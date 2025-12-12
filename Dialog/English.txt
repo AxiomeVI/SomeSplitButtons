@@ -1,0 +1,9 @@
+# ================================== Mod Menu        ==================================
+SSB_SOME_SPLIT_BUTTONS=                           Some Split Buttons
+SSB_ENABLE_SAVE_AND_QUIT_SPLIT_BUTTON=            Save and Quit Split Button
+SSB_ENABLE_SKIP_CUTSCENE_SPLIT_BUTTON=            Skip Cutscene Split Button
+SSB_CUTSCENES_REQUIRED=                           Nb of cutscenes to ignore
+
+# ================================== Save and Quit Timer Button / Menu ================
+SSB_SAVE_AND_QUIT_SPLIT_BUTTON=                   Save and Quit Split
+SSB_SKIP_CUTSCENE_SPLIT_BUTTON=                   Skip Cutscene Split
