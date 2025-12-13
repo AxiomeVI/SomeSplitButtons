@@ -37,8 +37,8 @@ public class SomeSplitButtonsModule : EverestModule {
 
     public override void Load() {
         Everest.Events.Level.OnCreatePauseMenuButtons += Level_OnCreatePauseMenuButtons;
-        On.Celeste.Level.Update += OnLevelUpdate;
-        // TODO: understand what it does
+        On.Celeste.Level.SkipCutscene += OnSkipCutscene;
+        Everest.Events.Level.OnComplete += OnLevelComplete;
         typeof(SaveLoadIntegration).ModInterop();
         SaveLoadInstance = SaveLoadIntegration.RegisterSaveLoadAction(
             StaticSkipCutsceneSplitManager.OnSaveState, 
@@ -52,7 +52,8 @@ public class SomeSplitButtonsModule : EverestModule {
 
     public override void Unload() {
         Everest.Events.Level.OnCreatePauseMenuButtons -= Level_OnCreatePauseMenuButtons;
-        On.Celeste.Level.Update -= OnLevelUpdate;
+        On.Celeste.Level.SkipCutscene -= OnSkipCutscene;
+        Everest.Events.Level.OnComplete -= OnLevelComplete;
         SaveLoadIntegration.Unregister(SaveLoadInstance);
     }
 
@@ -70,7 +71,6 @@ public class SomeSplitButtonsModule : EverestModule {
             MainSkipCutsceneSplitButton sc_button = new(Dialog.Get(DialogIds.SkipCutsceneSplitButtonId));
             sc_button.Pressed(() => {
                     sc_button.PressedHandler(level);
-                    StaticSkipCutsceneSplitManager.counter = 0;
             });
 
             // https://github.com/EverestAPI/Everest/blob/d7bc4c2716b747d243fa4347b98422766b3d8b5a/Celeste.Mod.mm/Mod/Core/CoreModule.cs#L234
@@ -88,17 +88,14 @@ public class SomeSplitButtonsModule : EverestModule {
         }
     }
 
-    private static void OnLevelUpdate(On.Celeste.Level.orig_Update orig, Level level) {
-        if (!Settings.ShowSkipCutsceneSplitButton) {
-            orig(level); 
-            return;
-        }
-        // TODO: find a better way to do this, maybe with level.onCutsceneSkip
-        if (level.SkippingCutscene && StaticSkipCutsceneSplitManager.cutsceneTimer == 0) StaticSkipCutsceneSplitManager.counter++;
-        if (level.SkippingCutscene) StaticSkipCutsceneSplitManager.cutsceneTimer++; else StaticSkipCutsceneSplitManager.cutsceneTimer = 0;
+    private static void OnSkipCutscene(On.Celeste.Level.orig_SkipCutscene orig, Level level) {
+        if (Settings.ShowSkipCutsceneSplitButton) StaticSkipCutsceneSplitManager.counter++;
         orig(level);
-        // TODO: find a way to keep level completion counting as a room for the timer
+    }
+
+    private static void OnLevelComplete(Level level) {
         level.Completed = false;
+        RoomTimerManager.UpdateTimerState();
     }
 
     public static void PopupMessage(string message) {

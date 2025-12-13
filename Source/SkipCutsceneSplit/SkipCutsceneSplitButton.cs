@@ -1,4 +1,5 @@
 using static Celeste.TextMenu;
+using Celeste.Mod.SomeSplitButtons.SkipCutsceneSplitManager;
 
 namespace Celeste.Mod.SomeSplitButtons.SkipCutsceneSplitButton;
 public class MainSkipCutsceneSplitButton : Button {
@@ -8,6 +9,7 @@ public class MainSkipCutsceneSplitButton : Button {
     
     public void PressedHandler(Level level) {
         if (level == null) return;
+        StaticSkipCutsceneSplitManager.counter = 0;
         Timer.HandleTimerButtonPressed(false);
         level.Unpause();
     }
