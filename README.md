@@ -1,5 +1,7 @@
 # SomeSplitButtons
 
+Inspired by [WonderMods](https://github.com/WonderGinger/WonderMods)
+
 ## Save and Quit Split
 Add a menu button to unpause and split the room timer for practicing segments that end with S&Q
 
