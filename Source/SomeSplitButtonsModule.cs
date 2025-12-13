@@ -94,6 +94,7 @@ public class SomeSplitButtonsModule : EverestModule {
     }
 
     private static void OnLevelComplete(Level level) {
+        if (!Settings.ShowSkipCutsceneSplitButton) return;
         level.Completed = false;
         RoomTimerManager.UpdateTimerState();
     }
