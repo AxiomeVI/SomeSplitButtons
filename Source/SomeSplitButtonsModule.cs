@@ -1,13 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
 using Celeste.Mod.SpeedrunTool.Message;
 using Celeste.Mod.SomeSplitButtons.SaveAndQuitSplitButton;
 using Celeste.Mod.SomeSplitButtons.SkipCutsceneSplitButton;
 using Celeste.Mod.SomeSplitButtons.Integration;
 using Celeste.Mod.SomeSplitButtons.SkipCutsceneSplitManager;
+using Celeste.Mod.SomeSplitButtons.SaveAndQuitSplitManager;
 using Celeste.Mod.SpeedrunTool.RoomTimer;
 using MonoMod.ModInterop;
 using Monocle;
+using Microsoft.Xna.Framework;
 
 namespace Celeste.Mod.SomeSplitButtons;
 
@@ -36,6 +37,7 @@ public class SomeSplitButtonsModule : EverestModule {
     }
 
     public override void Load() {
+        On.Monocle.Engine.Update += Engine_Update;
         Everest.Events.Level.OnCreatePauseMenuButtons += Level_OnCreatePauseMenuButtons;
         On.Celeste.Level.SkipCutscene += OnSkipCutscene;
         Everest.Events.Level.OnComplete += OnLevelComplete;
@@ -44,13 +46,14 @@ public class SomeSplitButtonsModule : EverestModule {
             StaticSkipCutsceneSplitManager.OnSaveState, 
             StaticSkipCutsceneSplitManager.OnLoadState, 
             StaticSkipCutsceneSplitManager.OnClearState, 
-            StaticSkipCutsceneSplitManager.OnBeforeSaveState,
-            StaticSkipCutsceneSplitManager.OnBeforeLoadState, 
+            null,
+            null, 
             null
         );
     }
 
     public override void Unload() {
+        On.Monocle.Engine.Update -= Engine_Update;
         Everest.Events.Level.OnCreatePauseMenuButtons -= Level_OnCreatePauseMenuButtons;
         On.Celeste.Level.SkipCutscene -= OnSkipCutscene;
         Everest.Events.Level.OnComplete -= OnLevelComplete;
@@ -63,33 +66,24 @@ public class SomeSplitButtonsModule : EverestModule {
             sq_button.Pressed(() => {
                 sq_button.PressedHandler(level);
             });
-
             menu.Insert(4, sq_button);
         }
 
-        if (Settings.ShowSkipCutsceneSplitButton && StaticSkipCutsceneSplitManager.counter >= Settings.CutscenesRequired){
+        if (level.InCutscene
+            && Settings.ShowSkipCutsceneSplitButton 
+            && StaticSkipCutsceneSplitManager.cutsceneSkippedCounter >= Settings.CutscenesRequired
+            && !StaticSkipCutsceneSplitManager.pressed) {
+
             MainSkipCutsceneSplitButton sc_button = new(Dialog.Get(DialogIds.SkipCutsceneSplitButtonId));
             sc_button.Pressed(() => {
                     sc_button.PressedHandler(level);
             });
-
-            // https://github.com/EverestAPI/Everest/blob/d7bc4c2716b747d243fa4347b98422766b3d8b5a/Celeste.Mod.mm/Mod/Core/CoreModule.cs#L234
-            List<TextMenu.Item> items = menu.Items;
-            int index;
-            // Find the skip cutscene button and place our button above it.
-            string cleanedOptions = Dialog.Clean("menu_pause_skip_cutscene");
-            index = items.FindIndex(_ => {
-                TextMenu.Button other = (_ as TextMenu.Button);
-                if (other == null)
-                    return false;
-                return other.Label == cleanedOptions;
-            });
-            if (index != -1) menu.Insert(index++, sc_button);
+            menu.Insert(2, sc_button);
         }
     }
 
     private static void OnSkipCutscene(On.Celeste.Level.orig_SkipCutscene orig, Level level) {
-        if (Settings.ShowSkipCutsceneSplitButton) StaticSkipCutsceneSplitManager.counter++;
+        if (Settings.ShowSkipCutsceneSplitButton) StaticSkipCutsceneSplitManager.cutsceneSkippedCounter++;
         orig(level);
     }
 
@@ -102,40 +96,10 @@ public class SomeSplitButtonsModule : EverestModule {
     public static void PopupMessage(string message) {
         PopupMessageUtils.Show(message, null);
     }
-}
 
-public static class Timer {
-
-    // CelesteTAS info hud function https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/ae25bf3f2fa931d362c3a321c2cf8dae58d2eb28/CelesteTAS-EverestInterop/Source/TAS/GameInfo.cs#L546
-    internal static int ToCeilingFrames(this float timer) {
-        if (timer <= 0.0f) {
-            return 0;
-        }
-
-        float frames = MathF.Ceiling(timer / Engine.DeltaTime);
-        return float.IsInfinity(frames) || float.IsNaN(frames) ? int.MaxValue : (int) frames;
-    }
-    
-    public static void HandleTimerButtonPressed(bool berryCheck = true) {
-        if (berryCheck) {
-            Player player = (Engine.Scene as Level).Tracker.GetEntity<Player>();
-
-            // CelesteTAS info hud format https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/ae25bf3f2fa931d362c3a321c2cf8dae58d2eb28/CelesteTAS-EverestInterop/Source/TAS/GameInfo.cs#L307
-            Follower? firstRedBerryFollower = player.Leader.Followers.Find(follower => follower.Entity is Strawberry {Golden: false});
-            if (firstRedBerryFollower?.Entity is Strawberry firstRedBerry) {
-                float collectTimer = firstRedBerry.collectTimer;
-                if (collectTimer <= 0.15f) {
-                    int collectFrames = (0.15f - collectTimer).ToCeilingFrames();
-                    if (collectTimer >= 0f) {
-                        SomeSplitButtonsModule.PopupMessage($"Berry({collectFrames}) ");
-                    } else {
-                        int additionalFrames = Math.Abs(collectTimer).ToCeilingFrames();
-                        SomeSplitButtonsModule.PopupMessage($"Berry({collectFrames - additionalFrames}+{additionalFrames}) ");
-                    }
-                }
-                return;
-            }
-        }
-        RoomTimerManager.UpdateTimerState();
+    private void Engine_Update(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
+        orig(self, gameTime);
+        if (Settings.ShowSaveAndQuitSplitButton) SaveAndQuitTimer.Update();
+        if (Settings.ShowSkipCutsceneSplitButton) SkipCutsceneTimer.Update(Settings.Prologue);
     }
 }

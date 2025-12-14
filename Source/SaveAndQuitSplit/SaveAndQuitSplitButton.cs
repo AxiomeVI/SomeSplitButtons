@@ -1,4 +1,5 @@
 using static Celeste.TextMenu;
+using Celeste.Mod.SomeSplitButtons.SaveAndQuitSplitManager;
 
 namespace Celeste.Mod.SomeSplitButtons.SaveAndQuitSplitButton;
 public class MainSaveAndQuitSplitButton : Button {
@@ -8,7 +9,7 @@ public class MainSaveAndQuitSplitButton : Button {
     
     public void PressedHandler(Level level) {
         if (level == null) return;
-        Timer.HandleTimerButtonPressed();
+        SaveAndQuitTimer.HandleTimerButtonPressed();
         level.Unpause();
     }
 }
