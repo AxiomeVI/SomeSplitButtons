@@ -97,7 +97,7 @@ public class SomeSplitButtonsModule : EverestModule {
         PopupMessageUtils.Show(message, null);
     }
 
-    private void Engine_Update(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
+    private static void Engine_Update(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
         orig(self, gameTime);
         if (Settings.ShowSaveAndQuitSplitButton) SaveAndQuitTimer.Update();
         if (Settings.ShowSkipCutsceneSplitButton) SkipCutsceneTimer.Update(Settings.Prologue);

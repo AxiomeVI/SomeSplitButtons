@@ -44,7 +44,7 @@ public static class SkipCutsceneTimer {
     public static void Update(bool isPrologueCutscene) {
         if (pressed) {
             frameCounter++;
-            if (frameCounter >= (isPrologueCutscene ? PROLOGUE_END_CS_FADEOUT_FRAMES : END_CS_FADEOUT_FRAMES)) {
+            if (frameCounter > (isPrologueCutscene ? PROLOGUE_END_CS_FADEOUT_FRAMES : END_CS_FADEOUT_FRAMES)) {
                 pressed = false;
                 frameCounter = 0;
                 RoomTimerManager.UpdateTimerState();

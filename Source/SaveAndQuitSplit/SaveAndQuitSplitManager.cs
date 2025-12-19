@@ -6,7 +6,7 @@ namespace Celeste.Mod.SomeSplitButtons.SaveAndQuitSplitManager;
 public static class SaveAndQuitTimer {
     private static int counter = 0;
     private static bool pressed = false;
-    private const int SQ_FADEOUT_FRAMES = 31;
+    private const int SQ_FADEOUT_FRAMES = 1;
 
     // CelesteTAS info hud function https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/ae25bf3f2fa931d362c3a321c2cf8dae58d2eb28/CelesteTAS-EverestInterop/Source/TAS/GameInfo.cs#L546
     internal static int ToCeilingFrames(this float timer) {
@@ -42,7 +42,7 @@ public static class SaveAndQuitTimer {
     public static void Update() {
         if (pressed) {
             counter++;
-            if (counter >= SQ_FADEOUT_FRAMES) {
+            if (counter > SQ_FADEOUT_FRAMES) {
                 pressed = false;
                 counter = 0;
                 RoomTimerManager.UpdateTimerState();
