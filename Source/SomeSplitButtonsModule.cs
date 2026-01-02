@@ -39,7 +39,6 @@ public class SomeSplitButtonsModule : EverestModule {
     public override void Load() {
         On.Monocle.Engine.Update += Engine_Update;
         Everest.Events.Level.OnCreatePauseMenuButtons += Level_OnCreatePauseMenuButtons;
-        On.Celeste.Level.SkipCutscene += OnSkipCutscene;
         Everest.Events.Level.OnComplete += OnLevelComplete;
         typeof(SaveLoadIntegration).ModInterop();
         SaveLoadInstance = SaveLoadIntegration.RegisterSaveLoadAction(
@@ -47,7 +46,7 @@ public class SomeSplitButtonsModule : EverestModule {
             StaticSkipCutsceneSplitManager.OnLoadState, 
             StaticSkipCutsceneSplitManager.OnClearState, 
             null,
-            null, 
+            null,
             null
         );
     }
@@ -55,7 +54,6 @@ public class SomeSplitButtonsModule : EverestModule {
     public override void Unload() {
         On.Monocle.Engine.Update -= Engine_Update;
         Everest.Events.Level.OnCreatePauseMenuButtons -= Level_OnCreatePauseMenuButtons;
-        On.Celeste.Level.SkipCutscene -= OnSkipCutscene;
         Everest.Events.Level.OnComplete -= OnLevelComplete;
         SaveLoadIntegration.Unregister(SaveLoadInstance);
     }
@@ -69,9 +67,8 @@ public class SomeSplitButtonsModule : EverestModule {
             menu.Insert(4, sq_button);
         }
 
-        if (level.InCutscene
-            && Settings.ShowSkipCutsceneSplitButton 
-            && StaticSkipCutsceneSplitManager.cutsceneSkippedCounter >= Settings.CutscenesRequired
+        if (Settings.ShowSkipCutsceneSplitButton
+            && level.endingChapterAfterCutscene
             && !StaticSkipCutsceneSplitManager.pressed) {
 
             MainSkipCutsceneSplitButton sc_button = new(Dialog.Get(DialogIds.SkipCutsceneSplitButtonId));
@@ -80,11 +77,6 @@ public class SomeSplitButtonsModule : EverestModule {
             });
             menu.Insert(2, sc_button);
         }
-    }
-
-    private static void OnSkipCutscene(On.Celeste.Level.orig_SkipCutscene orig, Level level) {
-        if (Settings.ShowSkipCutsceneSplitButton) StaticSkipCutsceneSplitManager.cutsceneSkippedCounter++;
-        orig(level);
     }
 
     private static void OnLevelComplete(Level level) {
@@ -100,6 +92,6 @@ public class SomeSplitButtonsModule : EverestModule {
     private static void Engine_Update(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
         orig(self, gameTime);
         if (Settings.ShowSaveAndQuitSplitButton) SaveAndQuitTimer.Update();
-        if (Settings.ShowSkipCutsceneSplitButton) SkipCutsceneTimer.Update(Settings.Prologue);
+        if (Settings.ShowSkipCutsceneSplitButton) SkipCutsceneTimer.Update();
     }
 }

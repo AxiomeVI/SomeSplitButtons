@@ -6,6 +6,4 @@ public static class DialogIds {
     public const string SaveAndQuitSplitButtonId = "SSB_SAVE_AND_QUIT_SPLIT_BUTTON";
     public const string EnableSkipCutsceneSplitButtonId = "SSB_ENABLE_SKIP_CUTSCENE_SPLIT_BUTTON";
     public const string SkipCutsceneSplitButtonId = "SSB_SKIP_CUTSCENE_SPLIT_BUTTON";
-    public const string CutscenesRequiredId = "SSB_CUTSCENES_REQUIRED";
-    public const string PrologueCaseId = "SSB_PROLOGUE_CASE";
 }

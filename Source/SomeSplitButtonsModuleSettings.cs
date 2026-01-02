@@ -12,10 +12,4 @@ public class SomeSplitButtonsModuleSettings : EverestModuleSettings {
 
     [SettingName(DialogIds.EnableSkipCutsceneSplitButtonId)]
     public bool ShowSkipCutsceneSplitButton { get; set; } = true;
-
-    [SettingName(DialogIds.CutscenesRequiredId), SettingRange(min: 0, max: 10)]
-    public int CutscenesRequired { get; set; } = 0;
-
-    [SettingName(DialogIds.PrologueCaseId)]
-    public bool Prologue { get; set; } = false;
 }
