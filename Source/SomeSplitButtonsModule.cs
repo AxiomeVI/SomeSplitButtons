@@ -7,8 +7,6 @@ using Celeste.Mod.SomeSplitButtons.SkipCutsceneSplitManager;
 using Celeste.Mod.SomeSplitButtons.SaveAndQuitSplitManager;
 using Celeste.Mod.SpeedrunTool.RoomTimer;
 using MonoMod.ModInterop;
-using Monocle;
-using Microsoft.Xna.Framework;
 
 namespace Celeste.Mod.SomeSplitButtons;
 
@@ -37,7 +35,7 @@ public class SomeSplitButtonsModule : EverestModule {
     }
 
     public override void Load() {
-        On.Monocle.Engine.Update += Engine_Update;
+        On.Celeste.Level.Update += LevelOnUpdate;
         Everest.Events.Level.OnCreatePauseMenuButtons += Level_OnCreatePauseMenuButtons;
         Everest.Events.Level.OnComplete += OnLevelComplete;
         typeof(SaveLoadIntegration).ModInterop();
@@ -52,7 +50,7 @@ public class SomeSplitButtonsModule : EverestModule {
     }
 
     public override void Unload() {
-        On.Monocle.Engine.Update -= Engine_Update;
+        On.Celeste.Level.Update -= LevelOnUpdate;
         Everest.Events.Level.OnCreatePauseMenuButtons -= Level_OnCreatePauseMenuButtons;
         Everest.Events.Level.OnComplete -= OnLevelComplete;
         SaveLoadIntegration.Unregister(SaveLoadInstance);
@@ -89,9 +87,19 @@ public class SomeSplitButtonsModule : EverestModule {
         PopupMessageUtils.Show(message, null);
     }
 
-    private static void Engine_Update(On.Monocle.Engine.orig_Update orig, Engine self, GameTime gameTime) {
-        orig(self, gameTime);
+    private static void LevelOnUpdate(On.Celeste.Level.orig_Update orig, Level self) {
+        orig(self);
         if (Settings.ShowSaveAndQuitSplitButton) SaveAndQuitTimer.Update();
         if (Settings.ShowSkipCutsceneSplitButton) SkipCutsceneTimer.Update();
+
+        if (Settings.ButtonToggleSaveQuit.Pressed) {
+            Settings.ShowSaveAndQuitSplitButton = !Settings.ShowSaveAndQuitSplitButton;
+            Instance.SaveSettings();
+        }
+
+        if (Settings.ButtonToggleSkipCutscene.Pressed) {
+            Settings.ShowSkipCutsceneSplitButton = !Settings.ShowSkipCutsceneSplitButton;
+            Instance.SaveSettings();
+        }
     }
 }

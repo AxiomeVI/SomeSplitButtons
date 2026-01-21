@@ -1,8 +1,9 @@
 - Name: SomeSplitButtons
-  Version: 0.3.0
+  Version: 0.4.0
   DLL: bin/SomeSplitButtons.dll
   Dependencies:
     - Name: EverestCore
       Version: 1.5935.0
+  OptionalDependencies:
     - Name: SpeedrunTool
-      Version: 3.27.11
+      Version: 3.26.4

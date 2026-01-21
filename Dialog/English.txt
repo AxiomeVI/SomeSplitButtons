@@ -5,4 +5,6 @@ SSB_ENABLE_SKIP_CUTSCENE_SPLIT_BUTTON=            Skip Cutscene Split Button
 
 # ============================ Buttons / Menu ==================================
 SSB_SAVE_AND_QUIT_SPLIT_BUTTON=                   Save and Quit Split
-SSB_SKIP_CUTSCENE_SPLIT_BUTTON=                   Skip Cutscene Split                               
+SSB_SKIP_CUTSCENE_SPLIT_BUTTON=                   Skip Cutscene Split
+SSB_TOGGLE_SAVE_QUIT_KEY=                         Enable/Disable Save and Quit button      
+SSB_TOGGLE_SKIP_CUTSCENE_KEY=                     Enable/Disable Skip Cutscene button
