@@ -109,7 +109,7 @@ public class SomeSplitButtonsModule : EverestModule {
         orig(self);
         if (!Settings.Enabled) return;
 
-        if (Settings.ShowSaveAndQuitSplitButton) SaveAndQuitTimer.Update();
+        if (Settings.ShowSaveAndQuitSplitButton) SaveAndQuitTimer.Update(self);
         if (Settings.ShowSkipCutsceneSplitButton) SkipCutsceneTimer.Update();
 
         if (Settings.ButtonToggleSaveQuit.Pressed) {

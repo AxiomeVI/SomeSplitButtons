@@ -39,13 +39,14 @@ public static class SaveAndQuitTimer {
         counter = 0;
     }
 
-    public static void Update() {
+    public static void Update(Level level) {
         if (pressed) {
             counter++;
             if (counter > SQ_FADEOUT_FRAMES) {
                 pressed = false;
                 counter = 0;
                 RoomTimerManager.UpdateTimerState();
+                level.TimerStopped = true;
             }
         }
         else {
