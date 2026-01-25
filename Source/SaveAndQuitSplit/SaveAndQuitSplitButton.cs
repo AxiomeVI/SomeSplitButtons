@@ -1,5 +1,6 @@
 using static Celeste.TextMenu;
 using Celeste.Mod.SomeSplitButtons.SaveAndQuitSplitManager;
+using Microsoft.Xna.Framework;
 
 namespace Celeste.Mod.SomeSplitButtons.SaveAndQuitSplitButton;
 public class MainSaveAndQuitSplitButton : Button {
@@ -11,5 +12,9 @@ public class MainSaveAndQuitSplitButton : Button {
         if (level == null) return;
         SaveAndQuitTimer.HandleTimerButtonPressed();
         level.Unpause();
+        if (SomeSplitButtonsModule.Settings.SaveAndQuitAndRetry)
+        {
+            level.Tracker.GetEntity<Player>()?.Die(Vector2.Zero);
+        }
     }
 }

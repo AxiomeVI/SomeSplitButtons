@@ -4,17 +4,19 @@ namespace Celeste.Mod.SomeSplitButtons;
 [SettingName(DialogIds.SomeSplitButtonsId)]
 
 public class SomeSplitButtonsModuleSettings : EverestModuleSettings {
-    public static SomeSplitButtonsModuleSettings Instance { get; private set; }
-    public SomeSplitButtonsModuleSettings(){
-        Instance = this;
-    }
 
-    [SettingName(DialogIds.EnableSaveAndQuitSplitButtonId)]
-    public bool ShowSaveAndQuitSplitButton { get; set; } = true;
+    [SettingName(DialogIds.EnabledId)]
+    public bool Enabled { get; set; } = true;
 
     [SettingName(DialogIds.EnableSkipCutsceneSplitButtonId)]
-    public bool ShowSkipCutsceneSplitButton { get; set; } = true;
+    public bool ShowSkipCutsceneSplitButton { get; set; } = false;
 
+    [SettingName(DialogIds.EnableSaveAndQuitSplitButtonId)]
+    public bool ShowSaveAndQuitSplitButton { get; set; } = false;
+
+    [SettingName(DialogIds.SaveAndQuitAndRetryId), SettingSubText(DialogIds.SaveAndQuitAndRetryDescId)]
+    public bool SaveAndQuitAndRetry { get; set; } = false;
+    
     #region Hotkeys
 
     [SettingName(DialogIds.ToggleSaveQuitKeyId)]
