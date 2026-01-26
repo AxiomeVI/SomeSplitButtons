@@ -7,6 +7,7 @@ public static class SaveAndQuitTimer {
     private static int counter = 0;
     private static bool pressed = false;
     private const int SQ_FADEOUT_FRAMES = 31;
+    private static bool keepTimerStopped = false;
 
     // CelesteTAS info hud function https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/ae25bf3f2fa931d362c3a321c2cf8dae58d2eb28/CelesteTAS-EverestInterop/Source/TAS/GameInfo.cs#L546
     internal static int ToCeilingFrames(this float timer) {
@@ -40,6 +41,16 @@ public static class SaveAndQuitTimer {
     }
 
     public static void Update(Level level) {
+        if (keepTimerStopped)
+        {
+            level.TimerStopped = true;
+            bool InControl = level.Tracker.GetEntity<Player>()?.InControl ?? false;
+            if (InControl)
+            {
+                keepTimerStopped = false;
+                level.TimerStopped = false;
+            }
+        }
         if (pressed) {
             counter++;
             if (counter > SQ_FADEOUT_FRAMES) {
@@ -47,6 +58,7 @@ public static class SaveAndQuitTimer {
                 counter = 0;
                 RoomTimerManager.UpdateTimerState();
                 level.TimerStopped = true;
+                keepTimerStopped = true;
             }
         }
         else {
