@@ -7,8 +7,10 @@ using Celeste.Mod.SomeSplitButtons.SkipCutsceneSplitManager;
 using Celeste.Mod.SomeSplitButtons.SaveAndQuitSplitManager;
 using Celeste.Mod.SpeedrunTool.RoomTimer;
 using MonoMod.ModInterop;
+using Celeste.Mod.SomeSplitButtons.Menu;
 using static Celeste.TextMenuExt;
-using Microsoft.Xna.Framework;
+
+using FMOD.Studio;
 
 namespace Celeste.Mod.SomeSplitButtons;
 
@@ -56,6 +58,13 @@ public class SomeSplitButtonsModule : EverestModule {
         Everest.Events.Level.OnCreatePauseMenuButtons -= Level_OnCreatePauseMenuButtons;
         Everest.Events.Level.OnComplete -= OnLevelComplete;
         SaveLoadIntegration.Unregister(SaveLoadInstance);
+    }
+
+    public override void CreateModMenuSection(TextMenu menu, bool inGame, EventInstance pauseSnapshot)
+    {
+        CreateModMenuSectionHeader(menu, inGame, pauseSnapshot);
+        ModMenuOptions.CreateMenu(menu);
+        CreateModMenuSectionKeyBindings(menu, inGame, pauseSnapshot);
     }
 
     private void Level_OnCreatePauseMenuButtons(Level level, TextMenu menu, bool minimal) {
