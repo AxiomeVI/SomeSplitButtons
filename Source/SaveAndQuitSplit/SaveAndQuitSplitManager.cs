@@ -1,6 +1,7 @@
 using Celeste.Mod.SpeedrunTool.RoomTimer;
 using Monocle;
 using System;
+using System.Collections.Generic;
 
 namespace Celeste.Mod.SomeSplitButtons.SaveAndQuitSplitManager;
 public static class SaveAndQuitTimer {
@@ -8,6 +9,25 @@ public static class SaveAndQuitTimer {
     private static bool pressed = false;
     private const int SQ_FADEOUT_FRAMES = 31;
     private static bool keepTimerStopped = false;
+
+    public static void OnSaveState(Dictionary<Type, Dictionary<string, object>> dictionary, Level level) {			
+        Reset();
+    }
+
+    public static void OnLoadState(Dictionary<Type, Dictionary<string, object>> dictionary, Level level) {
+        Reset();
+    }
+
+    public static void OnClearState() {
+        Reset();
+    }
+
+    public static void Reset()
+    {
+        pressed = false;
+        keepTimerStopped = false;
+        counter = 0;
+    }
 
     // CelesteTAS info hud function https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/ae25bf3f2fa931d362c3a321c2cf8dae58d2eb28/CelesteTAS-EverestInterop/Source/TAS/GameInfo.cs#L546
     internal static int ToCeilingFrames(this float timer) {
@@ -19,7 +39,7 @@ public static class SaveAndQuitTimer {
         return float.IsInfinity(frames) || float.IsNaN(frames) ? int.MaxValue : (int) frames;
     }
     
-    public static void HandleTimerButtonPressed() {
+    public static void HandleButtonPressed() {
         Player player = (Engine.Scene as Level).Tracker.GetEntity<Player>();
         // CelesteTAS info hud format https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/ae25bf3f2fa931d362c3a321c2cf8dae58d2eb28/CelesteTAS-EverestInterop/Source/TAS/GameInfo.cs#L307
         Follower? firstRedBerryFollower = player.Leader.Followers.Find(follower => follower.Entity is Strawberry {Golden: false});

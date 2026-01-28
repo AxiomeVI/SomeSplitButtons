@@ -12,6 +12,6 @@ SSB_TOGGLE_SKIP_CUTSCENE_KEY=                     Enable/Disable Skip Cutscene b
 SSB_SQ_BUTTON_DESC=                               Unpause then split room timer after 31 frames
 SSB_SQ_RETRY_BUTTON_DESC=                         Unpause, trigger a retry and split room timer after 31 frames
 SSB_SCS_BUTTON_DESC=                              Unpause then split room timer after 18 frames
-SSB_SCS_PROLOGUE_BUTTON_DESC=                     Unpause then split room timer after 232 frames
+SSB_SCS_PROLOGUE_BUTTON_DESC=                     Unpause then split room timer after 232 frames (~4s)
 SSB_SQ_RETRY_OPTIONS=                             Auto retry after S+Q split
 SSB_SQ_RETRY_OPTIONS_DESC=                        Helpful for death warps such as the 3A heart room

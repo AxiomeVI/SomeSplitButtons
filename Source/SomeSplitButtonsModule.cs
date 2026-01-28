@@ -5,12 +5,12 @@ using Celeste.Mod.SomeSplitButtons.SkipCutsceneSplitButton;
 using Celeste.Mod.SomeSplitButtons.Integration;
 using Celeste.Mod.SomeSplitButtons.SkipCutsceneSplitManager;
 using Celeste.Mod.SomeSplitButtons.SaveAndQuitSplitManager;
+using Celeste.Mod.SomeSplitButtons.Menu;
 using Celeste.Mod.SpeedrunTool.RoomTimer;
 using MonoMod.ModInterop;
-using Celeste.Mod.SomeSplitButtons.Menu;
 using static Celeste.TextMenuExt;
-
 using FMOD.Studio;
+using System.Collections.Generic;
 
 namespace Celeste.Mod.SomeSplitButtons;
 
@@ -39,14 +39,15 @@ public class SomeSplitButtonsModule : EverestModule {
     }
 
     public override void Load() {
-        On.Celeste.Level.Update += LevelOnUpdate;
+        On.Celeste.Level.Update += Level_OnUpdate;
+        Everest.Events.LevelLoader.OnLoadingThread += Level_OnLoadingThread;
         Everest.Events.Level.OnCreatePauseMenuButtons += Level_OnCreatePauseMenuButtons;
-        Everest.Events.Level.OnComplete += OnLevelComplete;
+        Everest.Events.Level.OnComplete += Level_OnLevelComplete;
         typeof(SaveLoadIntegration).ModInterop();
         SaveLoadInstance = SaveLoadIntegration.RegisterSaveLoadAction(
-            StaticSkipCutsceneSplitManager.OnSaveState, 
-            StaticSkipCutsceneSplitManager.OnLoadState, 
-            StaticSkipCutsceneSplitManager.OnClearState, 
+            OnSaveState, 
+            OnLoadState, 
+            OnClearState, 
             null,
             null,
             null
@@ -54,10 +55,40 @@ public class SomeSplitButtonsModule : EverestModule {
     }
 
     public override void Unload() {
-        On.Celeste.Level.Update -= LevelOnUpdate;
+        On.Celeste.Level.Update -= Level_OnUpdate;
+        Everest.Events.LevelLoader.OnLoadingThread -= Level_OnLoadingThread;
         Everest.Events.Level.OnCreatePauseMenuButtons -= Level_OnCreatePauseMenuButtons;
-        Everest.Events.Level.OnComplete -= OnLevelComplete;
+        Everest.Events.Level.OnComplete -= Level_OnLevelComplete;
         SaveLoadIntegration.Unregister(SaveLoadInstance);
+    }
+
+    public void Level_OnLoadingThread(Level level)
+    {
+        if (!Settings.Enabled) return;
+        if (Settings.ShowSkipCutsceneSplitButton) 
+        {
+            SkipCutsceneTimer.Reset();
+            SkipCutsceneTimer.PrologueCheck(level.Session.Area.ChapterIndex);
+        }
+        if (Settings.ShowSaveAndQuitSplitButton) SaveAndQuitTimer.Reset();
+    }
+
+    public static void OnSaveState(Dictionary<Type, Dictionary<string, object>> dictionary, Level level) {
+        if (!Settings.Enabled) return;		
+        if (Settings.ShowSkipCutsceneSplitButton) SkipCutsceneTimer.OnSaveState(dictionary, level);
+        if (Settings.ShowSaveAndQuitSplitButton) SaveAndQuitTimer.OnSaveState(dictionary, level);
+    }
+
+    public static void OnLoadState(Dictionary<Type, Dictionary<string, object>> dictionary, Level level) {
+        if (!Settings.Enabled) return;
+        if (Settings.ShowSkipCutsceneSplitButton) SkipCutsceneTimer.OnLoadState(dictionary, level);
+        if (Settings.ShowSaveAndQuitSplitButton) SaveAndQuitTimer.OnLoadState(dictionary, level);
+    }
+
+    public static void OnClearState() {
+        if (!Settings.Enabled) return;
+        if (Settings.ShowSkipCutsceneSplitButton) SkipCutsceneTimer.OnClearState();
+        if (Settings.ShowSaveAndQuitSplitButton) SaveAndQuitTimer.OnClearState();
     }
 
     public override void CreateModMenuSection(TextMenu menu, bool inGame, EventInstance pauseSnapshot)
@@ -87,7 +118,7 @@ public class SomeSplitButtonsModule : EverestModule {
 
         if (Settings.ShowSkipCutsceneSplitButton
             && level.endingChapterAfterCutscene
-            && !StaticSkipCutsceneSplitManager.pressed) {
+            && !SkipCutsceneTimer.hidden) {
 
             MainSkipCutsceneSplitButton sc_button = new(Dialog.Clean(DialogIds.SkipCutsceneSplitButtonId));
             sc_button.Pressed(() => {
@@ -104,7 +135,7 @@ public class SomeSplitButtonsModule : EverestModule {
         }
     }
 
-    private static void OnLevelComplete(Level level) {
+    private static void Level_OnLevelComplete(Level level) {
         if (!Settings.Enabled || !Settings.ShowSkipCutsceneSplitButton) return;
         level.Completed = false;
         RoomTimerManager.UpdateTimerState();
@@ -114,20 +145,23 @@ public class SomeSplitButtonsModule : EverestModule {
         PopupMessageUtils.Show(message, null);
     }
 
-    private static void LevelOnUpdate(On.Celeste.Level.orig_Update orig, Level self) {
+    private static void Level_OnUpdate(On.Celeste.Level.orig_Update orig, Level self) {
         orig(self);
         if (!Settings.Enabled) return;
 
         if (Settings.ShowSaveAndQuitSplitButton) SaveAndQuitTimer.Update(self);
-        if (Settings.ShowSkipCutsceneSplitButton) SkipCutsceneTimer.Update();
+        if (Settings.ShowSkipCutsceneSplitButton) SkipCutsceneTimer.Update(self);
 
         if (Settings.ButtonToggleSaveQuit.Pressed) {
             Settings.ShowSaveAndQuitSplitButton = !Settings.ShowSaveAndQuitSplitButton;
+            SkipCutsceneTimer.Reset();
+            if (Settings.ShowSaveAndQuitSplitButton) SkipCutsceneTimer.PrologueCheck(self.Session.Area.ChapterIndex);
             Instance.SaveSettings();
         }
 
         if (Settings.ButtonToggleSkipCutscene.Pressed) {
-            Settings.ShowSkipCutsceneSplitButton = !Settings.ShowSkipCutsceneSplitButton;
+            Settings.ShowSkipCutsceneSplitButton = !Settings.ShowSkipCutsceneSplitButton;;
+            SkipCutsceneTimer.Reset();
             Instance.SaveSettings();
         }
     }

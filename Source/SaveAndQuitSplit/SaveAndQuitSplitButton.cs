@@ -10,7 +10,7 @@ public class MainSaveAndQuitSplitButton : Button {
     
     public void PressedHandler(Level level) {
         if (level == null) return;
-        SaveAndQuitTimer.HandleTimerButtonPressed();
+        SaveAndQuitTimer.HandleButtonPressed();
         level.Unpause();
         if (SomeSplitButtonsModule.Settings.SaveAndQuitAndRetry)
         {

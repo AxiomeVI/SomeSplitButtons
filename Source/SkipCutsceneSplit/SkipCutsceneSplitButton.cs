@@ -9,8 +9,7 @@ public class MainSkipCutsceneSplitButton : Button {
     
     public void PressedHandler(Level level) {
         if (level == null) return;
-        StaticSkipCutsceneSplitManager.HandleButtonPressed();
-        SkipCutsceneTimer.HandleTimerButtonPressed(level.Session.Area.ChapterIndex);
+        SkipCutsceneTimer.HandleButtonPressed();
         level.Unpause();
     }
 }
