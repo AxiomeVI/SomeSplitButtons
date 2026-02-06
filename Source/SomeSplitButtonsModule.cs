@@ -39,6 +39,7 @@ public class SomeSplitButtonsModule : EverestModule {
     }
 
     public override void Load() {
+        Everest.Events.Level.OnExit += Level_OnLevelExit;
         On.Celeste.Level.Update += Level_OnUpdate;
         Everest.Events.LevelLoader.OnLoadingThread += Level_OnLoadingThread;
         Everest.Events.Level.OnCreatePauseMenuButtons += Level_OnCreatePauseMenuButtons;
@@ -60,9 +61,12 @@ public class SomeSplitButtonsModule : EverestModule {
         Everest.Events.Level.OnCreatePauseMenuButtons -= Level_OnCreatePauseMenuButtons;
         Everest.Events.Level.OnComplete -= Level_OnLevelComplete;
         SaveLoadIntegration.Unregister(SaveLoadInstance);
+        SaveAndQuitTimer.Reset();
+        SkipCutsceneTimer.Reset();
+        Everest.Events.Level.OnExit -= Level_OnLevelExit;
     }
 
-    public void Level_OnLoadingThread(Level level)
+    public static void Level_OnLoadingThread(Level level)
     {
         if (!Settings.Enabled) return;
         if (Settings.ShowSkipCutsceneSplitButton) 
@@ -71,6 +75,13 @@ public class SomeSplitButtonsModule : EverestModule {
             SkipCutsceneTimer.PrologueCheck(level.Session.Area.ChapterIndex);
         }
         if (Settings.ShowSaveAndQuitSplitButton) SaveAndQuitTimer.Reset();
+    }
+
+    private static void Level_OnLevelExit(Level level, LevelExit exit, LevelExit.Mode mode, Session session, HiresSnow snow) 
+    {
+        if (!Settings.Enabled) return;
+        SaveAndQuitTimer.Reset();
+        SaveAndQuitTimer.Reset();
     }
 
     public static void OnSaveState(Dictionary<Type, Dictionary<string, object>> dictionary, Level level) {
