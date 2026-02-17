@@ -10,11 +10,11 @@ public static class SaveAndQuitTimer {
     private const int SQ_FADEOUT_FRAMES = 31;
     private static bool keepTimerStopped = false;
 
-    public static void OnSaveState(Dictionary<Type, Dictionary<string, object>> dictionary, Level level) {			
+    public static void OnSaveState() {			
         Reset();
     }
 
-    public static void OnLoadState(Dictionary<Type, Dictionary<string, object>> dictionary, Level level) {
+    public static void OnLoadState() {
         Reset();
     }
 

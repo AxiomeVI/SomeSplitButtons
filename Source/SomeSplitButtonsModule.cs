@@ -11,6 +11,8 @@ using MonoMod.ModInterop;
 using static Celeste.TextMenuExt;
 using FMOD.Studio;
 using System.Collections.Generic;
+using MonoMod.RuntimeDetour;
+using System.Reflection;
 
 namespace Celeste.Mod.SomeSplitButtons;
 
@@ -26,6 +28,8 @@ public class SomeSplitButtonsModule : EverestModule {
     public override Type SaveDataType => typeof(SomeSplitButtonsModuleSaveData);
     public static SomeSplitButtonsModuleSaveData SaveData => (SomeSplitButtonsModuleSaveData) Instance._SaveData;
     private object SaveLoadInstance = null;
+    private static Hook _timingHook;
+    private static Hook _updateTimerStateHook;
 
     public SomeSplitButtonsModule() {
         Instance = this;
@@ -43,7 +47,6 @@ public class SomeSplitButtonsModule : EverestModule {
         On.Celeste.Level.Update += Level_OnUpdate;
         Everest.Events.LevelLoader.OnLoadingThread += Level_OnLoadingThread;
         Everest.Events.Level.OnCreatePauseMenuButtons += Level_OnCreatePauseMenuButtons;
-        Everest.Events.Level.OnComplete += Level_OnLevelComplete;
         typeof(SaveLoadIntegration).ModInterop();
         SaveLoadInstance = SaveLoadIntegration.RegisterSaveLoadAction(
             OnSaveState, 
@@ -53,17 +56,37 @@ public class SomeSplitButtonsModule : EverestModule {
             null,
             null
         );
+        var updateTimerStateMethod = typeof(RoomTimerManager).GetMethod("UpdateTimerState", BindingFlags.Public | BindingFlags.Static);
+        if (updateTimerStateMethod != null) {
+            _updateTimerStateHook = new Hook(
+                updateTimerStateMethod,
+                typeof(SkipCutsceneTimer).GetMethod("OnUpdateTimerState", BindingFlags.Public | BindingFlags.Static)
+            );
+        }
+        
+        var assembly = typeof(RoomTimerManager).Assembly;
+        var roomTimerDataType = assembly.GetType("Celeste.Mod.SpeedrunTool.RoomTimer.RoomTimerData");
+        var timingMethod = roomTimerDataType?.GetMethod("Timing", BindingFlags.Public | BindingFlags.Instance);
+        if (timingMethod != null) {
+            _timingHook = new Hook(
+                timingMethod,
+                typeof(SkipCutsceneTimer).GetMethod("OnTiming", BindingFlags.Public | BindingFlags.Static)
+            );
+        }
     }
 
     public override void Unload() {
         On.Celeste.Level.Update -= Level_OnUpdate;
         Everest.Events.LevelLoader.OnLoadingThread -= Level_OnLoadingThread;
         Everest.Events.Level.OnCreatePauseMenuButtons -= Level_OnCreatePauseMenuButtons;
-        Everest.Events.Level.OnComplete -= Level_OnLevelComplete;
         SaveLoadIntegration.Unregister(SaveLoadInstance);
         SaveAndQuitTimer.Reset();
         SkipCutsceneTimer.Reset();
         Everest.Events.Level.OnExit -= Level_OnLevelExit;
+        _timingHook?.Dispose();
+        _timingHook = null;
+        _updateTimerStateHook?.Dispose();
+        _updateTimerStateHook = null;
     }
 
     public static void Level_OnLoadingThread(Level level)
@@ -86,14 +109,14 @@ public class SomeSplitButtonsModule : EverestModule {
 
     public static void OnSaveState(Dictionary<Type, Dictionary<string, object>> dictionary, Level level) {
         if (!Settings.Enabled) return;		
-        if (Settings.ShowSkipCutsceneSplitButton) SkipCutsceneTimer.OnSaveState(dictionary, level);
-        if (Settings.ShowSaveAndQuitSplitButton) SaveAndQuitTimer.OnSaveState(dictionary, level);
+        if (Settings.ShowSkipCutsceneSplitButton) SkipCutsceneTimer.OnSaveState();
+        if (Settings.ShowSaveAndQuitSplitButton) SaveAndQuitTimer.OnSaveState();
     }
 
     public static void OnLoadState(Dictionary<Type, Dictionary<string, object>> dictionary, Level level) {
         if (!Settings.Enabled) return;
-        if (Settings.ShowSkipCutsceneSplitButton) SkipCutsceneTimer.OnLoadState(dictionary, level);
-        if (Settings.ShowSaveAndQuitSplitButton) SaveAndQuitTimer.OnLoadState(dictionary, level);
+        if (Settings.ShowSkipCutsceneSplitButton) SkipCutsceneTimer.OnLoadState();
+        if (Settings.ShowSaveAndQuitSplitButton) SaveAndQuitTimer.OnLoadState();
     }
 
     public static void OnClearState() {
@@ -144,12 +167,6 @@ public class SomeSplitButtonsModule : EverestModule {
             sc_button.OnEnter = () => descriptionText.FadeVisible = true;
             sc_button.OnLeave = () => descriptionText.FadeVisible = false;
         }
-    }
-
-    private static void Level_OnLevelComplete(Level level) {
-        if (!Settings.Enabled || !Settings.ShowSkipCutsceneSplitButton) return;
-        level.Completed = false;
-        RoomTimerManager.UpdateTimerState();
     }
 
     public static void PopupMessage(string message) {
