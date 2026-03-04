@@ -104,7 +104,6 @@ public class SomeSplitButtonsModule : EverestModule {
     {
         if (!Settings.Enabled) return;
         SaveAndQuitTimer.Reset();
-        SaveAndQuitTimer.Reset();
     }
 
     public static void OnSaveState(Dictionary<Type, Dictionary<string, object>> dictionary, Level level) {
@@ -138,7 +137,7 @@ public class SomeSplitButtonsModule : EverestModule {
         if (Settings.ShowSaveAndQuitSplitButton) {
             MainSaveAndQuitSplitButton sq_button = new(Dialog.Clean(DialogIds.SaveAndQuitSplitButtonId));
             sq_button.Pressed(() => {
-                sq_button.PressedHandler(level);
+                MainSaveAndQuitSplitButton.PressedHandler(level);
             });
             EaseInSubHeaderExt descriptionText = new(Settings.SaveAndQuitAndRetry ? Dialog.Clean(DialogIds.SQButtonRetryDesc) : Dialog.Clean(DialogIds.SQButtonDesc), false, menu, null)
             {
@@ -152,11 +151,11 @@ public class SomeSplitButtonsModule : EverestModule {
 
         if (Settings.ShowSkipCutsceneSplitButton
             && level.endingChapterAfterCutscene
-            && !SkipCutsceneTimer.hidden) {
+            && !SkipCutsceneTimer.Hidden) {
 
             MainSkipCutsceneSplitButton sc_button = new(Dialog.Clean(DialogIds.SkipCutsceneSplitButtonId));
             sc_button.Pressed(() => {
-                    sc_button.PressedHandler(level);
+                    MainSkipCutsceneSplitButton.PressedHandler(level);
             });
             EaseInSubHeaderExt descriptionText = new(level.Session.Area.ChapterIndex == -1 ? Dialog.Clean(DialogIds.SCSPrologueButtonDesc) : Dialog.Clean(DialogIds.SCSButtonDesc), false, menu, null)
             {
@@ -182,14 +181,14 @@ public class SomeSplitButtonsModule : EverestModule {
 
         if (Settings.ButtonToggleSaveQuit.Pressed) {
             Settings.ShowSaveAndQuitSplitButton = !Settings.ShowSaveAndQuitSplitButton;
-            SkipCutsceneTimer.Reset();
-            if (Settings.ShowSaveAndQuitSplitButton) SkipCutsceneTimer.PrologueCheck(self.Session.Area.ChapterIndex);
+            SaveAndQuitTimer.Reset();
             Instance.SaveSettings();
         }
 
         if (Settings.ButtonToggleSkipCutscene.Pressed) {
-            Settings.ShowSkipCutsceneSplitButton = !Settings.ShowSkipCutsceneSplitButton;;
+            Settings.ShowSkipCutsceneSplitButton = !Settings.ShowSkipCutsceneSplitButton;
             SkipCutsceneTimer.Reset();
+            if (Settings.ShowSkipCutsceneSplitButton) SkipCutsceneTimer.PrologueCheck(self.Session.Area.ChapterIndex);
             Instance.SaveSettings();
         }
     }

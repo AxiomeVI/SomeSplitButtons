@@ -8,7 +8,7 @@ public class MainSaveAndQuitSplitButton : Button {
         ConfirmSfx = SFX.ui_main_message_confirm;
     }
     
-    public void PressedHandler(Level level) {
+    public static void PressedHandler(Level level) {
         if (level == null) return;
         SaveAndQuitTimer.HandleButtonPressed();
         level.Unpause();

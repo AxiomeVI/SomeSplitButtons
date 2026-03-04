@@ -7,7 +7,7 @@ public class MainSkipCutsceneSplitButton : Button {
         ConfirmSfx = SFX.ui_main_message_confirm;
     }
     
-    public void PressedHandler(Level level) {
+    public static void PressedHandler(Level level) {
         if (level == null) return;
         SkipCutsceneTimer.HandleButtonPressed();
         level.Unpause();

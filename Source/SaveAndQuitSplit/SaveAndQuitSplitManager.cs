@@ -8,6 +8,7 @@ public static class SaveAndQuitTimer {
     private static int counter = 0;
     private static bool pressed = false;
     private const int SQ_FADEOUT_FRAMES = 31;
+    private const float BERRY_COLLECT_TIMER = 0.15f;
     private static bool keepTimerStopped = false;
 
     public static void OnSaveState() {			
@@ -40,13 +41,14 @@ public static class SaveAndQuitTimer {
     }
     
     public static void HandleButtonPressed() {
-        Player player = (Engine.Scene as Level).Tracker.GetEntity<Player>();
+        if (Engine.Scene is not Level level) return;
         // CelesteTAS info hud format https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/ae25bf3f2fa931d362c3a321c2cf8dae58d2eb28/CelesteTAS-EverestInterop/Source/TAS/GameInfo.cs#L307
-        Follower? firstRedBerryFollower = player.Leader.Followers.Find(follower => follower.Entity is Strawberry {Golden: false});
+        Player player = level.Tracker.GetEntity<Player>();
+        Follower? firstRedBerryFollower = player?.Leader.Followers.Find(follower => follower.Entity is Strawberry {Golden: false});
         if (firstRedBerryFollower?.Entity is Strawberry firstRedBerry) {
             float collectTimer = firstRedBerry.collectTimer;
-            if (collectTimer <= 0.15f) {
-                int collectFrames = (0.15f - collectTimer).ToCeilingFrames();
+            if (collectTimer <= BERRY_COLLECT_TIMER) {
+                int collectFrames = (BERRY_COLLECT_TIMER - collectTimer).ToCeilingFrames();
                 if (collectTimer >= 0f) {
                     SomeSplitButtonsModule.PopupMessage($"Berry({collectFrames}) ");
                 } else {
