@@ -49,10 +49,10 @@ public class SomeSplitButtonsModule : EverestModule {
         Everest.Events.Level.OnCreatePauseMenuButtons += Level_OnCreatePauseMenuButtons;
         typeof(SaveLoadIntegration).ModInterop();
         SaveLoadInstance = SaveLoadIntegration.RegisterSaveLoadAction(
-            OnSaveState, 
-            OnLoadState, 
-            OnClearState, 
-            null,
+            OnSaveState,
+            OnLoadState,
+            OnClearState,
+            OnBeforeSaveState,
             null,
             null
         );
@@ -116,6 +116,11 @@ public class SomeSplitButtonsModule : EverestModule {
         if (!Settings.Enabled) return;
         if (Settings.ShowSkipCutsceneSplitButton) SkipCutsceneTimer.OnLoadState();
         if (Settings.ShowSaveAndQuitSplitButton) SaveAndQuitTimer.OnLoadState();
+    }
+
+    public static void OnBeforeSaveState(Level level) {
+        if (!Settings.Enabled) return;
+        if (Settings.ShowSaveAndQuitSplitButton) SaveAndQuitTimer.OnBeforeSaveState(level);
     }
 
     public static void OnClearState() {

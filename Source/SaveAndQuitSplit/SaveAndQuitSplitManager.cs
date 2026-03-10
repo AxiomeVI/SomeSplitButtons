@@ -11,7 +11,11 @@ public static class SaveAndQuitTimer {
     private const float BERRY_COLLECT_TIMER = 0.15f;
     private static bool keepTimerStopped = false;
 
-    public static void OnSaveState() {			
+    public static void OnBeforeSaveState(Level level) {
+        level.TimerStopped = false;
+    }
+
+    public static void OnSaveState() {
         Reset();
     }
 
