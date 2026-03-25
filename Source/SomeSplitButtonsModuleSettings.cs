@@ -13,12 +13,10 @@ public class SomeSplitButtonsModuleSettings : EverestModuleSettings {
     
     #region Hotkeys
 
-    [SettingName(DialogIds.ToggleSkipCutsceneKeyId)]
-    [DefaultButtonBinding(0, Keys.None)]
-    public ButtonBinding ButtonToggleSkipCutscene { get; set; }  = new(0, Keys.None);
+    [SettingIgnore]
+    public ButtonBinding ButtonToggleSkipCutscene { get; set; } = new(0, Keys.None);
 
-    [SettingName(DialogIds.ToggleSaveQuitKeyId)]
-    [DefaultButtonBinding(0, Keys.None)]
+    [SettingIgnore]
     public ButtonBinding ButtonToggleSaveQuit { get; set; } = new(0, Keys.None);
 
     #endregion

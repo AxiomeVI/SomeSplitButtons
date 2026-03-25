@@ -15,3 +15,7 @@ SSB_SCS_BUTTON_DESC=                              Unpause then split room timer 
 SSB_SCS_PROLOGUE_BUTTON_DESC=                     Unpause then split room timer after 232 frames (~4s)
 SSB_SQ_RETRY_OPTIONS=                             Auto retry after S+Q split
 SSB_SQ_RETRY_OPTIONS_DESC=                        Helpful for death warps such as the 3A heart room
+
+# ============================ Keybind Config UI ================================
+SSB_KEYBIND_CONFIG=                               Hotkeys
+SSB_KEYBIND_COMBO_SUB=                            Binding multiple keys acts as a key combo (all must be held)

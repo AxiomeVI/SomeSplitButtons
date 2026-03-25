@@ -15,4 +15,13 @@ public static class DialogIds {
     public const string SCSPrologueButtonDesc = "SSB_SCS_PROLOGUE_BUTTON_DESC";
     public const string SaveAndQuitAndRetryId = "SSB_SQ_RETRY_OPTIONS";
     public const string SaveAndQuitAndRetryDescId = "SSB_SQ_RETRY_OPTIONS_DESC";
+
+    // Keybind config UI
+    public const string KeybindConfigId = "SSB_KEYBIND_CONFIG";
+    public const string KeybindComboSubId = "SSB_KEYBIND_COMBO_SUB";
+    public const string KeyConfigTitle = "KEY_CONFIG_TITLE";
+    public const string BtnConfigTitle = "BTN_CONFIG_TITLE";
+    public const string KeyConfigChanging = "KEY_CONFIG_CHANGING";
+    public const string BtnConfigChanging = "BTN_CONFIG_CHANGING";
+    public const string BtnConfigNoController = "BTN_CONFIG_NOCONTROLLER";
 }

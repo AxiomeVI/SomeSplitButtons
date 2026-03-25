@@ -6,6 +6,7 @@ using Celeste.Mod.SomeSplitButtons.Integration;
 using Celeste.Mod.SomeSplitButtons.SkipCutsceneSplitManager;
 using Celeste.Mod.SomeSplitButtons.SaveAndQuitSplitManager;
 using Celeste.Mod.SomeSplitButtons.Menu;
+using Celeste.Mod.SomeSplitButtons.UI;
 using Celeste.Mod.SpeedrunTool.RoomTimer;
 using MonoMod.ModInterop;
 using static Celeste.TextMenuExt;
@@ -30,6 +31,8 @@ public class SomeSplitButtonsModule : EverestModule {
     private object SaveLoadInstance = null;
     private static Hook _timingHook;
     private static Hook _updateTimerStateHook;
+    private static ComboHotkey _saveQuitHotkey;
+    private static ComboHotkey _skipCutsceneHotkey;
 
     public SomeSplitButtonsModule() {
         Instance = this;
@@ -56,6 +59,9 @@ public class SomeSplitButtonsModule : EverestModule {
             null,
             null
         );
+        _saveQuitHotkey = new ComboHotkey(Settings.ButtonToggleSaveQuit);
+        _skipCutsceneHotkey = new ComboHotkey(Settings.ButtonToggleSkipCutscene);
+
         var updateTimerStateMethod = typeof(RoomTimerManager).GetMethod("UpdateTimerState", BindingFlags.Public | BindingFlags.Static);
         if (updateTimerStateMethod != null) {
             _updateTimerStateHook = new Hook(
@@ -133,7 +139,6 @@ public class SomeSplitButtonsModule : EverestModule {
     {
         CreateModMenuSectionHeader(menu, inGame, pauseSnapshot);
         ModMenuOptions.CreateMenu(menu);
-        CreateModMenuSectionKeyBindings(menu, inGame, pauseSnapshot);
     }
 
     private void Level_OnCreatePauseMenuButtons(Level level, TextMenu menu, bool minimal) {
@@ -184,13 +189,17 @@ public class SomeSplitButtonsModule : EverestModule {
         if (Settings.ShowSaveAndQuitSplitButton) SaveAndQuitTimer.Update(self);
         if (Settings.ShowSkipCutsceneSplitButton) SkipCutsceneTimer.Update(self);
 
-        if (Settings.ButtonToggleSaveQuit.Pressed) {
+        ComboHotkey.UpdateStates();
+        _saveQuitHotkey.Update();
+        _skipCutsceneHotkey.Update();
+
+        if (_saveQuitHotkey.Pressed) {
             Settings.ShowSaveAndQuitSplitButton = !Settings.ShowSaveAndQuitSplitButton;
             SaveAndQuitTimer.Reset();
             Instance.SaveSettings();
         }
 
-        if (Settings.ButtonToggleSkipCutscene.Pressed) {
+        if (_skipCutsceneHotkey.Pressed) {
             Settings.ShowSkipCutsceneSplitButton = !Settings.ShowSkipCutsceneSplitButton;
             SkipCutsceneTimer.Reset();
             if (Settings.ShowSkipCutsceneSplitButton) SkipCutsceneTimer.PrologueCheck(self.Session.Area.ChapterIndex);
