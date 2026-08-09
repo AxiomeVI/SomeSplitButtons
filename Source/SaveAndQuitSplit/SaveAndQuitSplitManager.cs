@@ -1,14 +1,12 @@
+using Celeste.Mod.SomeSplitButtons.Utils;
 using Celeste.Mod.SpeedrunTool.RoomTimer;
 using Monocle;
-using System;
-using System.Collections.Generic;
 
 namespace Celeste.Mod.SomeSplitButtons.SaveAndQuitSplitManager;
 public static class SaveAndQuitTimer {
     private static int counter = 0;
     private static bool pressed = false;
     private const int SQ_FADEOUT_FRAMES = 31;
-    private const float BERRY_COLLECT_TIMER = 0.15f;
     private static bool keepTimerStopped = false;
 
     public static void OnBeforeSaveState(Level level) {
@@ -34,34 +32,10 @@ public static class SaveAndQuitTimer {
         counter = 0;
     }
 
-    // CelesteTAS info hud function https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/ae25bf3f2fa931d362c3a321c2cf8dae58d2eb28/CelesteTAS-EverestInterop/Source/TAS/GameInfo.cs#L546
-    internal static int ToCeilingFrames(this float timer) {
-        if (timer <= 0.0f) {
-            return 0;
-        }
-
-        float frames = MathF.Ceiling(timer / Engine.DeltaTime);
-        return float.IsInfinity(frames) || float.IsNaN(frames) ? int.MaxValue : (int) frames;
-    }
-    
     public static void HandleButtonPressed() {
         if (Engine.Scene is not Level level) return;
-        // CelesteTAS info hud format https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/ae25bf3f2fa931d362c3a321c2cf8dae58d2eb28/CelesteTAS-EverestInterop/Source/TAS/GameInfo.cs#L307
-        Player player = level.Tracker.GetEntity<Player>();
-        Follower? firstRedBerryFollower = player?.Leader.Followers.Find(follower => follower.Entity is Strawberry {Golden: false});
-        if (firstRedBerryFollower?.Entity is Strawberry firstRedBerry) {
-            float collectTimer = firstRedBerry.collectTimer;
-            if (collectTimer <= BERRY_COLLECT_TIMER) {
-                int collectFrames = (BERRY_COLLECT_TIMER - collectTimer).ToCeilingFrames();
-                if (collectTimer >= 0f) {
-                    SomeSplitButtonsModule.PopupMessage($"Berry({collectFrames}) ");
-                } else {
-                    int additionalFrames = Math.Abs(collectTimer).ToCeilingFrames();
-                    SomeSplitButtonsModule.PopupMessage($"Berry({collectFrames - additionalFrames}+{additionalFrames}) ");
-                }
-            }
-            return;
-        }
+        if (BerryCheck.BlocksSplit(level)) return;
+
         pressed = true;
         counter = 0;
     }

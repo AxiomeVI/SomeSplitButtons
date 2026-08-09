@@ -1,3 +1,4 @@
+using Celeste.Mod.SomeSplitButtons.ReturnToMapSplitManager;
 using Celeste.Mod.SomeSplitButtons.SaveAndQuitSplitManager;
 using Celeste.Mod.SomeSplitButtons.SkipCutsceneSplitManager;
 using Monocle;
@@ -35,6 +36,16 @@ public static class ModMenuOptions {
                 }
         );
 
+        TextMenu.OnOff _showReturnToMapSplitButton = (TextMenu.OnOff)new TextMenu.OnOff(
+            Dialog.Clean(DialogIds.EnableReturnToMapSplitButtonId),
+            SomeSplitButtonsModule.Settings.ShowReturnToMapSplitButton).Change(
+                b =>
+                {
+                    SomeSplitButtonsModule.Settings.ShowReturnToMapSplitButton = b;
+                    ReturnToMapTimer.Reset();
+                }
+        );
+
         menu.Add(new TextMenu.OnOff(Dialog.Clean(DialogIds.EnabledId), SomeSplitButtonsModule.Settings.Enabled).Change(
             value =>
             {
@@ -42,20 +53,24 @@ public static class ModMenuOptions {
                 _showSkipCutsceneSplitButton.Visible = value;
                 _showSaveAndQuitSplitButton.Visible = value;
                 _saveAndQuitAndRetry.Visible = value;
+                _showReturnToMapSplitButton.Visible = value;
                 _saveAndQuitAndRetry.Disabled = !SomeSplitButtonsModule.Settings.ShowSaveAndQuitSplitButton;
                 SkipCutsceneTimer.Reset();
                 if (value && SomeSplitButtonsModule.Settings.ShowSkipCutsceneSplitButton && Engine.Scene is Level level) SkipCutsceneTimer.PrologueCheck(level.Session.Area.ChapterIndex);
                 SaveAndQuitTimer.Reset();
+                ReturnToMapTimer.Reset();
             }
         ));
 
         menu.Add(_showSkipCutsceneSplitButton);
         menu.Add(_showSaveAndQuitSplitButton);
         menu.Add(_saveAndQuitAndRetry);
+        menu.Add(_showReturnToMapSplitButton);
 
         _showSkipCutsceneSplitButton.Visible = SomeSplitButtonsModule.Settings.Enabled;
         _showSaveAndQuitSplitButton.Visible = SomeSplitButtonsModule.Settings.Enabled;
         _saveAndQuitAndRetry.Visible = SomeSplitButtonsModule.Settings.Enabled;
+        _showReturnToMapSplitButton.Visible = SomeSplitButtonsModule.Settings.Enabled;
         _saveAndQuitAndRetry.Disabled = !SomeSplitButtonsModule.Settings.ShowSaveAndQuitSplitButton;
 
         _saveAndQuitAndRetry.AddDescription(menu, Dialog.Clean(DialogIds.SaveAndQuitAndRetryDescId));

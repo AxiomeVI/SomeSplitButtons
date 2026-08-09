@@ -10,7 +10,8 @@ public class SomeSplitButtonsModuleSettings : EverestModuleSettings {
     public bool ShowSkipCutsceneSplitButton { get; set; } = false;
     public bool ShowSaveAndQuitSplitButton { get; set; } = false;
     public bool SaveAndQuitAndRetry { get; set; } = false;
-    
+    public bool ShowReturnToMapSplitButton { get; set; } = false;
+
     #region Hotkeys
 
     [SettingName(DialogIds.ToggleSkipCutsceneKeyId)]
@@ -20,6 +21,10 @@ public class SomeSplitButtonsModuleSettings : EverestModuleSettings {
     [SettingName(DialogIds.ToggleSaveQuitKeyId)]
     [DefaultButtonBinding(0, Keys.None)]
     public ButtonBinding ButtonToggleSaveQuit { get; set; } = new(0, Keys.None);
+
+    [SettingName(DialogIds.ToggleReturnToMapKeyId)]
+    [DefaultButtonBinding(0, Keys.None)]
+    public ButtonBinding ButtonToggleReturnToMap { get; set; } = new(0, Keys.None);
 
     #endregion
 }

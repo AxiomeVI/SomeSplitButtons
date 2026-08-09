@@ -3,15 +3,20 @@ SSB_SOME_SPLIT_BUTTONS=                           Some Split Buttons
 SSB_ENABLED=                                      Enabled
 SSB_ENABLE_SAVE_AND_QUIT_SPLIT_BUTTON=            Save and Quit Split Button
 SSB_ENABLE_SKIP_CUTSCENE_SPLIT_BUTTON=            Skip Cutscene Split Button
+SSB_ENABLE_RETURN_TO_MAP_SPLIT_BUTTON=            Return to Map Split Button
 
 # ============================ Buttons / Menu ==================================
 SSB_SAVE_AND_QUIT_SPLIT_BUTTON=                   Save and Quit Split
 SSB_SKIP_CUTSCENE_SPLIT_BUTTON=                   Skip Cutscene Split
-SSB_TOGGLE_SAVE_QUIT_KEY=                         Enable/Disable Save and Quit button      
+SSB_RETURN_TO_MAP_SPLIT_BUTTON=                   Return to Map Split
+SSB_TOGGLE_SAVE_QUIT_KEY=                         Enable/Disable Save and Quit button
 SSB_TOGGLE_SKIP_CUTSCENE_KEY=                     Enable/Disable Skip Cutscene button
+SSB_TOGGLE_RETURN_TO_MAP_KEY=                     Enable/Disable Return to Map button
 SSB_SQ_BUTTON_DESC=                               Unpause then split room timer after 31 frames
 SSB_SQ_RETRY_BUTTON_DESC=                         Unpause, trigger a retry and split room timer after 31 frames
 SSB_SCS_BUTTON_DESC=                              Unpause then split room timer after 18 frames
 SSB_SCS_PROLOGUE_BUTTON_DESC=                     Unpause then split room timer after 232 frames (~4s)
+SSB_RTM_BUTTON_DESC=                              Unpause then split room timer after 31 frames
+SSB_RTM_SPLIT_MENU_HEADER=                        RETURN TO MAP SPLIT?
 SSB_SQ_RETRY_OPTIONS=                             Auto retry after S+Q split
 SSB_SQ_RETRY_OPTIONS_DESC=                        Helpful for death warps such as the 3A heart room

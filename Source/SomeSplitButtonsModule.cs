@@ -2,9 +2,11 @@
 using Celeste.Mod.SpeedrunTool.Message;
 using Celeste.Mod.SomeSplitButtons.SaveAndQuitSplitButton;
 using Celeste.Mod.SomeSplitButtons.SkipCutsceneSplitButton;
+using Celeste.Mod.SomeSplitButtons.ReturnToMapSplitButton;
 using Celeste.Mod.SomeSplitButtons.Integration;
 using Celeste.Mod.SomeSplitButtons.SkipCutsceneSplitManager;
 using Celeste.Mod.SomeSplitButtons.SaveAndQuitSplitManager;
+using Celeste.Mod.SomeSplitButtons.ReturnToMapSplitManager;
 using Celeste.Mod.SomeSplitButtons.Menu;
 using Celeste.Mod.SpeedrunTool.RoomTimer;
 using MonoMod.ModInterop;
@@ -82,6 +84,7 @@ public class SomeSplitButtonsModule : EverestModule {
         SaveLoadIntegration.Unregister(SaveLoadInstance);
         SaveAndQuitTimer.Reset();
         SkipCutsceneTimer.Reset();
+        ReturnToMapTimer.Reset();
         Everest.Events.Level.OnExit -= Level_OnLevelExit;
         _timingHook?.Dispose();
         _timingHook = null;
@@ -98,24 +101,28 @@ public class SomeSplitButtonsModule : EverestModule {
             SkipCutsceneTimer.PrologueCheck(level.Session.Area.ChapterIndex);
         }
         if (Settings.ShowSaveAndQuitSplitButton) SaveAndQuitTimer.Reset();
+        if (Settings.ShowReturnToMapSplitButton) ReturnToMapTimer.Reset();
     }
 
-    private static void Level_OnLevelExit(Level level, LevelExit exit, LevelExit.Mode mode, Session session, HiresSnow snow) 
+    private static void Level_OnLevelExit(Level level, LevelExit exit, LevelExit.Mode mode, Session session, HiresSnow snow)
     {
         if (!Settings.Enabled) return;
         SaveAndQuitTimer.Reset();
+        ReturnToMapTimer.Reset();
     }
 
     public static void OnSaveState(Dictionary<Type, Dictionary<string, object>> dictionary, Level level) {
         if (!Settings.Enabled) return;		
         if (Settings.ShowSkipCutsceneSplitButton) SkipCutsceneTimer.OnSaveState();
         if (Settings.ShowSaveAndQuitSplitButton) SaveAndQuitTimer.OnSaveState();
+        if (Settings.ShowReturnToMapSplitButton) ReturnToMapTimer.OnSaveState();
     }
 
     public static void OnLoadState(Dictionary<Type, Dictionary<string, object>> dictionary, Level level) {
         if (!Settings.Enabled) return;
         if (Settings.ShowSkipCutsceneSplitButton) SkipCutsceneTimer.OnLoadState();
         if (Settings.ShowSaveAndQuitSplitButton) SaveAndQuitTimer.OnLoadState();
+        if (Settings.ShowReturnToMapSplitButton) ReturnToMapTimer.OnLoadState();
     }
 
     public static void OnBeforeSaveState(Level level) {
@@ -127,6 +134,7 @@ public class SomeSplitButtonsModule : EverestModule {
         if (!Settings.Enabled) return;
         if (Settings.ShowSkipCutsceneSplitButton) SkipCutsceneTimer.OnClearState();
         if (Settings.ShowSaveAndQuitSplitButton) SaveAndQuitTimer.OnClearState();
+        if (Settings.ShowReturnToMapSplitButton) ReturnToMapTimer.OnClearState();
     }
 
     public override void CreateModMenuSection(TextMenu menu, bool inGame, EventInstance pauseSnapshot)
@@ -171,6 +179,22 @@ public class SomeSplitButtonsModule : EverestModule {
             sc_button.OnEnter = () => descriptionText.FadeVisible = true;
             sc_button.OnLeave = () => descriptionText.FadeVisible = false;
         }
+
+        if (Settings.ShowReturnToMapSplitButton) {
+            MainReturnToMapSplitButton rtm_button = new(Dialog.Clean(DialogIds.ReturnToMapSplitButtonId));
+            rtm_button.Pressed(() => {
+                MainReturnToMapSplitButton.PressedHandler(level, menu);
+            });
+            EaseInSubHeaderExt descriptionText = new(Dialog.Clean(DialogIds.RTMButtonDesc), false, menu, null)
+            {
+                HeightExtra = 0f
+            };
+            // Vanilla Return to Map closes the pause menu, so this button sits at the very bottom
+            menu.Add(rtm_button);
+            menu.Add(descriptionText);
+            rtm_button.OnEnter = () => descriptionText.FadeVisible = true;
+            rtm_button.OnLeave = () => descriptionText.FadeVisible = false;
+        }
     }
 
     public static void PopupMessage(string message) {
@@ -183,6 +207,7 @@ public class SomeSplitButtonsModule : EverestModule {
 
         if (Settings.ShowSaveAndQuitSplitButton) SaveAndQuitTimer.Update(self);
         if (Settings.ShowSkipCutsceneSplitButton) SkipCutsceneTimer.Update(self);
+        if (Settings.ShowReturnToMapSplitButton) ReturnToMapTimer.Update();
 
         if (Settings.ButtonToggleSaveQuit.Pressed) {
             Settings.ShowSaveAndQuitSplitButton = !Settings.ShowSaveAndQuitSplitButton;
@@ -194,6 +219,12 @@ public class SomeSplitButtonsModule : EverestModule {
             Settings.ShowSkipCutsceneSplitButton = !Settings.ShowSkipCutsceneSplitButton;
             SkipCutsceneTimer.Reset();
             if (Settings.ShowSkipCutsceneSplitButton) SkipCutsceneTimer.PrologueCheck(self.Session.Area.ChapterIndex);
+            Instance.SaveSettings();
+        }
+
+        if (Settings.ButtonToggleReturnToMap.Pressed) {
+            Settings.ShowReturnToMapSplitButton = !Settings.ShowReturnToMapSplitButton;
+            ReturnToMapTimer.Reset();
             Instance.SaveSettings();
         }
     }
