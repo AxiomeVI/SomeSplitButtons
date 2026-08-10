@@ -1,7 +1,7 @@
 using System;
-using Celeste.Mod.SomeSplitButtons.ReturnToMapSplitManager;
-using Celeste.Mod.SomeSplitButtons.SaveAndQuitSplitManager;
-using Celeste.Mod.SomeSplitButtons.SkipCutsceneSplitManager;
+using Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
+using Celeste.Mod.SomeSplitButtons.SaveAndQuitSplit;
+using Celeste.Mod.SomeSplitButtons.SkipCutsceneSplit;
 using Celeste.Mod.SomeSplitButtons.UI;
 using Monocle;
 

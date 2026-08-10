@@ -1,9 +1,9 @@
 using static Celeste.TextMenu;
-using Celeste.Mod.SomeSplitButtons.SkipCutsceneSplitManager;
+using Celeste.Mod.SomeSplitButtons.SkipCutsceneSplit;
 
-namespace Celeste.Mod.SomeSplitButtons.SkipCutsceneSplitButton;
-public class MainSkipCutsceneSplitButton : Button {
-    public MainSkipCutsceneSplitButton(string label) : base(label) {
+namespace Celeste.Mod.SomeSplitButtons.SkipCutsceneSplit;
+public class SkipCutsceneSplitButton : Button {
+    public SkipCutsceneSplitButton(string label) : base(label) {
         ConfirmSfx = SFX.ui_main_message_confirm;
     }
     

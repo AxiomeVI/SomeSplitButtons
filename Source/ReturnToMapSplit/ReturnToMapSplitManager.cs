@@ -3,7 +3,7 @@ using Celeste.Mod.SomeSplitButtons.Utils;
 using Celeste.Mod.SpeedrunTool.RoomTimer;
 using Monocle;
 
-namespace Celeste.Mod.SomeSplitButtons.ReturnToMapSplitManager;
+namespace Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 
 public static class ReturnToMapTimer {
     private static int counter = 0;

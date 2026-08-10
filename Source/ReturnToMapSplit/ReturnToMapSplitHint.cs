@@ -2,7 +2,7 @@ using Celeste.Mod.SomeSplitButtons.Splits;
 using Microsoft.Xna.Framework;
 using Monocle;
 
-namespace Celeste.Mod.SomeSplitButtons.ReturnToMapSplitButton;
+namespace Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 
 /// <summary>
 ///     The vanilla Return to Map hint with its caption replaced.

@@ -1,10 +1,10 @@
 using static Celeste.TextMenu;
-using Celeste.Mod.SomeSplitButtons.SaveAndQuitSplitManager;
+using Celeste.Mod.SomeSplitButtons.SaveAndQuitSplit;
 using Microsoft.Xna.Framework;
 
-namespace Celeste.Mod.SomeSplitButtons.SaveAndQuitSplitButton;
-public class MainSaveAndQuitSplitButton : Button {
-    public MainSaveAndQuitSplitButton(string label) : base(label) {
+namespace Celeste.Mod.SomeSplitButtons.SaveAndQuitSplit;
+public class SaveAndQuitSplitButton : Button {
+    public SaveAndQuitSplitButton(string label) : base(label) {
         ConfirmSfx = SFX.ui_main_message_confirm;
     }
     

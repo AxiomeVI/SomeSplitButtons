@@ -2,42 +2,40 @@ using Celeste.Mod.SomeSplitButtons.Splits;
 using Celeste.Mod.SomeSplitButtons.UI;
 using Monocle;
 
-namespace Celeste.Mod.SomeSplitButtons.Menu;
+namespace Celeste.Mod.SomeSplitButtons.UI;
 
 public static class ModMenuOptions {
     public static void CreateMenu(TextMenu menu)
     {
-        TextMenu.OnOff _showSkipCutsceneSplitButton = (TextMenu.OnOff)new TextMenu.OnOff(
+        TextMenu.OnOff showSkipCutsceneSplitButton = (TextMenu.OnOff)new TextMenu.OnOff(
             Dialog.Clean(DialogIds.EnableSkipCutsceneSplitButtonId),
             SomeSplitButtonsModule.Settings.ShowSkipCutsceneSplitButton).Change(
                 b => SplitFeatures.SkipCutscene.Toggle(b)
         );
 
-        TextMenu.OnOff _saveAndQuitAndRetry = (TextMenu.OnOff)new TextMenu.OnOff(
+        TextMenu.OnOff saveAndQuitAndRetry = (TextMenu.OnOff)new TextMenu.OnOff(
             Dialog.Clean(DialogIds.SaveAndQuitAndRetryId),
             SomeSplitButtonsModule.Settings.SaveAndQuitAndRetry).Change(
                 b => SomeSplitButtonsModule.Settings.SaveAndQuitAndRetry = b
         );
 
-        TextMenu.OnOff _showSaveAndQuitSplitButton = (TextMenu.OnOff)new TextMenu.OnOff(
+        TextMenu.OnOff showSaveAndQuitSplitButton = (TextMenu.OnOff)new TextMenu.OnOff(
             Dialog.Clean(DialogIds.EnableSaveAndQuitSplitButtonId),
             SomeSplitButtonsModule.Settings.ShowSaveAndQuitSplitButton).Change(
                 b =>
                 {
                     SplitFeatures.SaveAndQuit.Toggle(b);
-                    _saveAndQuitAndRetry.Disabled = !b;
+                    saveAndQuitAndRetry.Disabled = !b;
                 }
         );
 
-        TextMenu.OnOff _showReturnToMapSplitButton = (TextMenu.OnOff)new TextMenu.OnOff(
+        TextMenu.OnOff showReturnToMapSplitButton = (TextMenu.OnOff)new TextMenu.OnOff(
             Dialog.Clean(DialogIds.EnableReturnToMapSplitButtonId),
             SomeSplitButtonsModule.Settings.ShowReturnToMapSplitButton).Change(
                 b => SplitFeatures.ReturnToMap.Toggle(b)
         );
 
-        TextMenu.Button keybindButton = new TextMenu.Button(Dialog.Clean(DialogIds.KeybindConfigId)) {
-            Visible = SomeSplitButtonsModule.Settings.Enabled
-        };
+        TextMenu.Button keybindButton = new TextMenu.Button(Dialog.Clean(DialogIds.KeybindConfigId));
         keybindButton.Pressed(() => {
             menu.Focused = false;
             var ui = new KeybindConfigUi();
@@ -46,16 +44,26 @@ public static class ModMenuOptions {
             Engine.Scene.OnEndOfFrame += () => Engine.Scene.Entities.UpdateLists();
         });
 
+        // Everything below the master toggle appears and disappears with it. Written once and called
+        // from both the initial state and the toggle's Change, because the two used to be separate
+        // copies of the same five assignments — the kind of pair that stays in step until someone
+        // adds a sixth entry to one of them.
+        void SetSubOptionsVisible(bool visible) {
+            showSkipCutsceneSplitButton.Visible = visible;
+            showSaveAndQuitSplitButton.Visible = visible;
+            saveAndQuitAndRetry.Visible = visible;
+            showReturnToMapSplitButton.Visible = visible;
+            keybindButton.Visible = visible;
+            // Not part of the visibility rule, but always true alongside it: the retry option belongs
+            // to the Save and Quit button and is greyed out whenever that button is off.
+            saveAndQuitAndRetry.Disabled = !SomeSplitButtonsModule.Settings.ShowSaveAndQuitSplitButton;
+        }
+
         menu.Add(new TextMenu.OnOff(Dialog.Clean(DialogIds.EnabledId), SomeSplitButtonsModule.Settings.Enabled).Change(
             value =>
             {
                 SomeSplitButtonsModule.Settings.Enabled = value;
-                _showSkipCutsceneSplitButton.Visible = value;
-                _showSaveAndQuitSplitButton.Visible = value;
-                _saveAndQuitAndRetry.Visible = value;
-                _showReturnToMapSplitButton.Visible = value;
-                keybindButton.Visible = value;
-                _saveAndQuitAndRetry.Disabled = !SomeSplitButtonsModule.Settings.ShowSaveAndQuitSplitButton;
+                SetSubOptionsVisible(value);
                 SplitFeatures.ResetAll();
                 // Unconditional where this used to test ShowSkipCutsceneSplitButton as well. What it
                 // refreshes is only ever read by an enabled feature's Update, and a level load
@@ -65,18 +73,14 @@ public static class ModMenuOptions {
             }
         ));
 
-        menu.Add(_showSkipCutsceneSplitButton);
-        menu.Add(_showSaveAndQuitSplitButton);
-        menu.Add(_saveAndQuitAndRetry);
-        menu.Add(_showReturnToMapSplitButton);
+        menu.Add(showSkipCutsceneSplitButton);
+        menu.Add(showSaveAndQuitSplitButton);
+        menu.Add(saveAndQuitAndRetry);
+        menu.Add(showReturnToMapSplitButton);
         menu.Add(keybindButton);
 
-        _showSkipCutsceneSplitButton.Visible = SomeSplitButtonsModule.Settings.Enabled;
-        _showSaveAndQuitSplitButton.Visible = SomeSplitButtonsModule.Settings.Enabled;
-        _saveAndQuitAndRetry.Visible = SomeSplitButtonsModule.Settings.Enabled;
-        _showReturnToMapSplitButton.Visible = SomeSplitButtonsModule.Settings.Enabled;
-        _saveAndQuitAndRetry.Disabled = !SomeSplitButtonsModule.Settings.ShowSaveAndQuitSplitButton;
+        SetSubOptionsVisible(SomeSplitButtonsModule.Settings.Enabled);
 
-        _saveAndQuitAndRetry.AddDescription(menu, Dialog.Clean(DialogIds.SaveAndQuitAndRetryDescId));
+        saveAndQuitAndRetry.AddDescription(menu, Dialog.Clean(DialogIds.SaveAndQuitAndRetryDescId));
     }
 }

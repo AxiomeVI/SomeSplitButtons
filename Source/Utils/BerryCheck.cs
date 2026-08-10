@@ -18,7 +18,11 @@ public static class BerryCheck {
     private const float BERRY_COLLECT_TIMER = 0.15f;
 
     // CelesteTAS info hud function https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/ae25bf3f2fa931d362c3a321c2cf8dae58d2eb28/CelesteTAS-EverestInterop/Source/TAS/GameInfo.cs#L546
-    internal static int ToCeilingFrames(this float timer, float deltaTime) {
+    //
+    // Private and not an extension. It was `internal static int ToCeilingFrames(this float ...)`,
+    // which put a generically named method on every float in the assembly to serve one call site
+    // twenty lines below.
+    private static int ToCeilingFrames(float timer, float deltaTime) {
         if (timer <= 0.0f) {
             return 0;
         }
@@ -96,7 +100,7 @@ public static class BerryCheck {
             // player is off safe ground, or the berry is queued behind another and pinned at -0.15.
             // A queued berry therefore costs a full 18 frames here, which is what it really costs.
             ++redBerries;
-            collectFrames += (BERRY_COLLECT_TIMER - redBerry.collectTimer).ToCeilingFrames(deltaTime);
+            collectFrames += ToCeilingFrames(BERRY_COLLECT_TIMER - redBerry.collectTimer, deltaTime);
         }
         return redBerries == 0 ? null : collectFrames;
     }

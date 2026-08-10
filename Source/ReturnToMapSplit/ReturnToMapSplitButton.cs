@@ -1,10 +1,10 @@
 using Monocle;
 using static Celeste.TextMenu;
 
-namespace Celeste.Mod.SomeSplitButtons.ReturnToMapSplitButton;
+namespace Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 
-public class MainReturnToMapSplitButton : Button {
-    public MainReturnToMapSplitButton(string label) : base(label) {
+public class ReturnToMapSplitButton : Button {
+    public ReturnToMapSplitButton(string label) : base(label) {
         ConfirmSfx = SFX.ui_main_message_confirm;
     }
 

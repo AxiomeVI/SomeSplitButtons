@@ -2,7 +2,7 @@ using System;
 using Celeste.Mod.SomeSplitButtons.Splits;
 using Monocle;
 
-namespace Celeste.Mod.SomeSplitButtons.SkipCutsceneSplitManager;
+namespace Celeste.Mod.SomeSplitButtons.SkipCutsceneSplit;
 
 public static class SkipCutsceneTimer {
     private static int frameCounter = 0;

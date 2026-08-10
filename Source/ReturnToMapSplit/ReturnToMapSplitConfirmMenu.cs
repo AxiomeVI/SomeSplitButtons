@@ -1,8 +1,8 @@
-using Celeste.Mod.SomeSplitButtons.ReturnToMapSplitManager;
+using Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 using Microsoft.Xna.Framework;
 using Monocle;
 
-namespace Celeste.Mod.SomeSplitButtons.ReturnToMapSplitButton;
+namespace Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 
 /// <summary>
 /// Mirrors the vanilla Return to Map confirmation prompt, so practicing the split takes the same

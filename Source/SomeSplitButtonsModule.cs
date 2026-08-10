@@ -1,22 +1,15 @@
 ﻿using System;
 using Celeste.Mod.SpeedrunTool.Message;
-using Celeste.Mod.SomeSplitButtons.SaveAndQuitSplitButton;
-using Celeste.Mod.SomeSplitButtons.SkipCutsceneSplitButton;
-using Celeste.Mod.SomeSplitButtons.ReturnToMapSplitButton;
+using Celeste.Mod.SomeSplitButtons.SaveAndQuitSplit;
+using Celeste.Mod.SomeSplitButtons.SkipCutsceneSplit;
+using Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 using Celeste.Mod.SomeSplitButtons.Integration;
-using Celeste.Mod.SomeSplitButtons.SkipCutsceneSplitManager;
-using Celeste.Mod.SomeSplitButtons.SaveAndQuitSplitManager;
-using Celeste.Mod.SomeSplitButtons.ReturnToMapSplitManager;
-using Celeste.Mod.SomeSplitButtons.Menu;
-using Celeste.Mod.SomeSplitButtons.Splits;
 using Celeste.Mod.SomeSplitButtons.UI;
-using Celeste.Mod.SpeedrunTool.RoomTimer;
+using Celeste.Mod.SomeSplitButtons.Splits;
 using MonoMod.ModInterop;
 using static Celeste.TextMenuExt;
 using FMOD.Studio;
 using System.Collections.Generic;
-using MonoMod.RuntimeDetour;
-using System.Reflection;
 
 namespace Celeste.Mod.SomeSplitButtons;
 
@@ -26,14 +19,10 @@ public class SomeSplitButtonsModule : EverestModule {
     public override Type SettingsType => typeof(SomeSplitButtonsModuleSettings);
     public static SomeSplitButtonsModuleSettings Settings => (SomeSplitButtonsModuleSettings) Instance._Settings;
 
-    public override Type SessionType => typeof(SomeSplitButtonsModuleSession);
-    public static SomeSplitButtonsModuleSession Session => (SomeSplitButtonsModuleSession) Instance._Session;
-
-    public override Type SaveDataType => typeof(SomeSplitButtonsModuleSaveData);
-    public static SomeSplitButtonsModuleSaveData SaveData => (SomeSplitButtonsModuleSaveData) Instance._SaveData;
+    // No SessionType or SaveDataType. Both were registered with empty classes behind them, which made
+    // Everest serialise an empty object into every save file and every session for nothing. Declare
+    // them again when there is a field to put in them, not before.
     private object SaveLoadInstance = null;
-    private static Hook _timingHook;
-    private static Hook _updateTimerStateHook;
 
     public SomeSplitButtonsModule() {
         Instance = this;
@@ -82,34 +71,7 @@ public class SomeSplitButtonsModule : EverestModule {
         // instances above must exist before the hook goes up.
         On.Monocle.Engine.Update += Engine_OnUpdate;
 
-        // Both hooks are resolved by reflection against SpeedrunTool, so a rename on its side turns
-        // them into no-ops. Say so in the log: without this the Skip Cutscene split just quietly
-        // stops splitting, which reads as a mod bug rather than a version mismatch.
-        var updateTimerStateMethod = typeof(RoomTimerManager).GetMethod("UpdateTimerState", BindingFlags.Public | BindingFlags.Static);
-        if (updateTimerStateMethod != null) {
-            _updateTimerStateHook = new Hook(
-                updateTimerStateMethod,
-                typeof(SkipCutsceneTimer).GetMethod("OnUpdateTimerState", BindingFlags.Public | BindingFlags.Static)
-            );
-        }
-        else {
-            Logger.Warn(nameof(SomeSplitButtonsModule),
-                "SpeedrunTool RoomTimerManager.UpdateTimerState not found — the Skip Cutscene split will not hold back the room timer.");
-        }
-
-        var assembly = typeof(RoomTimerManager).Assembly;
-        var roomTimerDataType = assembly.GetType("Celeste.Mod.SpeedrunTool.RoomTimer.RoomTimerData");
-        var timingMethod = roomTimerDataType?.GetMethod("Timing", BindingFlags.Public | BindingFlags.Instance);
-        if (timingMethod != null) {
-            _timingHook = new Hook(
-                timingMethod,
-                typeof(SkipCutsceneTimer).GetMethod("OnTiming", BindingFlags.Public | BindingFlags.Static)
-            );
-        }
-        else {
-            Logger.Warn(nameof(SomeSplitButtonsModule),
-                "SpeedrunTool RoomTimerData.Timing not found — the room timer will stop at chapter completion instead of at the Skip Cutscene mark.");
-        }
+        SpeedrunToolHooks.Install();
     }
 
     /// <summary>
@@ -134,10 +96,7 @@ public class SomeSplitButtonsModule : EverestModule {
         }
         SplitFeatures.ResetAll();
         Everest.Events.Level.OnExit -= Level_OnLevelExit;
-        _timingHook?.Dispose();
-        _timingHook = null;
-        _updateTimerStateHook?.Dispose();
-        _updateTimerStateHook = null;
+        SpeedrunToolHooks.Uninstall();
     }
 
     /// <summary>
@@ -299,9 +258,9 @@ public class SomeSplitButtonsModule : EverestModule {
             // The vanilla button is always there when this one is, since both need InCutscene — so
             // its absence is a conflict with another mod and always worth a warning.
             if (VanillaButtonIndex(menu, "menu_pause_skip_cutscene", warnIfMissing: true) >= 0) {
-                MainSkipCutsceneSplitButton sc_button = new(Dialog.Clean(DialogIds.SkipCutsceneSplitButtonId));
+                SkipCutsceneSplitButton sc_button = new(Dialog.Clean(DialogIds.SkipCutsceneSplitButtonId));
                 sc_button.Pressed(() => {
-                    MainSkipCutsceneSplitButton.PressedHandler(level);
+                    SkipCutsceneSplitButton.PressedHandler(level);
                 });
                 InsertSplitButton(menu, SlotIndex(menu, SKIP_CUTSCENE_SLOT), sc_button, SplitDescription(
                     SkipCutsceneTimer.InPrologue ? DialogIds.SCSPrologueButtonDesc : DialogIds.SCSButtonDesc,
@@ -314,9 +273,9 @@ public class SomeSplitButtonsModule : EverestModule {
         // Save and Quit is the third reachable entry there, and the thumb has already moved.
         if (Settings.ShowSaveAndQuitSplitButton) {
             if (VanillaButtonIndex(menu, "menu_pause_savequit", warnIfMissing: !minimal) >= 0) {
-                MainSaveAndQuitSplitButton sq_button = new(Dialog.Clean(DialogIds.SaveAndQuitSplitButtonId));
+                SaveAndQuitSplitButton sq_button = new(Dialog.Clean(DialogIds.SaveAndQuitSplitButtonId));
                 sq_button.Pressed(() => {
-                    MainSaveAndQuitSplitButton.PressedHandler(level);
+                    SaveAndQuitSplitButton.PressedHandler(level);
                 });
                 InsertSplitButton(menu, SlotIndex(menu, SAVE_AND_QUIT_SLOT), sq_button, SplitDescription(
                     Settings.SaveAndQuitAndRetry ? DialogIds.SQButtonRetryDesc : DialogIds.SQButtonDesc,
@@ -329,9 +288,9 @@ public class SomeSplitButtonsModule : EverestModule {
         // usually sits there.
         if (Settings.ShowReturnToMapSplitButton) {
             if (VanillaButtonIndex(menu, "menu_pause_return", warnIfMissing: !minimal) >= 0) {
-                MainReturnToMapSplitButton rtm_button = new(Dialog.Clean(DialogIds.ReturnToMapSplitButtonId));
+                ReturnToMapSplitButton rtm_button = new(Dialog.Clean(DialogIds.ReturnToMapSplitButtonId));
                 rtm_button.Pressed(() => {
-                    MainReturnToMapSplitButton.PressedHandler(level, menu);
+                    ReturnToMapSplitButton.PressedHandler(level, menu);
                 });
                 InsertSplitButton(menu, menu.Items.Count, rtm_button,
                     SplitDescription(DialogIds.RTMButtonDesc, SplitTimings.WIPE_FADEOUT_FRAMES));

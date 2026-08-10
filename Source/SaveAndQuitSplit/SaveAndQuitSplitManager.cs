@@ -3,7 +3,7 @@ using Celeste.Mod.SomeSplitButtons.Utils;
 using Celeste.Mod.SpeedrunTool.RoomTimer;
 using Monocle;
 
-namespace Celeste.Mod.SomeSplitButtons.SaveAndQuitSplitManager;
+namespace Celeste.Mod.SomeSplitButtons.SaveAndQuitSplit;
 public static class SaveAndQuitTimer {
     private static int counter = 0;
     private static bool pressed = false;
