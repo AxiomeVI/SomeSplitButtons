@@ -46,6 +46,10 @@ public class SomeSplitButtonsModule : EverestModule {
 
     public override void Load() {
         Everest.Events.Level.OnExit += Level_OnLevelExit;
+        // ⚠️ Load order is load-bearing here. This hook must sit *outside* SpeedrunTool's own
+        // Level.Update hook (RoomTimerManager.Timing), so that SRT accumulates the frame before the
+        // split timers call UpdateTimerState. It does because the everest.yaml dependency forces SRT
+        // to load first, which makes this hook the outermost. Do not "tidy" the dependency away.
         On.Celeste.Level.Update += Level_OnUpdate;
         Everest.Events.LevelLoader.OnLoadingThread += Level_OnLoadingThread;
         Everest.Events.Level.OnCreatePauseMenuButtons += Level_OnCreatePauseMenuButtons;
@@ -58,6 +62,9 @@ public class SomeSplitButtonsModule : EverestModule {
             null,
             null
         );
+        // Both hooks are resolved by reflection against SpeedrunTool, so a rename on its side turns
+        // them into no-ops. Say so in the log: without this the Skip Cutscene split just quietly
+        // stops splitting, which reads as a mod bug rather than a version mismatch.
         var updateTimerStateMethod = typeof(RoomTimerManager).GetMethod("UpdateTimerState", BindingFlags.Public | BindingFlags.Static);
         if (updateTimerStateMethod != null) {
             _updateTimerStateHook = new Hook(
@@ -65,7 +72,11 @@ public class SomeSplitButtonsModule : EverestModule {
                 typeof(SkipCutsceneTimer).GetMethod("OnUpdateTimerState", BindingFlags.Public | BindingFlags.Static)
             );
         }
-        
+        else {
+            Logger.Warn(nameof(SomeSplitButtonsModule),
+                "SpeedrunTool RoomTimerManager.UpdateTimerState not found — the Skip Cutscene split will not hold back the room timer.");
+        }
+
         var assembly = typeof(RoomTimerManager).Assembly;
         var roomTimerDataType = assembly.GetType("Celeste.Mod.SpeedrunTool.RoomTimer.RoomTimerData");
         var timingMethod = roomTimerDataType?.GetMethod("Timing", BindingFlags.Public | BindingFlags.Instance);
@@ -75,6 +86,19 @@ public class SomeSplitButtonsModule : EverestModule {
                 typeof(SkipCutsceneTimer).GetMethod("OnTiming", BindingFlags.Public | BindingFlags.Static)
             );
         }
+        else {
+            Logger.Warn(nameof(SomeSplitButtonsModule),
+                "SpeedrunTool RoomTimerData.Timing not found — the room timer will stop at chapter completion instead of at the Skip Cutscene mark.");
+        }
+    }
+
+    /// <summary>
+    ///     Moves the pause-menu handler to the end of the event's invocation list.
+    /// </summary>
+    public override void Initialize() {
+        base.Initialize();
+        Everest.Events.Level.OnCreatePauseMenuButtons -= Level_OnCreatePauseMenuButtons;
+        Everest.Events.Level.OnCreatePauseMenuButtons += Level_OnCreatePauseMenuButtons;
     }
 
     public override void Unload() {
@@ -92,37 +116,36 @@ public class SomeSplitButtonsModule : EverestModule {
         _updateTimerStateHook = null;
     }
 
+    /// <summary>
+    ///     Disarms every split timer on level load, whether or not its feature is enabled.
+    /// </summary>
     public static void Level_OnLoadingThread(Level level)
     {
-        if (!Settings.Enabled) return;
-        if (Settings.ShowSkipCutsceneSplitButton) 
-        {
-            SkipCutsceneTimer.Reset();
-            SkipCutsceneTimer.PrologueCheck(level.Session.Area.ChapterIndex);
-        }
-        if (Settings.ShowSaveAndQuitSplitButton) SaveAndQuitTimer.Reset();
-        if (Settings.ShowReturnToMapSplitButton) ReturnToMapTimer.Reset();
-    }
-
-    private static void Level_OnLevelExit(Level level, LevelExit exit, LevelExit.Mode mode, Session session, HiresSnow snow)
-    {
-        if (!Settings.Enabled) return;
+        SkipCutsceneTimer.Reset();
+        SkipCutsceneTimer.PrologueCheck(level.Session.Area.ChapterIndex);
         SaveAndQuitTimer.Reset();
         ReturnToMapTimer.Reset();
     }
 
+    private static void Level_OnLevelExit(Level level, LevelExit exit, LevelExit.Mode mode, Session session, HiresSnow snow)
+    {
+        SkipCutsceneTimer.Reset();
+        SaveAndQuitTimer.Reset();
+        ReturnToMapTimer.Reset();
+    }
+
+    // The three save-state callbacks below only disarm the mod's own timers, so they run
+    // unconditionally for the same reason as Level_OnLoadingThread.
     public static void OnSaveState(Dictionary<Type, Dictionary<string, object>> dictionary, Level level) {
-        if (!Settings.Enabled) return;		
-        if (Settings.ShowSkipCutsceneSplitButton) SkipCutsceneTimer.OnSaveState();
-        if (Settings.ShowSaveAndQuitSplitButton) SaveAndQuitTimer.OnSaveState();
-        if (Settings.ShowReturnToMapSplitButton) ReturnToMapTimer.OnSaveState();
+        SkipCutsceneTimer.OnSaveState();
+        SaveAndQuitTimer.OnSaveState();
+        ReturnToMapTimer.OnSaveState();
     }
 
     public static void OnLoadState(Dictionary<Type, Dictionary<string, object>> dictionary, Level level) {
-        if (!Settings.Enabled) return;
-        if (Settings.ShowSkipCutsceneSplitButton) SkipCutsceneTimer.OnLoadState();
-        if (Settings.ShowSaveAndQuitSplitButton) SaveAndQuitTimer.OnLoadState();
-        if (Settings.ShowReturnToMapSplitButton) ReturnToMapTimer.OnLoadState();
+        SkipCutsceneTimer.OnLoadState();
+        SaveAndQuitTimer.OnLoadState();
+        ReturnToMapTimer.OnLoadState();
     }
 
     public static void OnBeforeSaveState(Level level) {
@@ -131,10 +154,9 @@ public class SomeSplitButtonsModule : EverestModule {
     }
 
     public static void OnClearState() {
-        if (!Settings.Enabled) return;
-        if (Settings.ShowSkipCutsceneSplitButton) SkipCutsceneTimer.OnClearState();
-        if (Settings.ShowSaveAndQuitSplitButton) SaveAndQuitTimer.OnClearState();
-        if (Settings.ShowReturnToMapSplitButton) ReturnToMapTimer.OnClearState();
+        SkipCutsceneTimer.OnClearState();
+        SaveAndQuitTimer.OnClearState();
+        ReturnToMapTimer.OnClearState();
     }
 
     public override void CreateModMenuSection(TextMenu menu, bool inGame, EventInstance pauseSnapshot)
@@ -144,10 +166,40 @@ public class SomeSplitButtonsModule : EverestModule {
         CreateModMenuSectionKeyBindings(menu, inGame, pauseSnapshot);
     }
 
+    /// <summary>
+    ///     Index of the vanilla pause-menu button carrying <paramref name="dialogId"/>, or -1 when
+    ///     this menu does not have it.
+    /// </summary>
+    private static readonly HashSet<string> warnedMissingAnchors = new();
+
+    private static int VanillaButtonIndex(TextMenu menu, string dialogId, bool warnIfMissing) {
+        string label = Dialog.Clean(dialogId);
+        int index = menu.Items.FindIndex(item => item is TextMenu.Button button && button.Label == label);
+
+        // Once per anchor per session: the menu is rebuilt on every pause, and this would otherwise
+        // fill the log. Without it the only symptom is a button that quietly never appears, which
+        // reads as a forgotten setting rather than as a conflict with another mod.
+        if (index < 0 && warnIfMissing && warnedMissingAnchors.Add(dialogId)) {
+            Logger.Warn(nameof(SomeSplitButtonsModule),
+                $"no '{dialogId}' button in the pause menu — the split button anchored on it is being skipped. " +
+                "Another mod has probably replaced or removed it.");
+        }
+        return index;
+    }
+
     private void Level_OnCreatePauseMenuButtons(Level level, TextMenu menu, bool minimal) {
         if (!Settings.Enabled) return;
 
-        if (Settings.ShowSaveAndQuitSplitButton) {
+        // Directly below Options — index 4 in a default chapter, which is what the old literal
+        // Insert(4) hit. Anchoring on Options is what keeps it there once Assist Mode or Variant
+        // Mode pushes everything down.
+        // Gated on vanilla Save and Quit being present as well: it is the button this one mirrors,
+        // and a minimal menu has neither.
+        int optionsIndex = VanillaButtonIndex(menu, "menu_pause_options", warnIfMissing: false);
+        if (Settings.ShowSaveAndQuitSplitButton
+            && optionsIndex >= 0
+            && VanillaButtonIndex(menu, "menu_pause_savequit", warnIfMissing: !minimal) >= 0) {
+
             MainSaveAndQuitSplitButton sq_button = new(Dialog.Clean(DialogIds.SaveAndQuitSplitButtonId));
             sq_button.Pressed(() => {
                 MainSaveAndQuitSplitButton.PressedHandler(level);
@@ -156,8 +208,8 @@ public class SomeSplitButtonsModule : EverestModule {
             {
                 HeightExtra = 0f
             };
-            menu.Insert(4, descriptionText);
-            menu.Insert(4, sq_button);
+            menu.Insert(optionsIndex + 1, descriptionText);
+            menu.Insert(optionsIndex + 1, sq_button);
             sq_button.OnEnter = () => descriptionText.FadeVisible = true;
             sq_button.OnLeave = () => descriptionText.FadeVisible = false;
         }
@@ -174,10 +226,16 @@ public class SomeSplitButtonsModule : EverestModule {
             {
                 HeightExtra = 0f
             };
-            menu.Insert(2, descriptionText);
-            menu.Insert(2, sc_button);
-            sc_button.OnEnter = () => descriptionText.FadeVisible = true;
-            sc_button.OnLeave = () => descriptionText.FadeVisible = false;
+            // Into vanilla Skip Cutscene's own slot, pushing it down — index 2 during an ending
+            // cutscene, which is what the old literal Insert(2) hit. The vanilla button is always
+            // there when this one is, since both need InCutscene.
+            int skipIndex = VanillaButtonIndex(menu, "menu_pause_skip_cutscene", warnIfMissing: true);
+            if (skipIndex >= 0) {
+                menu.Insert(skipIndex, descriptionText);
+                menu.Insert(skipIndex, sc_button);
+                sc_button.OnEnter = () => descriptionText.FadeVisible = true;
+                sc_button.OnLeave = () => descriptionText.FadeVisible = false;
+            }
         }
 
         if (Settings.ShowReturnToMapSplitButton) {
@@ -189,11 +247,16 @@ public class SomeSplitButtonsModule : EverestModule {
             {
                 HeightExtra = 0f
             };
-            // Vanilla Return to Map closes the pause menu, so this button sits at the very bottom
-            menu.Add(rtm_button);
-            menu.Add(descriptionText);
-            rtm_button.OnEnter = () => descriptionText.FadeVisible = true;
-            rtm_button.OnLeave = () => descriptionText.FadeVisible = false;
+            // Below vanilla Return to Map, which is the last entry of a default chapter's menu —
+            // where the old menu.Add() put it. Anchoring keeps it beside its counterpart even if
+            // another mod appends entries after it.
+            int returnIndex = VanillaButtonIndex(menu, "menu_pause_return", warnIfMissing: !minimal);
+            if (returnIndex >= 0) {
+                menu.Insert(returnIndex + 1, descriptionText);
+                menu.Insert(returnIndex + 1, rtm_button);
+                rtm_button.OnEnter = () => descriptionText.FadeVisible = true;
+                rtm_button.OnLeave = () => descriptionText.FadeVisible = false;
+            }
         }
     }
 

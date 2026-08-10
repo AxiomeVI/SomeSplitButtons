@@ -25,16 +25,33 @@ public static class SaveAndQuitTimer {
         Reset();
     }
 
+    /// <summary>
+    ///     Disarms the timer, releasing the chapter clock first if this manager is what is holding
+    ///     it stopped.
+    /// </summary>
     public static void Reset()
     {
+        if (keepTimerStopped && Engine.Scene is Level level) {
+            level.TimerStopped = false;
+        }
         pressed = false;
         keepTimerStopped = false;
         counter = 0;
     }
 
+    /// <summary>
+    ///     Vanilla's own test for "the chapter clock may run again", copied from the
+    ///     <c>TimerStarted</c> latch in <c>Level.UpdateTime</c>.
+    /// </summary>
+    private static bool ClockWouldRestart(Level level) {
+        if (level.InCutscene) return false;
+        Player player = level.Tracker.GetEntity<Player>();
+        return player != null && !player.TimePaused;
+    }
+
     public static void HandleButtonPressed() {
-        if (Engine.Scene is not Level level) return;
-        if (BerryCheck.BlocksSplit(level)) return;
+        if (Engine.Scene is not Level) return;
+        if (BerryCheck.BlocksSplit()) return;
 
         pressed = true;
         counter = 0;
@@ -44,8 +61,7 @@ public static class SaveAndQuitTimer {
         if (keepTimerStopped)
         {
             level.TimerStopped = true;
-            bool InControl = level.Tracker.GetEntity<Player>()?.InControl ?? false;
-            if (InControl)
+            if (ClockWouldRestart(level))
             {
                 keepTimerStopped = false;
                 level.TimerStopped = false;

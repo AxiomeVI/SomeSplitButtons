@@ -16,6 +16,9 @@ public class MainReturnToMapSplitButton : Button {
         if (level == null) return;
 
         ReturnToMapSplitConfirmMenu confirmMenu = new(level, pauseMenu);
+        // Vanilla's Return to Map button clears this before calling GiveUp; the confirmation menu
+        // puts it back when it closes. It gates the journal-button HUD hide in Level.Update.
+        level.PauseMainMenuOpen = false;
         pauseMenu.Focused = false;
         pauseMenu.Alpha = 0f;
         level.Add(confirmMenu);

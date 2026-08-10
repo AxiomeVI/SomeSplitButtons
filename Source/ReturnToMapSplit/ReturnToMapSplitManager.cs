@@ -20,8 +20,8 @@ public static class ReturnToMapTimer {
     }
 
     public static void HandleButtonPressed() {
-        if (Engine.Scene is not Level level) return;
-        if (BerryCheck.BlocksSplit(level)) return;
+        if (Engine.Scene is not Level) return;
+        if (BerryCheck.BlocksSplit()) return;
 
         pressed = true;
         counter = 0;

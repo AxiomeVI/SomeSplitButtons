@@ -20,6 +20,8 @@ public static class DialogIds {
     public const string ToggleReturnToMapKeyId = "SSB_TOGGLE_RETURN_TO_MAP_KEY";
     public const string RTMButtonDesc = "SSB_RTM_BUTTON_DESC";
     public const string ReturnToMapSplitMenuHeaderId = "SSB_RTM_SPLIT_MENU_HEADER";
+    public const string BerryBlocksSplitId = "SSB_BERRY_BLOCKS_SPLIT";
+    public const string BerrySlowdownId = "SSB_BERRY_SLOWDOWN";
 
     // Vanilla Celeste ids, reused so the confirmation prompt reads like the real Return to Map one
     public const string VanillaReturnContinueId = "MENU_RETURN_CONTINUE";

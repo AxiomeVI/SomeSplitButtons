@@ -49,22 +49,39 @@ public static class SkipCutsceneTimer {
         }
     }
 
-    private static bool ShouldFreezeLevelCompleted() =>
+    /// <summary>
+    ///     Whether SpeedrunTool should currently be kept from seeing a completed level.
+    /// </summary>
+    private static bool ShouldFreezeLevelCompleted(Level level) =>
+        level != null &&
         SomeSplitButtonsModule.Settings.Enabled &&
         SomeSplitButtonsModule.Settings.ShowSkipCutsceneSplitButton &&
+        level.endingChapterAfterCutscene &&
         freezeLevelCompleted;
 
+    /// <summary>
+    ///     Keeps SpeedrunTool's room timer running through the ending, then puts the flag back.
+    /// </summary>
+    // The restore is in a finally because the flag is vanilla's, not ours: letting an exception out
+    // of SpeedrunTool would leave the level permanently marked incomplete, which is a worse failure
+    // than whatever threw — the chapter would never register as finished for anything that reads it.
     public static void OnTiming(Action<object, Level> orig, object self, Level level) {
-        if (ShouldFreezeLevelCompleted()) {
+        bool wasCompleted = level.Completed;
+        if (ShouldFreezeLevelCompleted(level)) {
             level.Completed = false;
         }
-        orig(self, level);
+        try {
+            orig(self, level);
+        } finally {
+            level.Completed = wasCompleted;
+        }
     }
 
+    /// <summary>
+    ///     Swallows SpeedrunTool's timer-state transitions for the duration of the freeze.
+    /// </summary>
     public static void OnUpdateTimerState(Action<bool> orig, bool endPoint) {
-        if (ShouldFreezeLevelCompleted() && Engine.Scene is Level level) {
-            level.Completed = false;
-        }
+        if (ShouldFreezeLevelCompleted(Engine.Scene as Level)) return;
         orig(endPoint);
     }
 }

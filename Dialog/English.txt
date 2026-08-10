@@ -18,5 +18,12 @@ SSB_SCS_BUTTON_DESC=                              Unpause then split room timer 
 SSB_SCS_PROLOGUE_BUTTON_DESC=                     Unpause then split room timer after 232 frames (~4s)
 SSB_RTM_BUTTON_DESC=                              Unpause then split room timer after 31 frames
 SSB_RTM_SPLIT_MENU_HEADER=                        RETURN TO MAP SPLIT?
+
+# ============================== Messages ======================================
+# {0} is a frame count at normal speed: every carried red berry summed, since they bank one at a
+# time. The line below is appended to it while a seeker or Oshiro is slowing the game down, where
+# {0} is what the same wait costs at that speed and {1} is the speed, e.g. 0.5.
+SSB_BERRY_BLOCKS_SPLIT=                           No split: berry needs {0} more frames to collect
+SSB_BERRY_SLOWDOWN=                               ({0} at {1}x speed)
 SSB_SQ_RETRY_OPTIONS=                             Auto retry after S+Q split
 SSB_SQ_RETRY_OPTIONS_DESC=                        Helpful for death warps such as the 3A heart room
