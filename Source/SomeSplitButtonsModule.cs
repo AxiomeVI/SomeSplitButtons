@@ -214,6 +214,22 @@ public class SomeSplitButtonsModule : EverestModule {
         return index;
     }
 
+    /// <summary>
+    ///     Inserts a split button at <paramref name="index"/> together with the description that
+    ///     eases in while it holds focus.
+    /// </summary>
+    private static void InsertSplitButton(TextMenu menu, int index, TextMenu.Button button, string description) {
+        EaseInSubHeaderExt descriptionText = new(description, false, menu, null) {
+            HeightExtra = 0f
+        };
+        // Both go in at the same index, description first: the button displaces it and so ends up
+        // above its own description. Swapping these two lines inverts the pair.
+        menu.Insert(index, descriptionText);
+        menu.Insert(index, button);
+        button.OnEnter = () => descriptionText.FadeVisible = true;
+        button.OnLeave = () => descriptionText.FadeVisible = false;
+    }
+
     private void Level_OnCreatePauseMenuButtons(Level level, TextMenu menu, bool minimal) {
         if (!Settings.Enabled) return;
 
@@ -236,14 +252,8 @@ public class SomeSplitButtonsModule : EverestModule {
                 sq_button.Pressed(() => {
                     MainSaveAndQuitSplitButton.PressedHandler(level);
                 });
-                EaseInSubHeaderExt descriptionText = new(Settings.SaveAndQuitAndRetry ? Dialog.Clean(DialogIds.SQButtonRetryDesc) : Dialog.Clean(DialogIds.SQButtonDesc), false, menu, null)
-                {
-                    HeightExtra = 0f
-                };
-                menu.Insert(optionsIndex + 1, descriptionText);
-                menu.Insert(optionsIndex + 1, sq_button);
-                sq_button.OnEnter = () => descriptionText.FadeVisible = true;
-                sq_button.OnLeave = () => descriptionText.FadeVisible = false;
+                InsertSplitButton(menu, optionsIndex + 1, sq_button,
+                    Settings.SaveAndQuitAndRetry ? Dialog.Clean(DialogIds.SQButtonRetryDesc) : Dialog.Clean(DialogIds.SQButtonDesc));
             }
         }
 
@@ -251,44 +261,31 @@ public class SomeSplitButtonsModule : EverestModule {
             && level.endingChapterAfterCutscene
             && !SkipCutsceneTimer.Hidden) {
 
-            MainSkipCutsceneSplitButton sc_button = new(Dialog.Clean(DialogIds.SkipCutsceneSplitButtonId));
-            sc_button.Pressed(() => {
-                    MainSkipCutsceneSplitButton.PressedHandler(level);
-            });
-            EaseInSubHeaderExt descriptionText = new(level.Session.Area.ChapterIndex == -1 ? Dialog.Clean(DialogIds.SCSPrologueButtonDesc) : Dialog.Clean(DialogIds.SCSButtonDesc), false, menu, null)
-            {
-                HeightExtra = 0f
-            };
             // Into vanilla Skip Cutscene's own slot, pushing it down — index 2 during an ending
             // cutscene, which is what the old literal Insert(2) hit. The vanilla button is always
             // there when this one is, since both need InCutscene.
             int skipIndex = VanillaButtonIndex(menu, "menu_pause_skip_cutscene", warnIfMissing: true);
             if (skipIndex >= 0) {
-                menu.Insert(skipIndex, descriptionText);
-                menu.Insert(skipIndex, sc_button);
-                sc_button.OnEnter = () => descriptionText.FadeVisible = true;
-                sc_button.OnLeave = () => descriptionText.FadeVisible = false;
+                MainSkipCutsceneSplitButton sc_button = new(Dialog.Clean(DialogIds.SkipCutsceneSplitButtonId));
+                sc_button.Pressed(() => {
+                    MainSkipCutsceneSplitButton.PressedHandler(level);
+                });
+                InsertSplitButton(menu, skipIndex, sc_button,
+                    level.Session.Area.ChapterIndex == -1 ? Dialog.Clean(DialogIds.SCSPrologueButtonDesc) : Dialog.Clean(DialogIds.SCSButtonDesc));
             }
         }
 
         if (Settings.ShowReturnToMapSplitButton) {
-            MainReturnToMapSplitButton rtm_button = new(Dialog.Clean(DialogIds.ReturnToMapSplitButtonId));
-            rtm_button.Pressed(() => {
-                MainReturnToMapSplitButton.PressedHandler(level, menu);
-            });
-            EaseInSubHeaderExt descriptionText = new(Dialog.Clean(DialogIds.RTMButtonDesc), false, menu, null)
-            {
-                HeightExtra = 0f
-            };
             // Below vanilla Return to Map, which is the last entry of a default chapter's menu —
             // where the old menu.Add() put it. Anchoring keeps it beside its counterpart even if
             // another mod appends entries after it.
             int returnIndex = VanillaButtonIndex(menu, "menu_pause_return", warnIfMissing: !minimal);
             if (returnIndex >= 0) {
-                menu.Insert(returnIndex + 1, descriptionText);
-                menu.Insert(returnIndex + 1, rtm_button);
-                rtm_button.OnEnter = () => descriptionText.FadeVisible = true;
-                rtm_button.OnLeave = () => descriptionText.FadeVisible = false;
+                MainReturnToMapSplitButton rtm_button = new(Dialog.Clean(DialogIds.ReturnToMapSplitButtonId));
+                rtm_button.Pressed(() => {
+                    MainReturnToMapSplitButton.PressedHandler(level, menu);
+                });
+                InsertSplitButton(menu, returnIndex + 1, rtm_button, Dialog.Clean(DialogIds.RTMButtonDesc));
             }
         }
     }
