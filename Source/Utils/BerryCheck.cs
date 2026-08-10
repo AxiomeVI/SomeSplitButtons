@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using Monocle;
 
@@ -59,14 +60,19 @@ public static class BerryCheck {
         Slowed ? RemainingFrames(Engine.Scene as Level, Engine.DeltaTime) : null;
 
     /// <summary>
-    /// Returns true when the player carries a red berry, meaning the caller must not split.
-    /// A popup reports how many frames are still missing before the berry is secured.
+    /// Why the caller must not split, or null when nothing blocks it. The text says how many frames
+    /// are still missing before the carried berries are secured.
     /// </summary>
-    public static bool BlocksSplit() {
-        if (CurrentRemainingFrames is not int frames) return false;
+    // Returns the message instead of showing it. This used to be `bool BlocksSplit()` that popped a
+    // message on its way out — a predicate with a side effect its name did not admit — and it was
+    // the one place where a class in Utils/ reached back to the root module. Both problems have the
+    // same fix: the caller already knows how to talk to the player, and this does not need to.
+    //
+    // Callers must still say something. The refusal is otherwise invisible: the button does nothing
+    // and the split silently does not happen.
+    public static string? BlockedMessage() {
+        if (CurrentRemainingFrames is not int frames) return null;
 
-        // Always say something. The refusal is otherwise invisible: the button does nothing and the
-        // split silently does not happen.
         string message = string.Format(Dialog.Get(DialogIds.BerryBlocksSplitId), frames);
 
         // The rate is formatted invariant so it reads 0.5x and never 0,5x.
@@ -75,8 +81,7 @@ public static class BerryCheck {
                                            Engine.TimeRate.ToString("0.##", CultureInfo.InvariantCulture));
         }
 
-        SomeSplitButtonsModule.PopupMessage(message);
-        return true;
+        return message;
     }
 
     /// <summary>
@@ -86,21 +91,40 @@ public static class BerryCheck {
     private static int? RemainingFrames(Level? level, float deltaTime) {
         Player? player = level?.Tracker.GetEntity<Player>();
         if (player == null) return null;
+        return FramesForBerries(CarriedRedBerryTimers(player), deltaTime);
+    }
 
-        // Every red berry, not just the first one. StrawberryRegistry.IsFirstStrawberry gates the
-        // countdown, so berries bank one at a time and the wait is their sum. Reading the first
-        // follower alone reports the moment the player loses one berry fewer than they are carrying.
+    /// <summary>
+    /// The <c>collectTimer</c> of every red berry the player is carrying, in follower order.
+    /// </summary>
+    // Every red berry, not just the first one. StrawberryRegistry.IsFirstStrawberry gates the
+    // countdown, so berries bank one at a time and the wait is their sum. Reading the first follower
+    // alone reports the moment the player loses one berry fewer than they are carrying.
+    private static IEnumerable<float> CarriedRedBerryTimers(Player player) {
+        foreach (Follower follower in player.Leader.Followers) {
+            if (follower.Entity is Strawberry {Golden: false} redBerry) {
+                yield return redBerry.collectTimer;
+            }
+        }
+    }
+
+    /// <summary>
+    /// The frames those berries still need, or null when the sequence is empty.
+    /// </summary>
+    // Split from the follower walk above so it can be tested without an engine: this is the only
+    // part of the mod that is pure arithmetic over a case nobody can produce on demand in a `.tas`.
+    // See UnitTests/ on the tests branch.
+    //
+    // CelesteTAS info hud function https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/ae25bf3f2fa931d362c3a321c2cf8dae58d2eb28/CelesteTAS-EverestInterop/Source/TAS/GameInfo.cs#L307
+    // A negative collectTimer means the berry first has to climb back out of it: either the player
+    // is off safe ground, or the berry is queued behind another and pinned at -0.15. A queued berry
+    // therefore costs a full 18 frames here, which is what it really costs.
+    internal static int? FramesForBerries(IEnumerable<float> collectTimers, float deltaTime) {
         int redBerries = 0;
         int collectFrames = 0;
-        foreach (Follower follower in player.Leader.Followers) {
-            if (follower.Entity is not Strawberry {Golden: false} redBerry) continue;
-
-            // CelesteTAS info hud function https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/ae25bf3f2fa931d362c3a321c2cf8dae58d2eb28/CelesteTAS-EverestInterop/Source/TAS/GameInfo.cs#L307
-            // A negative collectTimer means the berry first has to climb back out of it: either the
-            // player is off safe ground, or the berry is queued behind another and pinned at -0.15.
-            // A queued berry therefore costs a full 18 frames here, which is what it really costs.
+        foreach (float collectTimer in collectTimers) {
             ++redBerries;
-            collectFrames += ToCeilingFrames(BERRY_COLLECT_TIMER - redBerry.collectTimer, deltaTime);
+            collectFrames += ToCeilingFrames(BERRY_COLLECT_TIMER - collectTimer, deltaTime);
         }
         return redBerries == 0 ? null : collectFrames;
     }
