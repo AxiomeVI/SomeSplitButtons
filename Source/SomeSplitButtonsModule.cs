@@ -342,12 +342,12 @@ public class SomeSplitButtonsModule : EverestModule {
         orig(self, gameTime);
         if (!Settings.Enabled) return;
 
-        // Every hotkey is polled before any of them is acted on, as it was when these were three
-        // separate blocks. Handling one toggle can write settings and show a popup, and none of that
-        // should sit between two reads of the same input frame.
-        ComboHotkey.UpdateStates();
+        // One snapshot for every hotkey. That, rather than the two loops, is now what guarantees
+        // they all answer the same input frame — handling a toggle writes settings and shows a
+        // popup, and this used to be a live read that such work could sit in the middle of.
+        InputSnapshot input = InputSnapshot.Current();
         foreach (SplitFeature feature in SplitFeatures.All) {
-            feature.Hotkey.Update();
+            feature.Hotkey.Update(input);
         }
 
         foreach (SplitFeature feature in SplitFeatures.All) {
@@ -369,9 +369,9 @@ public class SomeSplitButtonsModule : EverestModule {
     // bound is still held when the remap screen hands focus back — so without this, binding a key
     // immediately toggles the button it was bound to.
     internal static void ResyncHotkeys() {
-        ComboHotkey.UpdateStates();
+        InputSnapshot input = InputSnapshot.Current();
         foreach (SplitFeature feature in SplitFeatures.All) {
-            feature.Hotkey.Resync();
+            feature.Hotkey.Resync(input);
         }
     }
 }
