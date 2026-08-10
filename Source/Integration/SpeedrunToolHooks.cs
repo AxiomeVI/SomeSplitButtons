@@ -1,4 +1,3 @@
-using Celeste.Mod.SomeSplitButtons.SkipCutsceneSplit;
 using Celeste.Mod.SpeedrunTool.RoomTimer;
 using MonoMod.RuntimeDetour;
 using System.Reflection;
@@ -27,7 +26,7 @@ internal static class SpeedrunToolHooks {
         if (updateTimerState != null) {
             _updateTimerStateHook = new Hook(
                 updateTimerState,
-                typeof(SkipCutsceneTimer).GetMethod("OnUpdateTimerState", BindingFlags.Public | BindingFlags.Static)
+                typeof(SkipCutsceneRoomTimer).GetMethod("OnUpdateTimerState", BindingFlags.Public | BindingFlags.Static)
             );
         }
         else {
@@ -44,7 +43,7 @@ internal static class SpeedrunToolHooks {
         if (timing != null) {
             _timingHook = new Hook(
                 timing,
-                typeof(SkipCutsceneTimer).GetMethod("OnTiming", BindingFlags.Public | BindingFlags.Static)
+                typeof(SkipCutsceneRoomTimer).GetMethod("OnTiming", BindingFlags.Public | BindingFlags.Static)
             );
         }
         else {

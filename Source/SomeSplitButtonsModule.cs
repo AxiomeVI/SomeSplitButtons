@@ -326,6 +326,13 @@ public class SomeSplitButtonsModule : EverestModule {
         }
 
         if (!Settings.Enabled) return;
+        // The countdowns do not stop for a pause, and that is the intended behaviour rather than an
+        // accident of where this sits. `Level.Update` runs while paused and the count happens after
+        // `orig`, so re-pausing inside the 31 (or 18) frames keeps the counter going. A button that
+        // promises a split in 31 frames promises 31 frames; a player who re-pauses during a fade-out
+        // is fumbling, not asking to suspend their split. Suspending would also have to answer what
+        // happens when the pause lasts, and a split arriving ten seconds late is worse than one
+        // arriving slightly early.
         foreach (SplitFeature feature in SplitFeatures.All) {
             if (feature.Enabled()) feature.Update(self);
         }
