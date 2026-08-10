@@ -57,15 +57,25 @@ public class SomeSplitButtonsModule : EverestModule {
         On.Celeste.Level.Update += Level_OnUpdate;
         Everest.Events.LevelLoader.OnLoadingThread += Level_OnLoadingThread;
         Everest.Events.Level.OnCreatePauseMenuButtons += Level_OnCreatePauseMenuButtons;
+        // ModInterop leaves the delegate fields null when SpeedrunTool does not export
+        // SpeedrunTool.SaveLoad. Calling through unchecked throws inside Load(), and Everest then
+        // refuses the whole mod over one missing integration — so degrade like the reflection hooks
+        // below and say what stops working.
         typeof(SaveLoadIntegration).ModInterop();
-        SaveLoadInstance = SaveLoadIntegration.RegisterSaveLoadAction(
-            OnSaveState,
-            OnLoadState,
-            OnClearState,
-            OnBeforeSaveState,
-            null,
-            null
-        );
+        if (SaveLoadIntegration.RegisterSaveLoadAction != null) {
+            SaveLoadInstance = SaveLoadIntegration.RegisterSaveLoadAction(
+                OnSaveState,
+                OnLoadState,
+                OnClearState,
+                OnBeforeSaveState,
+                null,
+                null
+            );
+        }
+        else {
+            Logger.Warn(nameof(SomeSplitButtonsModule),
+                "SpeedrunTool.SaveLoad ModInterop not found — the split timers will not be disarmed around save states.");
+        }
         _saveQuitHotkey = new ComboHotkey(Settings.ButtonToggleSaveQuit);
         _skipCutsceneHotkey = new ComboHotkey(Settings.ButtonToggleSkipCutscene);
         _returnToMapHotkey = new ComboHotkey(Settings.ButtonToggleReturnToMap);
@@ -118,7 +128,12 @@ public class SomeSplitButtonsModule : EverestModule {
         On.Celeste.Level.Update -= Level_OnUpdate;
         Everest.Events.LevelLoader.OnLoadingThread -= Level_OnLoadingThread;
         Everest.Events.Level.OnCreatePauseMenuButtons -= Level_OnCreatePauseMenuButtons;
-        SaveLoadIntegration.Unregister(SaveLoadInstance);
+        // Null whenever the registration above was skipped or refused; Unregister is null in exactly
+        // the same case, since both come from the same import.
+        if (SaveLoadInstance != null) {
+            SaveLoadIntegration.Unregister?.Invoke(SaveLoadInstance);
+            SaveLoadInstance = null;
+        }
         SaveAndQuitTimer.Reset();
         SkipCutsceneTimer.Reset();
         ReturnToMapTimer.Reset();
@@ -178,12 +193,12 @@ public class SomeSplitButtonsModule : EverestModule {
         ModMenuOptions.CreateMenu(menu);
     }
 
+    private static readonly HashSet<string> warnedMissingAnchors = new();
+
     /// <summary>
     ///     Index of the vanilla pause-menu button carrying <paramref name="dialogId"/>, or -1 when
     ///     this menu does not have it.
     /// </summary>
-    private static readonly HashSet<string> warnedMissingAnchors = new();
-
     private static int VanillaButtonIndex(TextMenu menu, string dialogId, bool warnIfMissing) {
         string label = Dialog.Clean(dialogId);
         int index = menu.Items.FindIndex(item => item is TextMenu.Button button && button.Label == label);
@@ -206,24 +221,30 @@ public class SomeSplitButtonsModule : EverestModule {
         // Insert(4) hit. Anchoring on Options is what keeps it there once Assist Mode or Variant
         // Mode pushes everything down.
         // Gated on vanilla Save and Quit being present as well: it is the button this one mirrors,
-        // and a minimal menu has neither.
-        int optionsIndex = VanillaButtonIndex(menu, "menu_pause_options", warnIfMissing: false);
-        if (Settings.ShowSaveAndQuitSplitButton
-            && optionsIndex >= 0
-            && VanillaButtonIndex(menu, "menu_pause_savequit", warnIfMissing: !minimal) >= 0) {
-
-            MainSaveAndQuitSplitButton sq_button = new(Dialog.Clean(DialogIds.SaveAndQuitSplitButtonId));
-            sq_button.Pressed(() => {
-                MainSaveAndQuitSplitButton.PressedHandler(level);
-            });
-            EaseInSubHeaderExt descriptionText = new(Settings.SaveAndQuitAndRetry ? Dialog.Clean(DialogIds.SQButtonRetryDesc) : Dialog.Clean(DialogIds.SQButtonDesc), false, menu, null)
-            {
-                HeightExtra = 0f
-            };
-            menu.Insert(optionsIndex + 1, descriptionText);
-            menu.Insert(optionsIndex + 1, sq_button);
-            sq_button.OnEnter = () => descriptionText.FadeVisible = true;
-            sq_button.OnLeave = () => descriptionText.FadeVisible = false;
+        // and a minimal menu does not have it. Options does survive a minimal menu, so its absence
+        // always means another mod replaced it — hence the same !minimal warning on both.
+        // Both anchors looked up before the test, not inside it: && would short-circuit past the
+        // second lookup and lose its warning, which is the diagnostic this pair exists for. The
+        // setting stays outside, so a disabled button never warns about anchors it was not going
+        // to use — warnedMissingAnchors only fires once per session, and a false first warning
+        // would suppress the real one.
+        if (Settings.ShowSaveAndQuitSplitButton) {
+            int optionsIndex = VanillaButtonIndex(menu, "menu_pause_options", warnIfMissing: !minimal);
+            int vanillaSaveQuitIndex = VanillaButtonIndex(menu, "menu_pause_savequit", warnIfMissing: !minimal);
+            if (optionsIndex >= 0 && vanillaSaveQuitIndex >= 0) {
+                MainSaveAndQuitSplitButton sq_button = new(Dialog.Clean(DialogIds.SaveAndQuitSplitButtonId));
+                sq_button.Pressed(() => {
+                    MainSaveAndQuitSplitButton.PressedHandler(level);
+                });
+                EaseInSubHeaderExt descriptionText = new(Settings.SaveAndQuitAndRetry ? Dialog.Clean(DialogIds.SQButtonRetryDesc) : Dialog.Clean(DialogIds.SQButtonDesc), false, menu, null)
+                {
+                    HeightExtra = 0f
+                };
+                menu.Insert(optionsIndex + 1, descriptionText);
+                menu.Insert(optionsIndex + 1, sq_button);
+                sq_button.OnEnter = () => descriptionText.FadeVisible = true;
+                sq_button.OnLeave = () => descriptionText.FadeVisible = false;
+            }
         }
 
         if (Settings.ShowSkipCutsceneSplitButton
