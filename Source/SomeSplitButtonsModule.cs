@@ -213,6 +213,37 @@ public class SomeSplitButtonsModule : EverestModule {
     ///     Inserts a split button at <paramref name="index"/> together with the description that
     ///     eases in while it holds focus.
     /// </summary>
+    /// <summary>
+    ///     Which entry the Save and Quit split must be, counted the way a player counts: in Down
+    ///     presses from where the cursor opens.
+    /// </summary>
+    private const int SAVE_AND_QUIT_SLOT = 2;
+
+    /// <summary>
+    ///     The insertion index that makes a new entry the <paramref name="slot"/>-th one the cursor
+    ///     can land on.
+    /// </summary>
+    // Hoverable, not Selectable: TextMenu.MoveCursor loops `while (!Current.Hoverable)`, and
+    // Hoverable is `Selectable && Visible && !Disabled`. A greyed-out Retry is drawn but stepped
+    // over, so it costs no press and must not be counted — which is the whole reason this button
+    // lands below Options during a wake-up and above it during normal play.
+    //
+    // Reading Disabled here is safe because vanilla sets it immediately after each Add, well before
+    // Everest fires OnCreatePauseMenuButtons. Our handler is also last in the invocation list, moved
+    // there by Initialize(), so no other mod inserts above us afterwards and shifts the count.
+    //
+    // Falls through to the end of the menu when it has fewer than `slot` reachable entries, which no
+    // pause menu carrying a Save and Quit does — the gate on that button is what makes this a
+    // fallback rather than a case to handle.
+    private static int SlotIndex(TextMenu menu, int slot) {
+        int reachable = 0;
+        for (int i = 0; i < menu.Items.Count; i++) {
+            if (reachable == slot) return i;
+            if (menu.Items[i].Hoverable) reachable++;
+        }
+        return menu.Items.Count;
+    }
+
     private static void InsertSplitButton(TextMenu menu, int index, TextMenu.Button button, string description) {
         EaseInSubHeaderExt descriptionText = new(description, false, menu, null) {
             HeightExtra = 0f
@@ -228,26 +259,32 @@ public class SomeSplitButtonsModule : EverestModule {
     private void Level_OnCreatePauseMenuButtons(Level level, TextMenu menu, bool minimal) {
         if (!Settings.Enabled) return;
 
-        // Directly below Options — index 4 in a default chapter, which is what the old literal
-        // Insert(4) hit. Anchoring on Options is what keeps it there once Assist Mode or Variant
-        // Mode pushes everything down.
-        // Gated on vanilla Save and Quit being present as well: it is the button this one mirrors,
-        // and a minimal menu does not have it. Options does survive a minimal menu, so its absence
-        // always means another mod replaced it — hence the same !minimal warning on both.
-        // Both anchors looked up before the test, not inside it: && would short-circuit past the
-        // second lookup and lose its warning, which is the diagnostic this pair exists for. The
-        // setting stays outside, so a disabled button never warns about anchors it was not going
-        // to use — warnedMissingAnchors only fires once per session, and a false first warning
-        // would suppress the real one.
+        // ⚠️ A fixed slot, not an anchor, and that is a deliberate reversal of what this used to do.
+        // Runners reach this button blind, two Down presses from a menu they never look at, in the
+        // states where they need it: a wake-up animation, or the moment after a heart or a cassette.
+        // Vanilla greys Retry out in exactly those states, so its own Save and Quit is the third
+        // reachable entry — and the habit is two presses. The requirement is that number, not a
+        // neighbour.
+        //
+        // Anchoring on Options happened to satisfy it and stopped: ExtendedVariantMode inserts its
+        // submenu button above Options, which pushes this one to the fourth slot while leaving its
+        // offset from Options at 1. Any mod that inserts above Options does the same, so nothing
+        // measured relative to Options can express the requirement.
+        //
+        // Still gated on vanilla Save and Quit being present, which is now the only reason to look a
+        // button up: it is what this one mirrors, and a minimal menu does not have it.
+        //
+        // The cost, stated because it is real: in a menu where Retry *is* reachable, holding slot 2
+        // puts this button above Options rather than below it, and in a cutscene it lands above both
+        // Skip Cutscene entries. The slot wins there too — that is the decision.
         if (Settings.ShowSaveAndQuitSplitButton) {
-            int optionsIndex = VanillaButtonIndex(menu, "menu_pause_options", warnIfMissing: !minimal);
             int vanillaSaveQuitIndex = VanillaButtonIndex(menu, "menu_pause_savequit", warnIfMissing: !minimal);
-            if (optionsIndex >= 0 && vanillaSaveQuitIndex >= 0) {
+            if (vanillaSaveQuitIndex >= 0) {
                 MainSaveAndQuitSplitButton sq_button = new(Dialog.Clean(DialogIds.SaveAndQuitSplitButtonId));
                 sq_button.Pressed(() => {
                     MainSaveAndQuitSplitButton.PressedHandler(level);
                 });
-                InsertSplitButton(menu, optionsIndex + 1, sq_button, SplitDescription(
+                InsertSplitButton(menu, SlotIndex(menu, SAVE_AND_QUIT_SLOT), sq_button, SplitDescription(
                     Settings.SaveAndQuitAndRetry ? DialogIds.SQButtonRetryDesc : DialogIds.SQButtonDesc,
                     SplitTimings.WIPE_FADEOUT_FRAMES));
             }
