@@ -214,9 +214,18 @@ public class SomeSplitButtonsModule : EverestModule {
     ///     eases in while it holds focus.
     /// </summary>
     /// <summary>
-    ///     Which entry the Save and Quit split must be, counted the way a player counts: in Down
-    ///     presses from where the cursor opens.
+    ///     Which entry each split button must be, counted the way a player counts: in Down presses
+    ///     from where the cursor opens.
     /// </summary>
+    // These are the placement rules, and they are absolute. Every one of these buttons is reached
+    // blind, by a thumb that has already moved before the menu is read — so what matters is the
+    // number of presses, not which vanilla entry happens to be adjacent.
+    //
+    // ⚠️ The order the three are inserted in is load-bearing and must match the order of these
+    // constants. Each insertion is measured against the menu as it stands, so a later one placed
+    // above an earlier one would silently push it down a slot. Skip Cutscene is inserted first for
+    // exactly that reason.
+    private const int SKIP_CUTSCENE_SLOT = 1;
     private const int SAVE_AND_QUIT_SLOT = 2;
 
     /// <summary>
@@ -232,14 +241,21 @@ public class SomeSplitButtonsModule : EverestModule {
     // Everest fires OnCreatePauseMenuButtons. Our handler is also last in the invocation list, moved
     // there by Initialize(), so no other mod inserts above us afterwards and shifts the count.
     //
-    // Falls through to the end of the menu when it has fewer than `slot` reachable entries, which no
-    // pause menu carrying a Save and Quit does — the gate on that button is what makes this a
-    // fallback rather than a case to handle.
+    // ⚠️ The returned index is always *before a reachable entry*, never before an unreachable one.
+    // That is what keeps a split button from landing between an earlier split button and its own
+    // description: the pair occupies one reachable slot and two items, and the count reaches its
+    // target while the description is still the next item along. Returning that index would cut the
+    // pair in half and leave each button showing its neighbour's text.
+    //
+    // Falls through to the end of the menu when it has fewer than `slot` reachable entries. That is
+    // the correct answer rather than a fallback — a button asked for a slot the menu does not have
+    // belongs after everything, which is also how the Return to Map split asks for last place.
     private static int SlotIndex(TextMenu menu, int slot) {
         int reachable = 0;
         for (int i = 0; i < menu.Items.Count; i++) {
+            if (!menu.Items[i].Hoverable) continue;
             if (reachable == slot) return i;
-            if (menu.Items[i].Hoverable) reachable++;
+            reachable++;
         }
         return menu.Items.Count;
     }
@@ -259,27 +275,45 @@ public class SomeSplitButtonsModule : EverestModule {
     private void Level_OnCreatePauseMenuButtons(Level level, TextMenu menu, bool minimal) {
         if (!Settings.Enabled) return;
 
-        // ⚠️ A fixed slot, not an anchor, and that is a deliberate reversal of what this used to do.
-        // Runners reach this button blind, two Down presses from a menu they never look at, in the
-        // states where they need it: a wake-up animation, or the moment after a heart or a cassette.
-        // Vanilla greys Retry out in exactly those states, so its own Save and Quit is the third
-        // reachable entry — and the habit is two presses. The requirement is that number, not a
-        // neighbour.
+        // ⚠️ Fixed slots, not anchors, and that is a deliberate reversal of what this used to do.
+        // Every vanilla lookup below is now a *gate* — it decides whether this menu should carry a
+        // split button at all — and none of them decides where it goes.
         //
-        // Anchoring on Options happened to satisfy it and stopped: ExtendedVariantMode inserts its
-        // submenu button above Options, which pushes this one to the fourth slot while leaving its
-        // offset from Options at 1. Any mod that inserts above Options does the same, so nothing
-        // measured relative to Options can express the requirement.
+        // Anchoring satisfied the real requirement by coincidence until it stopped. ExtendedVariantMode
+        // inserts its submenu button above Options, which pushed Save and Quit from the third
+        // reachable entry to the fourth while leaving its offset from Options at 1. Any mod inserting
+        // above an anchor does the same, so nothing measured relative to one can express "two Down
+        // presses".
         //
-        // Still gated on vanilla Save and Quit being present, which is now the only reason to look a
-        // button up: it is what this one mirrors, and a minimal menu does not have it.
-        //
-        // The cost, stated because it is real: in a menu where Retry *is* reachable, holding slot 2
-        // puts this button above Options rather than below it, and in a cutscene it lands above both
-        // Skip Cutscene entries. The slot wins there too — that is the decision.
+        // ⚠️ Insertion order is the rule, in ascending slot order. Each call measures the menu as it
+        // stands, so inserting a lower slot after a higher one pushes the higher one down without
+        // anything noticing.
+
+        // Slot 1 — one Down press. First in, because it is the smallest slot: placing it after Save
+        // and Quit would move Save and Quit to 3, which is how it behaved before these rules and is
+        // the defect they close.
+        if (Settings.ShowSkipCutsceneSplitButton
+            && level.endingChapterAfterCutscene
+            && !SkipCutsceneTimer.Hidden) {
+
+            // The vanilla button is always there when this one is, since both need InCutscene — so
+            // its absence is a conflict with another mod and always worth a warning.
+            if (VanillaButtonIndex(menu, "menu_pause_skip_cutscene", warnIfMissing: true) >= 0) {
+                MainSkipCutsceneSplitButton sc_button = new(Dialog.Clean(DialogIds.SkipCutsceneSplitButtonId));
+                sc_button.Pressed(() => {
+                    MainSkipCutsceneSplitButton.PressedHandler(level);
+                });
+                InsertSplitButton(menu, SlotIndex(menu, SKIP_CUTSCENE_SLOT), sc_button, SplitDescription(
+                    SkipCutsceneTimer.InPrologue ? DialogIds.SCSPrologueButtonDesc : DialogIds.SCSButtonDesc,
+                    SkipCutsceneTimer.FadeoutFrames));
+            }
+        }
+
+        // Slot 2 — two Down presses. The habit comes from vanilla: it greys Retry out during a
+        // wake-up, and after a heart or a cassette, which are the moments this button is for. Its own
+        // Save and Quit is the third reachable entry there, and the thumb has already moved.
         if (Settings.ShowSaveAndQuitSplitButton) {
-            int vanillaSaveQuitIndex = VanillaButtonIndex(menu, "menu_pause_savequit", warnIfMissing: !minimal);
-            if (vanillaSaveQuitIndex >= 0) {
+            if (VanillaButtonIndex(menu, "menu_pause_savequit", warnIfMissing: !minimal) >= 0) {
                 MainSaveAndQuitSplitButton sq_button = new(Dialog.Clean(DialogIds.SaveAndQuitSplitButtonId));
                 sq_button.Pressed(() => {
                     MainSaveAndQuitSplitButton.PressedHandler(level);
@@ -290,36 +324,16 @@ public class SomeSplitButtonsModule : EverestModule {
             }
         }
 
-        if (Settings.ShowSkipCutsceneSplitButton
-            && level.endingChapterAfterCutscene
-            && !SkipCutsceneTimer.Hidden) {
-
-            // Into vanilla Skip Cutscene's own slot, pushing it down — index 2 during an ending
-            // cutscene, which is what the old literal Insert(2) hit. The vanilla button is always
-            // there when this one is, since both need InCutscene.
-            int skipIndex = VanillaButtonIndex(menu, "menu_pause_skip_cutscene", warnIfMissing: true);
-            if (skipIndex >= 0) {
-                MainSkipCutsceneSplitButton sc_button = new(Dialog.Clean(DialogIds.SkipCutsceneSplitButtonId));
-                sc_button.Pressed(() => {
-                    MainSkipCutsceneSplitButton.PressedHandler(level);
-                });
-                InsertSplitButton(menu, skipIndex, sc_button, SplitDescription(
-                    SkipCutsceneTimer.InPrologue ? DialogIds.SCSPrologueButtonDesc : DialogIds.SCSButtonDesc,
-                    SkipCutsceneTimer.FadeoutFrames));
-            }
-        }
-
+        // Last, always. Reached by holding Down rather than by counting, so the requirement is the
+        // end of the menu and not a distance from vanilla Return to Map — which is merely what
+        // usually sits there.
         if (Settings.ShowReturnToMapSplitButton) {
-            // Below vanilla Return to Map, which is the last entry of a default chapter's menu —
-            // where the old menu.Add() put it. Anchoring keeps it beside its counterpart even if
-            // another mod appends entries after it.
-            int returnIndex = VanillaButtonIndex(menu, "menu_pause_return", warnIfMissing: !minimal);
-            if (returnIndex >= 0) {
+            if (VanillaButtonIndex(menu, "menu_pause_return", warnIfMissing: !minimal) >= 0) {
                 MainReturnToMapSplitButton rtm_button = new(Dialog.Clean(DialogIds.ReturnToMapSplitButtonId));
                 rtm_button.Pressed(() => {
                     MainReturnToMapSplitButton.PressedHandler(level, menu);
                 });
-                InsertSplitButton(menu, returnIndex + 1, rtm_button,
+                InsertSplitButton(menu, menu.Items.Count, rtm_button,
                     SplitDescription(DialogIds.RTMButtonDesc, SplitTimings.WIPE_FADEOUT_FRAMES));
             }
         }
