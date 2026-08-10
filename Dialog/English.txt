@@ -25,5 +25,12 @@ SSB_RTM_SPLIT_MENU_HEADER=                        RETURN TO MAP SPLIT?
 # {0} is what the same wait costs at that speed and {1} is the speed, e.g. 0.5.
 SSB_BERRY_BLOCKS_SPLIT=                           No split: berry needs {0} more frames to collect
 SSB_BERRY_SLOWDOWN=                               ({0} at {1}x speed)
+# {0} is a split button name, taken from the mod menu labels above.
+SSB_BUTTON_ENABLED=                               {0} enabled
+SSB_BUTTON_DISABLED=                              {0} disabled
 SSB_SQ_RETRY_OPTIONS=                             Auto retry after S+Q split
 SSB_SQ_RETRY_OPTIONS_DESC=                        Helpful for death warps such as the 3A heart room
+
+# ============================ Keybind Config UI ================================
+SSB_KEYBIND_CONFIG=                               Hotkeys
+SSB_KEYBIND_COMBO_SUB=                            Binding multiple keys acts as a key combo (all must be held)

@@ -22,8 +22,19 @@ public static class DialogIds {
     public const string ReturnToMapSplitMenuHeaderId = "SSB_RTM_SPLIT_MENU_HEADER";
     public const string BerryBlocksSplitId = "SSB_BERRY_BLOCKS_SPLIT";
     public const string BerrySlowdownId = "SSB_BERRY_SLOWDOWN";
+    public const string ButtonEnabledId = "SSB_BUTTON_ENABLED";
+    public const string ButtonDisabledId = "SSB_BUTTON_DISABLED";
 
     // Vanilla Celeste ids, reused so the confirmation prompt reads like the real Return to Map one
     public const string VanillaReturnContinueId = "MENU_RETURN_CONTINUE";
     public const string VanillaReturnCancelId = "MENU_RETURN_CANCEL";
+
+    // Keybind config UI
+    public const string KeybindConfigId = "SSB_KEYBIND_CONFIG";
+    public const string KeybindComboSubId = "SSB_KEYBIND_COMBO_SUB";
+    public const string KeyConfigTitle = "KEY_CONFIG_TITLE";
+    public const string BtnConfigTitle = "BTN_CONFIG_TITLE";
+    public const string KeyConfigChanging = "KEY_CONFIG_CHANGING";
+    public const string BtnConfigChanging = "BTN_CONFIG_CHANGING";
+    public const string BtnConfigNoController = "BTN_CONFIG_NOCONTROLLER";
 }

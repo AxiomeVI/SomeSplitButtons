@@ -1,6 +1,7 @@
 using Celeste.Mod.SomeSplitButtons.ReturnToMapSplitManager;
 using Celeste.Mod.SomeSplitButtons.SaveAndQuitSplitManager;
 using Celeste.Mod.SomeSplitButtons.SkipCutsceneSplitManager;
+using Celeste.Mod.SomeSplitButtons.UI;
 using Monocle;
 
 namespace Celeste.Mod.SomeSplitButtons.Menu;
@@ -46,6 +47,17 @@ public static class ModMenuOptions {
                 }
         );
 
+        TextMenu.Button keybindButton = new TextMenu.Button(Dialog.Clean(DialogIds.KeybindConfigId)) {
+            Visible = SomeSplitButtonsModule.Settings.Enabled
+        };
+        keybindButton.Pressed(() => {
+            menu.Focused = false;
+            var ui = new KeybindConfigUi();
+            ui.OnClose = () => menu.Focused = true;
+            Engine.Scene.Add(ui);
+            Engine.Scene.OnEndOfFrame += () => Engine.Scene.Entities.UpdateLists();
+        });
+
         menu.Add(new TextMenu.OnOff(Dialog.Clean(DialogIds.EnabledId), SomeSplitButtonsModule.Settings.Enabled).Change(
             value =>
             {
@@ -54,6 +66,7 @@ public static class ModMenuOptions {
                 _showSaveAndQuitSplitButton.Visible = value;
                 _saveAndQuitAndRetry.Visible = value;
                 _showReturnToMapSplitButton.Visible = value;
+                keybindButton.Visible = value;
                 _saveAndQuitAndRetry.Disabled = !SomeSplitButtonsModule.Settings.ShowSaveAndQuitSplitButton;
                 SkipCutsceneTimer.Reset();
                 if (value && SomeSplitButtonsModule.Settings.ShowSkipCutsceneSplitButton && Engine.Scene is Level level) SkipCutsceneTimer.PrologueCheck(level.Session.Area.ChapterIndex);
@@ -66,6 +79,7 @@ public static class ModMenuOptions {
         menu.Add(_showSaveAndQuitSplitButton);
         menu.Add(_saveAndQuitAndRetry);
         menu.Add(_showReturnToMapSplitButton);
+        menu.Add(keybindButton);
 
         _showSkipCutsceneSplitButton.Visible = SomeSplitButtonsModule.Settings.Enabled;
         _showSaveAndQuitSplitButton.Visible = SomeSplitButtonsModule.Settings.Enabled;

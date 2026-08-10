@@ -8,6 +8,7 @@ using Celeste.Mod.SomeSplitButtons.SkipCutsceneSplitManager;
 using Celeste.Mod.SomeSplitButtons.SaveAndQuitSplitManager;
 using Celeste.Mod.SomeSplitButtons.ReturnToMapSplitManager;
 using Celeste.Mod.SomeSplitButtons.Menu;
+using Celeste.Mod.SomeSplitButtons.UI;
 using Celeste.Mod.SpeedrunTool.RoomTimer;
 using MonoMod.ModInterop;
 using static Celeste.TextMenuExt;
@@ -32,6 +33,9 @@ public class SomeSplitButtonsModule : EverestModule {
     private object SaveLoadInstance = null;
     private static Hook _timingHook;
     private static Hook _updateTimerStateHook;
+    private static ComboHotkey _saveQuitHotkey;
+    private static ComboHotkey _skipCutsceneHotkey;
+    private static ComboHotkey _returnToMapHotkey;
 
     public SomeSplitButtonsModule() {
         Instance = this;
@@ -62,6 +66,14 @@ public class SomeSplitButtonsModule : EverestModule {
             null,
             null
         );
+        _saveQuitHotkey = new ComboHotkey(Settings.ButtonToggleSaveQuit);
+        _skipCutsceneHotkey = new ComboHotkey(Settings.ButtonToggleSkipCutscene);
+        _returnToMapHotkey = new ComboHotkey(Settings.ButtonToggleReturnToMap);
+        // Engine.Update, not Level.Update: the hotkeys arm split buttons for a run that has not
+        // started yet, so they have to answer on the overworld and the chapter card too. The
+        // instances above must exist before the hook goes up.
+        On.Monocle.Engine.Update += Engine_OnUpdate;
+
         // Both hooks are resolved by reflection against SpeedrunTool, so a rename on its side turns
         // them into no-ops. Say so in the log: without this the Skip Cutscene split just quietly
         // stops splitting, which reads as a mod bug rather than a version mismatch.
@@ -102,6 +114,7 @@ public class SomeSplitButtonsModule : EverestModule {
     }
 
     public override void Unload() {
+        On.Monocle.Engine.Update -= Engine_OnUpdate;
         On.Celeste.Level.Update -= Level_OnUpdate;
         Everest.Events.LevelLoader.OnLoadingThread -= Level_OnLoadingThread;
         Everest.Events.Level.OnCreatePauseMenuButtons -= Level_OnCreatePauseMenuButtons;
@@ -163,7 +176,6 @@ public class SomeSplitButtonsModule : EverestModule {
     {
         CreateModMenuSectionHeader(menu, inGame, pauseSnapshot);
         ModMenuOptions.CreateMenu(menu);
-        CreateModMenuSectionKeyBindings(menu, inGame, pauseSnapshot);
     }
 
     /// <summary>
@@ -264,6 +276,18 @@ public class SomeSplitButtonsModule : EverestModule {
         PopupMessageUtils.Show(message, null);
     }
 
+    /// <summary>
+    ///     Announces on screen which split button a hotkey just toggled, and to which state.
+    /// </summary>
+    // The hotkeys fire from gameplay, where nothing else reflects the new state: the mod menu is
+    // closed and the split button itself only appears once paused. Without this the runner has to
+    // pause to find out whether the press registered.
+    private static void AnnounceToggle(string buttonNameId, bool enabled) {
+        PopupMessage(string.Format(
+            Dialog.Get(enabled ? DialogIds.ButtonEnabledId : DialogIds.ButtonDisabledId),
+            Dialog.Clean(buttonNameId)));
+    }
+
     private static void Level_OnUpdate(On.Celeste.Level.orig_Update orig, Level self) {
         orig(self);
         if (!Settings.Enabled) return;
@@ -271,24 +295,52 @@ public class SomeSplitButtonsModule : EverestModule {
         if (Settings.ShowSaveAndQuitSplitButton) SaveAndQuitTimer.Update(self);
         if (Settings.ShowSkipCutsceneSplitButton) SkipCutsceneTimer.Update(self);
         if (Settings.ShowReturnToMapSplitButton) ReturnToMapTimer.Update();
+    }
 
-        if (Settings.ButtonToggleSaveQuit.Pressed) {
+    private static void Engine_OnUpdate(On.Monocle.Engine.orig_Update orig, Monocle.Engine self, Microsoft.Xna.Framework.GameTime gameTime) {
+        orig(self, gameTime);
+        if (!Settings.Enabled) return;
+
+        ComboHotkey.UpdateStates();
+        _saveQuitHotkey.Update();
+        _skipCutsceneHotkey.Update();
+        _returnToMapHotkey.Update();
+
+        if (_saveQuitHotkey.Pressed) {
             Settings.ShowSaveAndQuitSplitButton = !Settings.ShowSaveAndQuitSplitButton;
             SaveAndQuitTimer.Reset();
             Instance.SaveSettings();
+            AnnounceToggle(DialogIds.EnableSaveAndQuitSplitButtonId, Settings.ShowSaveAndQuitSplitButton);
         }
 
-        if (Settings.ButtonToggleSkipCutscene.Pressed) {
+        if (_skipCutsceneHotkey.Pressed) {
             Settings.ShowSkipCutsceneSplitButton = !Settings.ShowSkipCutsceneSplitButton;
             SkipCutsceneTimer.Reset();
-            if (Settings.ShowSkipCutsceneSplitButton) SkipCutsceneTimer.PrologueCheck(self.Session.Area.ChapterIndex);
+            // Outside a level there is no chapter to test; the next Level_OnLoadingThread does it.
+            if (Settings.ShowSkipCutsceneSplitButton && Monocle.Engine.Scene is Level level)
+                SkipCutsceneTimer.PrologueCheck(level.Session.Area.ChapterIndex);
             Instance.SaveSettings();
+            AnnounceToggle(DialogIds.EnableSkipCutsceneSplitButtonId, Settings.ShowSkipCutsceneSplitButton);
         }
 
-        if (Settings.ButtonToggleReturnToMap.Pressed) {
+        if (_returnToMapHotkey.Pressed) {
             Settings.ShowReturnToMapSplitButton = !Settings.ShowReturnToMapSplitButton;
             ReturnToMapTimer.Reset();
             Instance.SaveSettings();
+            AnnounceToggle(DialogIds.EnableReturnToMapSplitButtonId, Settings.ShowReturnToMapSplitButton);
         }
+    }
+
+    /// <summary>
+    ///     Marks the hotkeys' current input state as already consumed.
+    /// </summary>
+    // Called right after a rebind. ComboHotkey fires on a rising edge, and the key that was just
+    // bound is still held when the remap screen hands focus back — so without this, binding a key
+    // immediately toggles the button it was bound to.
+    internal static void ResyncHotkeys() {
+        ComboHotkey.UpdateStates();
+        _saveQuitHotkey.Resync();
+        _skipCutsceneHotkey.Resync();
+        _returnToMapHotkey.Resync();
     }
 }
