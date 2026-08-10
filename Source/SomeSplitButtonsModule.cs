@@ -290,8 +290,16 @@ public class SomeSplitButtonsModule : EverestModule {
 
     private static void Level_OnUpdate(On.Celeste.Level.orig_Update orig, Level self) {
         orig(self);
-        if (!Settings.Enabled) return;
 
+        // Holds first, and above every settings gate. They are vanilla flags the mod borrowed, so
+        // switching a button off — or the whole mod off — must not strand one half-held. Turning
+        // Save and Quit off during its hold used to freeze the chapter clock for the rest of the
+        // Level; see SaveAndQuitTimer.UpdateHold.
+        foreach (SplitFeature feature in SplitFeatures.All) {
+            feature.UpdateHold?.Invoke(self);
+        }
+
+        if (!Settings.Enabled) return;
         foreach (SplitFeature feature in SplitFeatures.All) {
             if (feature.Enabled()) feature.Update(self);
         }

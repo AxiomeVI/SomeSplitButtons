@@ -27,6 +27,15 @@ internal sealed class SplitFeature {
     internal required Action<Level> Update { get; init; }
 
     /// <summary>
+    ///     Maintains and releases whatever vanilla state this feature holds between frames. Runs
+    ///     every frame regardless of any setting. Null for features that hold none.
+    /// </summary>
+    // The asymmetry with Update is the point. Update is the mod's own business and stops when the
+    // button is switched off; a hold is a vanilla flag the mod borrowed, and dropping it half-held
+    // leaves the game in a state only this code knows how to undo.
+    internal Action<Level> UpdateHold { get; init; }
+
+    /// <summary>
     ///     Recomputes whatever this feature derives from the chapter it is in. Null for the features
     ///     that derive nothing.
     /// </summary>
@@ -72,6 +81,9 @@ internal static class SplitFeatures {
         Binding = () => SomeSplitButtonsModule.Settings.ButtonToggleSaveQuit,
         Reset = SaveAndQuitTimer.Reset,
         Update = SaveAndQuitTimer.Update,
+        // The only feature that borrows a vanilla flag: level.TimerStopped, held frame by frame
+        // between the split and the moment the clock would restart on its own.
+        UpdateHold = SaveAndQuitTimer.UpdateHold,
     };
 
     internal static readonly SplitFeature SkipCutscene = new() {

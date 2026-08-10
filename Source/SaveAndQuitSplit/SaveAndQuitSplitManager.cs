@@ -17,6 +17,12 @@ public static class SaveAndQuitTimer {
     ///     Disarms the timer, releasing the chapter clock first if this manager is what is holding
     ///     it stopped.
     /// </summary>
+    // Kept as well as UpdateHold, not instead of it: this releases at the moment of the reset, where
+    // UpdateHold would wait for the next frame — and on a level exit there is no next frame.
+    //
+    // The `Engine.Scene is Level` test abandons the flag when the scene is not a level, which is
+    // safe rather than lucky: the only way to leave a Level is to replace it, and the next one
+    // starts with TimerStopped false. There is no live object left to release.
     public static void Reset()
     {
         if (keepTimerStopped && Engine.Scene is Level level) {
@@ -45,16 +51,30 @@ public static class SaveAndQuitTimer {
         counter = 0;
     }
 
-    public static void Update(Level level) {
-        if (keepTimerStopped)
-        {
-            level.TimerStopped = true;
-            if (ClockWouldRestart(level))
-            {
-                keepTimerStopped = false;
-                level.TimerStopped = false;
-            }
+    /// <summary>
+    ///     Maintains the chapter-clock hold, and releases it once vanilla would have restarted the
+    ///     clock on its own.
+    /// </summary>
+    // ⚠️ Split out of Update, and called from outside the settings gates, because TimerStopped is
+    // vanilla's flag and not the mod's. While this manager holds it, the mod is the only thing that
+    // will ever put it back — so if Update stopped being called mid-hold, the chapter clock stayed
+    // frozen for the rest of the Level, and with it Session.Time and SaveData.AddTime.
+    //
+    // That used to be prevented by every path that clears either setting also calling Reset(). True
+    // in all five, but true by convention repeated five times rather than by construction, and the
+    // sixth path would have been silent. Declaring the hold in the SplitFeatures table is what makes
+    // it structural: the loop runs this whether or not anything is enabled.
+    public static void UpdateHold(Level level) {
+        if (!keepTimerStopped) return;
+
+        level.TimerStopped = true;
+        if (ClockWouldRestart(level)) {
+            keepTimerStopped = false;
+            level.TimerStopped = false;
         }
+    }
+
+    public static void Update(Level level) {
         if (pressed) {
             counter++;
             if (counter > SQ_FADEOUT_FRAMES) {
