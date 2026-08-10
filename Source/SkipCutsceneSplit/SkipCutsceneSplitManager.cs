@@ -21,10 +21,6 @@ public static class SkipCutsceneTimer {
         frameCounter = 0;
     }
 
-    public static void OnSaveState() => Reset();
-    public static void OnLoadState() => Reset();
-    public static void OnClearState() => Reset();
-
     public static void Reset()
     {
         hidden = false;

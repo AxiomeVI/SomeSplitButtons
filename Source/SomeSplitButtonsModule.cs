@@ -8,6 +8,7 @@ using Celeste.Mod.SomeSplitButtons.SkipCutsceneSplitManager;
 using Celeste.Mod.SomeSplitButtons.SaveAndQuitSplitManager;
 using Celeste.Mod.SomeSplitButtons.ReturnToMapSplitManager;
 using Celeste.Mod.SomeSplitButtons.Menu;
+using Celeste.Mod.SomeSplitButtons.Splits;
 using Celeste.Mod.SomeSplitButtons.UI;
 using Celeste.Mod.SpeedrunTool.RoomTimer;
 using MonoMod.ModInterop;
@@ -33,9 +34,6 @@ public class SomeSplitButtonsModule : EverestModule {
     private object SaveLoadInstance = null;
     private static Hook _timingHook;
     private static Hook _updateTimerStateHook;
-    private static ComboHotkey _saveQuitHotkey;
-    private static ComboHotkey _skipCutsceneHotkey;
-    private static ComboHotkey _returnToMapHotkey;
 
     public SomeSplitButtonsModule() {
         Instance = this;
@@ -76,9 +74,9 @@ public class SomeSplitButtonsModule : EverestModule {
             Logger.Warn(nameof(SomeSplitButtonsModule),
                 "SpeedrunTool.SaveLoad ModInterop not found — the split timers will not be disarmed around save states.");
         }
-        _saveQuitHotkey = new ComboHotkey(Settings.ButtonToggleSaveQuit);
-        _skipCutsceneHotkey = new ComboHotkey(Settings.ButtonToggleSkipCutscene);
-        _returnToMapHotkey = new ComboHotkey(Settings.ButtonToggleReturnToMap);
+        foreach (SplitFeature feature in SplitFeatures.All) {
+            feature.Hotkey = new ComboHotkey(feature.Binding());
+        }
         // Engine.Update, not Level.Update: the hotkeys arm split buttons for a run that has not
         // started yet, so they have to answer on the overworld and the chapter card too. The
         // instances above must exist before the hook goes up.
@@ -134,9 +132,7 @@ public class SomeSplitButtonsModule : EverestModule {
             SaveLoadIntegration.Unregister?.Invoke(SaveLoadInstance);
             SaveLoadInstance = null;
         }
-        SaveAndQuitTimer.Reset();
-        SkipCutsceneTimer.Reset();
-        ReturnToMapTimer.Reset();
+        SplitFeatures.ResetAll();
         Everest.Events.Level.OnExit -= Level_OnLevelExit;
         _timingHook?.Dispose();
         _timingHook = null;
@@ -149,43 +145,29 @@ public class SomeSplitButtonsModule : EverestModule {
     /// </summary>
     public static void Level_OnLoadingThread(Level level)
     {
-        SkipCutsceneTimer.Reset();
-        SkipCutsceneTimer.PrologueCheck(level.Session.Area.ChapterIndex);
-        SaveAndQuitTimer.Reset();
-        ReturnToMapTimer.Reset();
+        SplitFeatures.ResetAll();
+        SplitFeatures.RefreshAll(level);
     }
 
     private static void Level_OnLevelExit(Level level, LevelExit exit, LevelExit.Mode mode, Session session, HiresSnow snow)
-    {
-        SkipCutsceneTimer.Reset();
-        SaveAndQuitTimer.Reset();
-        ReturnToMapTimer.Reset();
-    }
+        => SplitFeatures.ResetAll();
 
     // The three save-state callbacks below only disarm the mod's own timers, so they run
-    // unconditionally for the same reason as Level_OnLoadingThread.
-    public static void OnSaveState(Dictionary<Type, Dictionary<string, object>> dictionary, Level level) {
-        SkipCutsceneTimer.OnSaveState();
-        SaveAndQuitTimer.OnSaveState();
-        ReturnToMapTimer.OnSaveState();
-    }
+    // unconditionally for the same reason as Level_OnLoadingThread. Disarming is all any of them
+    // ever did — the managers used to spell out OnSaveState/OnLoadState/OnClearState one by one, and
+    // all nine were Reset().
+    public static void OnSaveState(Dictionary<Type, Dictionary<string, object>> dictionary, Level level)
+        => SplitFeatures.ResetAll();
 
-    public static void OnLoadState(Dictionary<Type, Dictionary<string, object>> dictionary, Level level) {
-        SkipCutsceneTimer.OnLoadState();
-        SaveAndQuitTimer.OnLoadState();
-        ReturnToMapTimer.OnLoadState();
-    }
+    public static void OnLoadState(Dictionary<Type, Dictionary<string, object>> dictionary, Level level)
+        => SplitFeatures.ResetAll();
 
     public static void OnBeforeSaveState(Level level) {
         if (!Settings.Enabled) return;
         if (Settings.ShowSaveAndQuitSplitButton) SaveAndQuitTimer.OnBeforeSaveState(level);
     }
 
-    public static void OnClearState() {
-        SkipCutsceneTimer.OnClearState();
-        SaveAndQuitTimer.OnClearState();
-        ReturnToMapTimer.OnClearState();
-    }
+    public static void OnClearState() => SplitFeatures.ResetAll();
 
     public override void CreateModMenuSection(TextMenu menu, bool inGame, EventInstance pauseSnapshot)
     {
@@ -310,42 +292,32 @@ public class SomeSplitButtonsModule : EverestModule {
         orig(self);
         if (!Settings.Enabled) return;
 
-        if (Settings.ShowSaveAndQuitSplitButton) SaveAndQuitTimer.Update(self);
-        if (Settings.ShowSkipCutsceneSplitButton) SkipCutsceneTimer.Update(self);
-        if (Settings.ShowReturnToMapSplitButton) ReturnToMapTimer.Update();
+        foreach (SplitFeature feature in SplitFeatures.All) {
+            if (feature.Enabled()) feature.Update(self);
+        }
     }
 
     private static void Engine_OnUpdate(On.Monocle.Engine.orig_Update orig, Monocle.Engine self, Microsoft.Xna.Framework.GameTime gameTime) {
         orig(self, gameTime);
         if (!Settings.Enabled) return;
 
+        // Every hotkey is polled before any of them is acted on, as it was when these were three
+        // separate blocks. Handling one toggle can write settings and show a popup, and none of that
+        // should sit between two reads of the same input frame.
         ComboHotkey.UpdateStates();
-        _saveQuitHotkey.Update();
-        _skipCutsceneHotkey.Update();
-        _returnToMapHotkey.Update();
-
-        if (_saveQuitHotkey.Pressed) {
-            Settings.ShowSaveAndQuitSplitButton = !Settings.ShowSaveAndQuitSplitButton;
-            SaveAndQuitTimer.Reset();
-            Instance.SaveSettings();
-            AnnounceToggle(DialogIds.EnableSaveAndQuitSplitButtonId, Settings.ShowSaveAndQuitSplitButton);
+        foreach (SplitFeature feature in SplitFeatures.All) {
+            feature.Hotkey.Update();
         }
 
-        if (_skipCutsceneHotkey.Pressed) {
-            Settings.ShowSkipCutsceneSplitButton = !Settings.ShowSkipCutsceneSplitButton;
-            SkipCutsceneTimer.Reset();
-            // Outside a level there is no chapter to test; the next Level_OnLoadingThread does it.
-            if (Settings.ShowSkipCutsceneSplitButton && Monocle.Engine.Scene is Level level)
-                SkipCutsceneTimer.PrologueCheck(level.Session.Area.ChapterIndex);
-            Instance.SaveSettings();
-            AnnounceToggle(DialogIds.EnableSkipCutsceneSplitButtonId, Settings.ShowSkipCutsceneSplitButton);
-        }
+        foreach (SplitFeature feature in SplitFeatures.All) {
+            if (!feature.Hotkey.Pressed) continue;
 
-        if (_returnToMapHotkey.Pressed) {
-            Settings.ShowReturnToMapSplitButton = !Settings.ShowReturnToMapSplitButton;
-            ReturnToMapTimer.Reset();
+            bool enabled = !feature.Enabled();
+            feature.Toggle(enabled);
+            // The mod menu leaves this to Everest, which saves when the menu closes. Nothing closes
+            // on a hotkey's behalf.
             Instance.SaveSettings();
-            AnnounceToggle(DialogIds.EnableReturnToMapSplitButtonId, Settings.ShowReturnToMapSplitButton);
+            AnnounceToggle(feature.NameId, enabled);
         }
     }
 
@@ -357,8 +329,8 @@ public class SomeSplitButtonsModule : EverestModule {
     // immediately toggles the button it was bound to.
     internal static void ResyncHotkeys() {
         ComboHotkey.UpdateStates();
-        _saveQuitHotkey.Resync();
-        _skipCutsceneHotkey.Resync();
-        _returnToMapHotkey.Resync();
+        foreach (SplitFeature feature in SplitFeatures.All) {
+            feature.Hotkey.Resync();
+        }
     }
 }

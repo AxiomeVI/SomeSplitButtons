@@ -10,10 +10,6 @@ public static class ReturnToMapTimer {
     private static int counter = 0;
     private static bool pressed = false;
 
-    public static void OnSaveState() => Reset();
-    public static void OnLoadState() => Reset();
-    public static void OnClearState() => Reset();
-
     public static void Reset() {
         pressed = false;
         counter = 0;

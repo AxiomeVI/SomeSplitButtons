@@ -1,6 +1,4 @@
-using Celeste.Mod.SomeSplitButtons.ReturnToMapSplitManager;
-using Celeste.Mod.SomeSplitButtons.SaveAndQuitSplitManager;
-using Celeste.Mod.SomeSplitButtons.SkipCutsceneSplitManager;
+using Celeste.Mod.SomeSplitButtons.Splits;
 using Celeste.Mod.SomeSplitButtons.UI;
 using Monocle;
 
@@ -12,12 +10,7 @@ public static class ModMenuOptions {
         TextMenu.OnOff _showSkipCutsceneSplitButton = (TextMenu.OnOff)new TextMenu.OnOff(
             Dialog.Clean(DialogIds.EnableSkipCutsceneSplitButtonId),
             SomeSplitButtonsModule.Settings.ShowSkipCutsceneSplitButton).Change(
-                b =>
-                {
-                    SomeSplitButtonsModule.Settings.ShowSkipCutsceneSplitButton = b;
-                    SkipCutsceneTimer.Reset();
-                    if (b && Engine.Scene is Level level) SkipCutsceneTimer.PrologueCheck(level.Session.Area.ChapterIndex);
-                }
+                b => SplitFeatures.SkipCutscene.Toggle(b)
         );
 
         TextMenu.OnOff _saveAndQuitAndRetry = (TextMenu.OnOff)new TextMenu.OnOff(
@@ -31,20 +24,15 @@ public static class ModMenuOptions {
             SomeSplitButtonsModule.Settings.ShowSaveAndQuitSplitButton).Change(
                 b =>
                 {
-                    SomeSplitButtonsModule.Settings.ShowSaveAndQuitSplitButton = b;
+                    SplitFeatures.SaveAndQuit.Toggle(b);
                     _saveAndQuitAndRetry.Disabled = !b;
-                    SaveAndQuitTimer.Reset();
                 }
         );
 
         TextMenu.OnOff _showReturnToMapSplitButton = (TextMenu.OnOff)new TextMenu.OnOff(
             Dialog.Clean(DialogIds.EnableReturnToMapSplitButtonId),
             SomeSplitButtonsModule.Settings.ShowReturnToMapSplitButton).Change(
-                b =>
-                {
-                    SomeSplitButtonsModule.Settings.ShowReturnToMapSplitButton = b;
-                    ReturnToMapTimer.Reset();
-                }
+                b => SplitFeatures.ReturnToMap.Toggle(b)
         );
 
         TextMenu.Button keybindButton = new TextMenu.Button(Dialog.Clean(DialogIds.KeybindConfigId)) {
@@ -68,10 +56,12 @@ public static class ModMenuOptions {
                 _showReturnToMapSplitButton.Visible = value;
                 keybindButton.Visible = value;
                 _saveAndQuitAndRetry.Disabled = !SomeSplitButtonsModule.Settings.ShowSaveAndQuitSplitButton;
-                SkipCutsceneTimer.Reset();
-                if (value && SomeSplitButtonsModule.Settings.ShowSkipCutsceneSplitButton && Engine.Scene is Level level) SkipCutsceneTimer.PrologueCheck(level.Session.Area.ChapterIndex);
-                SaveAndQuitTimer.Reset();
-                ReturnToMapTimer.Reset();
+                SplitFeatures.ResetAll();
+                // Unconditional where this used to test ShowSkipCutsceneSplitButton as well. What it
+                // refreshes is only ever read by an enabled feature's Update, and a level load
+                // refreshes it regardless — so the extra test could only ever agree with what was
+                // already there.
+                if (value && Engine.Scene is Level level) SplitFeatures.RefreshAll(level);
             }
         ));
 

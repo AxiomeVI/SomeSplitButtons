@@ -13,18 +13,6 @@ public static class SaveAndQuitTimer {
         level.TimerStopped = false;
     }
 
-    public static void OnSaveState() {
-        Reset();
-    }
-
-    public static void OnLoadState() {
-        Reset();
-    }
-
-    public static void OnClearState() {
-        Reset();
-    }
-
     /// <summary>
     ///     Disarms the timer, releasing the chapter clock first if this manager is what is holding
     ///     it stopped.
