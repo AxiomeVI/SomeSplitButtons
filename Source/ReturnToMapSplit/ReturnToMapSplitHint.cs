@@ -1,3 +1,4 @@
+using Celeste.Mod.SomeSplitButtons.Splits;
 using Microsoft.Xna.Framework;
 using Monocle;
 
@@ -10,7 +11,9 @@ public class ReturnToMapSplitHint : ReturnMapHint {
     public override void Render() {
         MTexture icon = GFX.Gui["checkpoint"];
         MTexture polaroid = MTN.Checkpoints["polaroid"];
-        string text = Dialog.Clean(DialogIds.RTMButtonDesc);
+        // Same entry as the pause-menu button's description, and now parameterised, so it has to be
+        // formatted here too — Dialog.Clean would leave "{0}" on screen.
+        string text = string.Format(Dialog.Get(DialogIds.RTMButtonDesc), SplitTimings.WIPE_FADEOUT_FRAMES);
         float textWidth = ActiveFont.Measure(text).X * 0.75f;
 
         if (checkpoint != null) {

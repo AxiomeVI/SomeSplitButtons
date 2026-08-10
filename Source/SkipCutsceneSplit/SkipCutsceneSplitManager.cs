@@ -1,12 +1,10 @@
 using System;
+using Celeste.Mod.SomeSplitButtons.Splits;
 using Monocle;
 
 namespace Celeste.Mod.SomeSplitButtons.SkipCutsceneSplitManager;
 
 public static class SkipCutsceneTimer {
-    private const int END_CS_FADEOUT_FRAMES = 18;
-    private const int PROLOGUE_END_CS_FADEOUT_FRAMES = 232;
-
     private static int frameCounter = 0;
     private static bool pressed = false;
     private static bool inPrologue = false;
@@ -35,10 +33,21 @@ public static class SkipCutsceneTimer {
         inPrologue = chapterIndex == -1; // Prologue chapter index is -1
     }
 
+    /// <summary>
+    ///     How long this split will wait, for the chapter it was last refreshed for.
+    /// </summary>
+    // Exposed so the pause-menu description can quote the wait rather than decide it a second time.
+    // The button used to say "232 frames" by re-testing ChapterIndex == -1 itself, which is the same
+    // question asked of a different source — the live session instead of the flag set on level load.
+    public static int FadeoutFrames =>
+        inPrologue ? SplitTimings.PROLOGUE_END_CS_FADEOUT_FRAMES : SplitTimings.END_CS_FADEOUT_FRAMES;
+
+    public static bool InPrologue => inPrologue;
+
     public static void Update(Level level) {
         if (pressed) {
             frameCounter++;
-            if (frameCounter > (inPrologue ? PROLOGUE_END_CS_FADEOUT_FRAMES : END_CS_FADEOUT_FRAMES)) {
+            if (frameCounter > FadeoutFrames) {
                 pressed = false;
                 frameCounter = 0;
                 freezeLevelCompleted = false;

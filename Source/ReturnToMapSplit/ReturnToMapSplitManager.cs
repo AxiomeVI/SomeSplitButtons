@@ -1,3 +1,4 @@
+using Celeste.Mod.SomeSplitButtons.Splits;
 using Celeste.Mod.SomeSplitButtons.Utils;
 using Celeste.Mod.SpeedrunTool.RoomTimer;
 using Monocle;
@@ -5,8 +6,6 @@ using Monocle;
 namespace Celeste.Mod.SomeSplitButtons.ReturnToMapSplitManager;
 
 public static class ReturnToMapTimer {
-    private const int RTM_FADEOUT_FRAMES = 31;
-
     private static int counter = 0;
     private static bool pressed = false;
 
@@ -30,7 +29,7 @@ public static class ReturnToMapTimer {
         }
 
         counter++;
-        if (counter > RTM_FADEOUT_FRAMES) {
+        if (counter > SplitTimings.WIPE_FADEOUT_FRAMES) {
             pressed = false;
             counter = 0;
             RoomTimerManager.UpdateTimerState();

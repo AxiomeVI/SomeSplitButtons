@@ -197,6 +197,19 @@ public class SomeSplitButtonsModule : EverestModule {
     }
 
     /// <summary>
+    ///     A split button's description, with the number of frames it will actually wait filled in.
+    /// </summary>
+    // Dialog.Get and not Dialog.Clean. Language.LoadTxt builds the Cleaned dictionary by running
+    // `\{(.*?)\}` over every value and replacing each match with "" unless it is {n} or {break} —
+    // so Clean deletes the placeholder along with the dialogue markup it shares its braces with, and
+    // the sentence reaches the player as "after  frames". Every parameterised string in this mod is
+    // read the same way, for the same reason.
+    //
+    // Both arguments are always supplied; the entries that quote only frames ignore the second.
+    private static string SplitDescription(string dialogId, int frames)
+        => string.Format(Dialog.Get(dialogId), frames, SplitTimings.ToSeconds(frames));
+
+    /// <summary>
     ///     Inserts a split button at <paramref name="index"/> together with the description that
     ///     eases in while it holds focus.
     /// </summary>
@@ -234,8 +247,9 @@ public class SomeSplitButtonsModule : EverestModule {
                 sq_button.Pressed(() => {
                     MainSaveAndQuitSplitButton.PressedHandler(level);
                 });
-                InsertSplitButton(menu, optionsIndex + 1, sq_button,
-                    Settings.SaveAndQuitAndRetry ? Dialog.Clean(DialogIds.SQButtonRetryDesc) : Dialog.Clean(DialogIds.SQButtonDesc));
+                InsertSplitButton(menu, optionsIndex + 1, sq_button, SplitDescription(
+                    Settings.SaveAndQuitAndRetry ? DialogIds.SQButtonRetryDesc : DialogIds.SQButtonDesc,
+                    SplitTimings.WIPE_FADEOUT_FRAMES));
             }
         }
 
@@ -252,8 +266,9 @@ public class SomeSplitButtonsModule : EverestModule {
                 sc_button.Pressed(() => {
                     MainSkipCutsceneSplitButton.PressedHandler(level);
                 });
-                InsertSplitButton(menu, skipIndex, sc_button,
-                    level.Session.Area.ChapterIndex == -1 ? Dialog.Clean(DialogIds.SCSPrologueButtonDesc) : Dialog.Clean(DialogIds.SCSButtonDesc));
+                InsertSplitButton(menu, skipIndex, sc_button, SplitDescription(
+                    SkipCutsceneTimer.InPrologue ? DialogIds.SCSPrologueButtonDesc : DialogIds.SCSButtonDesc,
+                    SkipCutsceneTimer.FadeoutFrames));
             }
         }
 
@@ -267,7 +282,8 @@ public class SomeSplitButtonsModule : EverestModule {
                 rtm_button.Pressed(() => {
                     MainReturnToMapSplitButton.PressedHandler(level, menu);
                 });
-                InsertSplitButton(menu, returnIndex + 1, rtm_button, Dialog.Clean(DialogIds.RTMButtonDesc));
+                InsertSplitButton(menu, returnIndex + 1, rtm_button,
+                    SplitDescription(DialogIds.RTMButtonDesc, SplitTimings.WIPE_FADEOUT_FRAMES));
             }
         }
     }

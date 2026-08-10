@@ -1,3 +1,4 @@
+using Celeste.Mod.SomeSplitButtons.Splits;
 using Celeste.Mod.SomeSplitButtons.Utils;
 using Celeste.Mod.SpeedrunTool.RoomTimer;
 using Monocle;
@@ -6,7 +7,6 @@ namespace Celeste.Mod.SomeSplitButtons.SaveAndQuitSplitManager;
 public static class SaveAndQuitTimer {
     private static int counter = 0;
     private static bool pressed = false;
-    private const int SQ_FADEOUT_FRAMES = 31;
     private static bool keepTimerStopped = false;
 
     public static void OnBeforeSaveState(Level level) {
@@ -77,7 +77,7 @@ public static class SaveAndQuitTimer {
     public static void Update(Level level) {
         if (pressed) {
             counter++;
-            if (counter > SQ_FADEOUT_FRAMES) {
+            if (counter > SplitTimings.WIPE_FADEOUT_FRAMES) {
                 pressed = false;
                 counter = 0;
                 RoomTimerManager.UpdateTimerState();
