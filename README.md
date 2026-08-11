@@ -9,4 +9,4 @@ Add a menu button in the pause menu to unpause and split the room timer (after 3
 Add a button in the pause menu to unpause and split the room timer (after 18 frames or 232 for Prologue) for practicing end-of-chapter cutscene skips as if under filetime condition.
 
 ## Return to Map Split
-Add a button at the bottom of the pause menu to unpause and split the room timer (after 31 frames) for practicing segments containing a Return to Map. Like the real thing, it asks for confirmation first, so the menu inputs match a run.
+Add a button at the bottom of the pause menu to unpause and split the room timer (after 31 frames) for practicing segments ending with a Return to Map.
