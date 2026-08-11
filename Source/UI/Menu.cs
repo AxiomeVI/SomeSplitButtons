@@ -73,14 +73,21 @@ public static class ModMenuOptions {
             }
         ));
 
+        menu.Add(showReturnToMapSplitButton);
         menu.Add(showSkipCutsceneSplitButton);
         menu.Add(showSaveAndQuitSplitButton);
         menu.Add(saveAndQuitAndRetry);
-        menu.Add(showReturnToMapSplitButton);
         menu.Add(keybindButton);
 
         SetSubOptionsVisible(SomeSplitButtonsModule.Settings.Enabled);
 
+        // After the Add calls, not before: AddDescription inserts the description at the option's
+        // index in the menu and does nothing at all when the option is not in it yet.
+        //
+        // The descriptions are not listed in SetSubOptionsVisible, and must not be. They start
+        // invisible and only fade in from the option's OnEnter — an option hidden by the master
+        // toggle can never be hovered, so it can never show its description.
+        showSkipCutsceneSplitButton.AddDescription(menu, Dialog.Clean(DialogIds.EnableSkipCutsceneSplitButtonDescId));
         saveAndQuitAndRetry.AddDescription(menu, Dialog.Clean(DialogIds.SaveAndQuitAndRetryDescId));
     }
 }

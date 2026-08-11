@@ -3,6 +3,8 @@ SSB_SOME_SPLIT_BUTTONS=                           Some Split Buttons
 SSB_ENABLED=                                      Enabled
 SSB_ENABLE_SAVE_AND_QUIT_SPLIT_BUTTON=            Save and Quit Split Button
 SSB_ENABLE_SKIP_CUTSCENE_SPLIT_BUTTON=            Skip Cutscene Split Button
+# The button only exists while level.endingChapterAfterCutscene is set — see Level_OnCreatePauseMenuButtons.
+SSB_ENABLE_SKIP_CUTSCENE_SPLIT_BUTTON_DESC=       Only for end-of-chapter cutscenes
 SSB_ENABLE_RETURN_TO_MAP_SPLIT_BUTTON=            Return to Map Split Button
 
 # ============================ Buttons / Menu ==================================
@@ -32,7 +34,7 @@ SSB_BERRY_SLOWDOWN=                               ({0} at {1}x speed)
 # {0} is a split button name, taken from the mod menu labels above.
 SSB_BUTTON_ENABLED=                               {0} enabled
 SSB_BUTTON_DISABLED=                              {0} disabled
-SSB_SQ_RETRY_OPTIONS=                             Auto retry after S+Q split
+SSB_SQ_RETRY_OPTIONS=                             Auto retry after S&Q split
 SSB_SQ_RETRY_OPTIONS_DESC=                        Helpful for death warps such as the 3A heart room
 
 # ============================ Keybind Config UI ================================
