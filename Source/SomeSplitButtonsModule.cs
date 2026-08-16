@@ -6,6 +6,7 @@ using Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 using Celeste.Mod.SomeSplitButtons.Integration;
 using Celeste.Mod.SomeSplitButtons.UI;
 using Celeste.Mod.SomeSplitButtons.Splits;
+using Microsoft.Xna.Framework.Input;
 using MonoMod.ModInterop;
 using static Celeste.TextMenuExt;
 using FMOD.Studio;
@@ -64,6 +65,12 @@ public class SomeSplitButtonsModule : EverestModule {
                 "SpeedrunTool.SaveLoad ModInterop not found — the split timers will not be disarmed around save states.");
         }
         foreach (SplitFeature feature in SplitFeatures.All) {
+            // Keys.None must not survive into a hotkey. It is FNA's "no XNA key for this" sentinel,
+            // and a keyboard state reports it held whenever an unmappable key is — AZERTY's ")" is
+            // one — so a binding carrying it toggles a split button on an unrelated press. Settings
+            // written while the defaults still seeded it are on disk, so strip it on the way in
+            // rather than trusting the file.
+            feature.Binding().Keys.RemoveAll(key => key == Keys.None);
             feature.Hotkey = new ComboHotkey(feature.Binding());
         }
         // Engine.Update, not Level.Update: the hotkeys arm split buttons for a run that has not

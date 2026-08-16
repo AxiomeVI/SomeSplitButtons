@@ -113,8 +113,11 @@ internal class KeybindConfigUi : TextMenu {
                 _remapping = false;
                 Focused = true;
             } else if (_remappingKeyboard) {
-                Keys[] pressed = MInput.Keyboard.CurrentState.GetPressedKeys();
-                if (pressed?.LastOrDefault() is { } k && MInput.Keyboard.Pressed(k))
+                // Keys.None is skipped rather than bound. It is what FNA hands back for a key absent
+                // from its SDL→XNA table — AZERTY's ")" is one — so it stands for "some key we have
+                // no name for", not for a key the player chose. Bound, it would match every such key.
+                Keys k = MInput.Keyboard.CurrentState.GetPressedKeys().LastOrDefault(key => key != Keys.None);
+                if (k != Keys.None && MInput.Keyboard.Pressed(k))
                     ApplyRemap(k);
             } else {
                 var cur  = MInput.GamePads[Input.Gamepad].CurrentState;
