@@ -19,7 +19,7 @@ SSB_TOGGLE_RETURN_TO_MAP_KEY=                     Enable/Disable Return to Map b
 # buttons describing a delay the mod no longer had. {1} in the Prologue entry is the same count in
 # whole seconds. These five are read with Dialog.Get: Dialog.Clean deletes {0} outright.
 SSB_SQ_BUTTON_DESC=                               Unpause then split room timer after {0} frames
-SSB_SQ_RETRY_BUTTON_DESC=                         Unpause, trigger a retry and split room timer after {0} frames
+SSB_SQ_REENTER_BUTTON_DESC=                       Unpause, split room timer after {0} frames then re-enter the room
 SSB_SCS_BUTTON_DESC=                              Unpause then split room timer after {0} frames
 SSB_SCS_PROLOGUE_BUTTON_DESC=                     Unpause then split room timer after {0} frames (~{1}s)
 SSB_RTM_BUTTON_DESC=                              Unpause then split room timer after {0} frames
@@ -34,8 +34,8 @@ SSB_BERRY_SLOWDOWN=                               ({0} at {1}x speed)
 # {0} is a split button name, taken from the mod menu labels above.
 SSB_BUTTON_ENABLED=                               {0} enabled
 SSB_BUTTON_DISABLED=                              {0} disabled
-SSB_SQ_RETRY_OPTIONS=                             Auto retry after S&Q split
-SSB_SQ_RETRY_OPTIONS_DESC=                        Helpful for death warps such as the 3A heart room
+SSB_SQ_REENTER_OPTIONS=                           Reenter the room after S&Q split
+SSB_SQ_REENTER_OPTIONS_DESC=                      Reloads the room as a real S&Q does
 
 # ============================ Keybind Config UI ================================
 SSB_KEYBIND_CONFIG=                               Hotkeys
