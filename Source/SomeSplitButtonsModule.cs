@@ -285,7 +285,7 @@ public class SomeSplitButtonsModule : EverestModule {
                     SaveAndQuitSplitButton.PressedHandler(level);
                 });
                 InsertSplitButton(menu, SlotIndex(menu, SAVE_AND_QUIT_SLOT), sq_button, SplitDescription(
-                    Settings.SaveAndQuitAndRetry ? DialogIds.SQButtonRetryDesc : DialogIds.SQButtonDesc,
+                    Settings.SaveAndQuitAndReenter ? DialogIds.SQButtonReenterDesc : DialogIds.SQButtonDesc,
                     SplitTimings.WIPE_FADEOUT_FRAMES));
             }
         }

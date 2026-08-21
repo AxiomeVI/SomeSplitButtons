@@ -13,10 +13,10 @@ public static class ModMenuOptions {
                 b => SplitFeatures.SkipCutscene.Toggle(b)
         );
 
-        TextMenu.OnOff saveAndQuitAndRetry = (TextMenu.OnOff)new TextMenu.OnOff(
-            Dialog.Clean(DialogIds.SaveAndQuitAndRetryId),
-            SomeSplitButtonsModule.Settings.SaveAndQuitAndRetry).Change(
-                b => SomeSplitButtonsModule.Settings.SaveAndQuitAndRetry = b
+        TextMenu.OnOff saveAndQuitAndReenter = (TextMenu.OnOff)new TextMenu.OnOff(
+            Dialog.Clean(DialogIds.SaveAndQuitAndReenterId),
+            SomeSplitButtonsModule.Settings.SaveAndQuitAndReenter).Change(
+                b => SomeSplitButtonsModule.Settings.SaveAndQuitAndReenter = b
         );
 
         TextMenu.OnOff showSaveAndQuitSplitButton = (TextMenu.OnOff)new TextMenu.OnOff(
@@ -25,7 +25,7 @@ public static class ModMenuOptions {
                 b =>
                 {
                     SplitFeatures.SaveAndQuit.Toggle(b);
-                    saveAndQuitAndRetry.Disabled = !b;
+                    saveAndQuitAndReenter.Disabled = !b;
                 }
         );
 
@@ -51,12 +51,12 @@ public static class ModMenuOptions {
         void SetSubOptionsVisible(bool visible) {
             showSkipCutsceneSplitButton.Visible = visible;
             showSaveAndQuitSplitButton.Visible = visible;
-            saveAndQuitAndRetry.Visible = visible;
+            saveAndQuitAndReenter.Visible = visible;
             showReturnToMapSplitButton.Visible = visible;
             keybindButton.Visible = visible;
-            // Not part of the visibility rule, but always true alongside it: the retry option belongs
-            // to the Save and Quit button and is greyed out whenever that button is off.
-            saveAndQuitAndRetry.Disabled = !SomeSplitButtonsModule.Settings.ShowSaveAndQuitSplitButton;
+            // Not part of the visibility rule, but always true alongside it: the re-entry option
+            // belongs to the Save and Quit button and is greyed out whenever that button is off.
+            saveAndQuitAndReenter.Disabled = !SomeSplitButtonsModule.Settings.ShowSaveAndQuitSplitButton;
         }
 
         menu.Add(new TextMenu.OnOff(Dialog.Clean(DialogIds.EnabledId), SomeSplitButtonsModule.Settings.Enabled).Change(
@@ -76,7 +76,7 @@ public static class ModMenuOptions {
         menu.Add(showReturnToMapSplitButton);
         menu.Add(showSkipCutsceneSplitButton);
         menu.Add(showSaveAndQuitSplitButton);
-        menu.Add(saveAndQuitAndRetry);
+        menu.Add(saveAndQuitAndReenter);
         menu.Add(keybindButton);
 
         SetSubOptionsVisible(SomeSplitButtonsModule.Settings.Enabled);
@@ -88,6 +88,6 @@ public static class ModMenuOptions {
         // invisible and only fade in from the option's OnEnter — an option hidden by the master
         // toggle can never be hovered, so it can never show its description.
         showSkipCutsceneSplitButton.AddDescription(menu, Dialog.Clean(DialogIds.EnableSkipCutsceneSplitButtonDescId));
-        saveAndQuitAndRetry.AddDescription(menu, Dialog.Clean(DialogIds.SaveAndQuitAndRetryDescId));
+        saveAndQuitAndReenter.AddDescription(menu, Dialog.Clean(DialogIds.SaveAndQuitAndReenterDescId));
     }
 }

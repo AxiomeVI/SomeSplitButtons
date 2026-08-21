@@ -43,15 +43,20 @@ public static class SaveAndQuitTimer {
         return player != null && !player.TimePaused;
     }
 
-    public static void HandleButtonPressed() {
-        if (Engine.Scene is not Level) return;
+    /// <summary>
+    ///     Arms the split. False when nothing was armed, which is the caller's signal not to start
+    ///     the fade-out — it has no completion of its own and would leave the screen black.
+    /// </summary>
+    public static bool HandleButtonPressed() {
+        if (Engine.Scene is not Level) return false;
         if (BerryCheck.BlockedMessage() is string blocked) {
             SomeSplitButtonsModule.PopupMessage(blocked);
-            return;
+            return false;
         }
 
         pressed = true;
         counter = 0;
+        return true;
     }
 
     /// <summary>
@@ -67,6 +72,8 @@ public static class SaveAndQuitTimer {
     // in all five, but true by convention repeated five times rather than by construction, and the
     // sixth path would have been silent. Declaring the hold in the SplitFeatures table is what makes
     // it structural: the loop runs this whether or not anything is enabled.
+    //
+    // Only the split-only path arms it; the re-entry path replaces the Level instead.
     public static void UpdateHold(Level level) {
         if (!keepTimerStopped) return;
 
@@ -78,18 +85,38 @@ public static class SaveAndQuitTimer {
     }
 
     public static void Update(Level level) {
-        if (pressed) {
-            counter++;
-            if (counter > SplitTimings.WIPE_FADEOUT_FRAMES) {
-                pressed = false;
-                counter = 0;
-                RoomTimerManager.UpdateTimerState();
+        if (!pressed) {
+            counter = 0;
+            return;
+        }
+
+        counter++;
+        if (counter > SplitTimings.WIPE_FADEOUT_FRAMES) {
+            pressed = false;
+            counter = 0;
+            RoomTimerManager.UpdateTimerState();
+            if (SomeSplitButtonsModule.Settings.SaveAndQuitAndReenter) {
+                Reenter(level);
+            }
+            else {
                 level.TimerStopped = true;
                 keepTimerStopped = true;
             }
         }
-        else {
-            counter = 0;
-        }
+    }
+
+    /// <summary>
+    ///     Re-enters the room the way a chapter resumed after a Save and Quit does: through
+    ///     <c>LevelLoader</c>, which rebuilds the level and respawns at <c>Session.RespawnPoint</c>.
+    /// </summary>
+    // ⚠️ Must stay on the same frame as the split above, and after it: RoomTimerManager reads the
+    // Level it is told about, and this scene is gone by the next frame. Vanilla hangs its own scene
+    // change off the fade-out's OnComplete — done here instead, so the split and the re-entry come
+    // off one 31-frame counter rather than two that have to agree.
+    //
+    // No hold needed: a Level built by LevelLoader starts with TimerStarted false, so vanilla keeps
+    // the chapter clock stopped until the player has control.
+    private static void Reenter(Level level) {
+        Engine.Scene = new LevelLoader(level.Session);
     }
 }
