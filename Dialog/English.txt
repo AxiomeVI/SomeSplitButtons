@@ -36,6 +36,8 @@ SSB_BUTTON_ENABLED=                               {0} enabled
 SSB_BUTTON_DISABLED=                              {0} disabled
 SSB_SQ_REENTER_OPTIONS=                           Reenter the room after S&Q split
 SSB_SQ_REENTER_OPTIONS_DESC=                      Reloads the room as a real S&Q does
+SSB_BERRY_COLLECT_PROTECTION=                     Berry Collect Protection
+SSB_BERRY_COLLECT_PROTECTION_DESC=                Refuse to split while a carried berry would be lost
 
 # ============================ Keybind Config UI ================================
 SSB_KEYBIND_CONFIG=                               Hotkeys

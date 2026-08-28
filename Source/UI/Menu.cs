@@ -35,6 +35,12 @@ public static class ModMenuOptions {
                 b => SplitFeatures.ReturnToMap.Toggle(b)
         );
 
+        TextMenu.OnOff berryCollectProtection = (TextMenu.OnOff)new TextMenu.OnOff(
+            Dialog.Clean(DialogIds.BerryCollectProtectionId),
+            SomeSplitButtonsModule.Settings.BerryCollectProtection).Change(
+                b => SomeSplitButtonsModule.Settings.BerryCollectProtection = b
+        );
+
         TextMenu.Button keybindButton = new TextMenu.Button(Dialog.Clean(DialogIds.KeybindConfigId));
         keybindButton.Pressed(() => {
             menu.Focused = false;
@@ -53,6 +59,7 @@ public static class ModMenuOptions {
             showSaveAndQuitSplitButton.Visible = visible;
             saveAndQuitAndReenter.Visible = visible;
             showReturnToMapSplitButton.Visible = visible;
+            berryCollectProtection.Visible = visible;
             keybindButton.Visible = visible;
             // Not part of the visibility rule, but always true alongside it: the re-entry option
             // belongs to the Save and Quit button and is greyed out whenever that button is off.
@@ -77,6 +84,7 @@ public static class ModMenuOptions {
         menu.Add(showSkipCutsceneSplitButton);
         menu.Add(showSaveAndQuitSplitButton);
         menu.Add(saveAndQuitAndReenter);
+        menu.Add(berryCollectProtection);
         menu.Add(keybindButton);
 
         SetSubOptionsVisible(SomeSplitButtonsModule.Settings.Enabled);
@@ -89,5 +97,6 @@ public static class ModMenuOptions {
         // toggle can never be hovered, so it can never show its description.
         showSkipCutsceneSplitButton.AddDescription(menu, Dialog.Clean(DialogIds.EnableSkipCutsceneSplitButtonDescId));
         saveAndQuitAndReenter.AddDescription(menu, Dialog.Clean(DialogIds.SaveAndQuitAndReenterDescId));
+        berryCollectProtection.AddDescription(menu, Dialog.Clean(DialogIds.BerryCollectProtectionDescId));
     }
 }

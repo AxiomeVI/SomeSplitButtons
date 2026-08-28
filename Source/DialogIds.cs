@@ -21,6 +21,8 @@ public static class DialogIds {
     public const string ToggleReturnToMapKeyId = "SSB_TOGGLE_RETURN_TO_MAP_KEY";
     public const string RTMButtonDesc = "SSB_RTM_BUTTON_DESC";
     public const string ReturnToMapSplitMenuHeaderId = "SSB_RTM_SPLIT_MENU_HEADER";
+    public const string BerryCollectProtectionId = "SSB_BERRY_COLLECT_PROTECTION";
+    public const string BerryCollectProtectionDescId = "SSB_BERRY_COLLECT_PROTECTION_DESC";
     public const string BerryBlocksSplitId = "SSB_BERRY_BLOCKS_SPLIT";
     public const string BerrySlowdownId = "SSB_BERRY_SLOWDOWN";
     public const string ButtonEnabledId = "SSB_BUTTON_ENABLED";
