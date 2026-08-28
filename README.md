@@ -10,3 +10,6 @@ Add a button in the pause menu to unpause and split the room timer (after 18 fra
 
 ## Return to Map Split
 Add a button at the bottom of the pause menu to unpause and split the room timer (after 31 frames) for practicing segments ending with a Return to Map.
+
+## Berry Collect Protection
+Leaving a chapter with a red berry still collecting loses it, so by default the Save and Quit and Return to Map splits refuse to fire and tell you how many frames the berry still needs. Can be turned off to split anyway.
