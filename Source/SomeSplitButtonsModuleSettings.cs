@@ -10,6 +10,10 @@ public class SomeSplitButtonsModuleSettings : EverestModuleSettings {
     public bool SaveAndQuitAndReenter { get; set; } = true;
     public bool ShowReturnToMapSplitButton { get; set; } = false;
 
+    // Default on: a berry lost to a split is gone for the run, and turning the refusal off is one
+    // menu away for a player who wants the split regardless.
+    public bool BerryCollectProtection { get; set; } = true;
+
     #region Hotkeys
 
     // ⚠️ Unbound is `new()`, never `new(0, Keys.None)`. The latter reads as "no key" but actually

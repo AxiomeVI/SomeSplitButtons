@@ -13,7 +13,8 @@ namespace Celeste.Mod.SomeSplitButtons.Utils;
 
 /// <summary>
 /// A carried red berry is only secured after BERRY_COLLECT_TIMER seconds. Leaving the room before
-/// that loses it, so a split button must refuse to fire and report the missing frames instead.
+/// that loses it, so a split button must refuse to fire and report the missing frames instead —
+/// unless the player has turned that refusal off.
 /// </summary>
 public static class BerryCheck {
     private const float BERRY_COLLECT_TIMER = 0.15f;
@@ -71,6 +72,10 @@ public static class BerryCheck {
     // Callers must still say something. The refusal is otherwise invisible: the button does nothing
     // and the split silently does not happen.
     public static string? BlockedMessage() {
+        // Read here and not at the call sites, so every button that asks whether a berry blocks it
+        // gets the same answer, including one added later. This is a read back to the root module,
+        // which the note above rules out only for the popup — showing it stays the caller's job.
+        if (!SomeSplitButtonsModule.Settings.BerryCollectProtection) return null;
         if (CurrentRemainingFrames is not int frames) return null;
 
         string message = string.Format(Dialog.Get(DialogIds.BerryBlocksSplitId), frames);
