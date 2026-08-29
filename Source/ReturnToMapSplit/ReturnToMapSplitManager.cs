@@ -16,7 +16,7 @@ public static class ReturnToMapTimer {
 
     public static void HandleButtonPressed() {
         if (Engine.Scene is not Level) return;
-        if (BerryCheck.BlockedMessage() is string blocked) {
+        if (CollectCheck.BlockedMessage() is string blocked) {
             SomeSplitButtonsModule.PopupMessage(blocked);
             return;
         }

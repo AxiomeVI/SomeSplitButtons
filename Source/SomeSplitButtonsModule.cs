@@ -6,6 +6,7 @@ using Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 using Celeste.Mod.SomeSplitButtons.Integration;
 using Celeste.Mod.SomeSplitButtons.UI;
 using Celeste.Mod.SomeSplitButtons.Splits;
+using Celeste.Mod.SomeSplitButtons.Utils;
 using Microsoft.Xna.Framework.Input;
 using MonoMod.ModInterop;
 using static Celeste.TextMenuExt;
@@ -331,6 +332,10 @@ public class SomeSplitButtonsModule : EverestModule {
         foreach (SplitFeature feature in SplitFeatures.All) {
             feature.UpdateHold?.Invoke(self);
         }
+
+        // Above the gate for a related reason: the heart protection is the one refusal a player
+        // cannot switch off, so what it counts on must not be counted by something they can.
+        HeartCheck.Update(self);
 
         if (!Settings.Enabled) return;
         // The countdowns do not stop for a pause, and that is the intended behaviour rather than an

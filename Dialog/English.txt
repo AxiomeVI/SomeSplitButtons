@@ -31,6 +31,9 @@ SSB_RTM_SPLIT_MENU_HEADER=                        RETURN TO MAP SPLIT?
 # {0} is what the same wait costs at that speed and {1} is the speed, e.g. 0.5.
 SSB_BERRY_BLOCKS_SPLIT=                           No split: berry needs {0} more frames to collect
 SSB_BERRY_SLOWDOWN=                               ({0} at {1}x speed)
+# {0} is how many Level.Updates a crystal heart's collect routine still needs before it is
+# written to the save. Leaving the chapter before that loses the heart, so the split refuses.
+SSB_HEART_BLOCKS_SPLIT=                           No split: heart needs {0} more frames to collect
 # {0} is a split button name, taken from the mod menu labels above.
 SSB_BUTTON_ENABLED=                               {0} enabled
 SSB_BUTTON_DISABLED=                              {0} disabled

@@ -23,8 +23,15 @@ public class SaveAndQuitSplitButton : Button {
     /// </summary>
     private static void BeginFadeOut(Level level) {
         // One-shot reset of a rate the mod never owned, not the sustained modification
-        // TimeRateModifier arbitrates. Nothing on the LevelLoader path puts TimeRate back — only
-        // Level.Reload does — so a press during a slowdown would re-enter the room still slowed.
+        // TimeRateModifier arbitrates. It mirrors vanilla's own savequit handler, which resets the
+        // rate at the press for the same reason: the fade-out that follows should run at normal
+        // speed rather than at a seeker's.
+        //
+        // It is not what keeps the re-entered room at normal speed, against what this comment used
+        // to claim. Monocle.Engine.OnSceneTransition assigns TimeRate = 1f on every scene swap, so
+        // even a slowdown still writing the field when its scene dies — the heart's collect routine
+        // is the one that does — cannot follow the player into the new Level. Measured 2026-08-29 by
+        // test/Heart/rate_is_normal_after_the_reenter.
 #pragma warning disable CS0618
         Engine.TimeRate = 1f;
 #pragma warning restore CS0618

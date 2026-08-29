@@ -25,6 +25,7 @@ public static class DialogIds {
     public const string BerryCollectProtectionDescId = "SSB_BERRY_COLLECT_PROTECTION_DESC";
     public const string BerryBlocksSplitId = "SSB_BERRY_BLOCKS_SPLIT";
     public const string BerrySlowdownId = "SSB_BERRY_SLOWDOWN";
+    public const string HeartBlocksSplitId = "SSB_HEART_BLOCKS_SPLIT";
     public const string ButtonEnabledId = "SSB_BUTTON_ENABLED";
     public const string ButtonDisabledId = "SSB_BUTTON_DISABLED";
 

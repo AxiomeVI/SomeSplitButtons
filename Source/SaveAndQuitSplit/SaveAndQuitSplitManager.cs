@@ -49,7 +49,7 @@ public static class SaveAndQuitTimer {
     /// </summary>
     public static bool HandleButtonPressed() {
         if (Engine.Scene is not Level) return false;
-        if (BerryCheck.BlockedMessage() is string blocked) {
+        if (CollectCheck.BlockedMessage() is string blocked) {
             SomeSplitButtonsModule.PopupMessage(blocked);
             return false;
         }
