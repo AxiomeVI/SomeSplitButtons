@@ -3,6 +3,7 @@ using Celeste.Mod.SpeedrunTool.Message;
 using Celeste.Mod.SomeSplitButtons.SaveAndQuitSplit;
 using Celeste.Mod.SomeSplitButtons.SkipCutsceneSplit;
 using Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
+using Celeste.Mod.SomeSplitButtons.Interop;
 using Celeste.Mod.SomeSplitButtons.Integration;
 using Celeste.Mod.SomeSplitButtons.UI;
 using Celeste.Mod.SomeSplitButtons.Splits;
@@ -50,6 +51,7 @@ public class SomeSplitButtonsModule : EverestModule {
         // SpeedrunTool.SaveLoad. Calling through unchecked throws inside Load(), and Everest then
         // refuses the whole mod over one missing integration — so degrade like the reflection hooks
         // below and say what stops working.
+        typeof(SplitButtonsInterop).ModInterop();
         typeof(SaveLoadIntegration).ModInterop();
         if (SaveLoadIntegration.RegisterSaveLoadAction != null) {
             SaveLoadInstance = SaveLoadIntegration.RegisterSaveLoadAction(
@@ -268,7 +270,10 @@ public class SomeSplitButtonsModule : EverestModule {
             if (VanillaButtonIndex(menu, "menu_pause_skip_cutscene", warnIfMissing: true) >= 0) {
                 SkipCutsceneSplitButton sc_button = new(Dialog.Clean(DialogIds.SkipCutsceneSplitButtonId));
                 sc_button.Pressed(() => {
+                    // Skip Cutscene never refuses, so its sequence ends on the press.
+                    SplitEvents.Emit(SplitActions.SkipCutscene, SplitStages.Pressed);
                     SkipCutsceneSplitButton.PressedHandler(level);
+                    SplitEvents.Emit(SplitActions.SkipCutscene, SplitStages.Confirmed);
                 });
                 InsertSplitButton(menu, SlotIndex(menu, SKIP_CUTSCENE_SLOT), sc_button, SplitDescription(
                     SkipCutsceneTimer.InPrologue ? DialogIds.SCSPrologueButtonDesc : DialogIds.SCSButtonDesc,
@@ -283,7 +288,9 @@ public class SomeSplitButtonsModule : EverestModule {
             if (VanillaButtonIndex(menu, "menu_pause_savequit", warnIfMissing: !minimal) >= 0) {
                 SaveAndQuitSplitButton sq_button = new(Dialog.Clean(DialogIds.SaveAndQuitSplitButtonId));
                 sq_button.Pressed(() => {
-                    SaveAndQuitSplitButton.PressedHandler(level);
+                    SplitEvents.Emit(SplitActions.SaveAndQuit, SplitStages.Pressed);
+                    bool armed = SaveAndQuitSplitButton.PressedHandler(level);
+                    SplitEvents.Emit(SplitActions.SaveAndQuit, armed ? SplitStages.Confirmed : SplitStages.Refused);
                 });
                 InsertSplitButton(menu, SlotIndex(menu, SAVE_AND_QUIT_SLOT), sq_button, SplitDescription(
                     Settings.SaveAndQuitAndReenter ? DialogIds.SQButtonReenterDesc : DialogIds.SQButtonDesc,
@@ -298,7 +305,11 @@ public class SomeSplitButtonsModule : EverestModule {
             if (VanillaButtonIndex(menu, "menu_pause_return", warnIfMissing: !minimal) >= 0) {
                 ReturnToMapSplitButton rtm_button = new(Dialog.Clean(DialogIds.ReturnToMapSplitButtonId));
                 rtm_button.Pressed(() => {
-                    ReturnToMapSplitButton.PressedHandler(level, menu);
+                    SplitEvents.Emit(SplitActions.ReturnToMap, SplitStages.Pressed);
+                    // The confirmation menu owns the terminal stage from here on.
+                    if (!ReturnToMapSplitButton.PressedHandler(level, menu)) {
+                        SplitEvents.Emit(SplitActions.ReturnToMap, SplitStages.Cancelled);
+                    }
                 });
                 InsertSplitButton(menu, menu.Items.Count, rtm_button,
                     SplitDescription(DialogIds.RTMButtonDesc, SplitTimings.WIPE_FADEOUT_FRAMES));

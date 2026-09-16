@@ -1,5 +1,5 @@
 - Name: SomeSplitButtons
-  Version: 1.3.0
+  Version: 1.4.0
   DLL: bin/SomeSplitButtons.dll
   Dependencies:
     - Name: EverestCore

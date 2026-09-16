@@ -12,8 +12,9 @@ public class ReturnToMapSplitButton : Button {
     /// Vanilla Return to Map asks for confirmation before leaving, so the split button does too:
     /// the pause menu steps aside and the confirmation menu takes focus.
     /// </summary>
-    public static void PressedHandler(Level level, TextMenu pauseMenu) {
-        if (level == null) return;
+    /// <returns>False when no confirmation menu was opened.</returns>
+    public static bool PressedHandler(Level level, TextMenu pauseMenu) {
+        if (level == null) return false;
 
         ReturnToMapSplitConfirmMenu confirmMenu = new(level, pauseMenu);
         // Vanilla's Return to Map button clears this before calling GiveUp; the confirmation menu
@@ -23,5 +24,6 @@ public class ReturnToMapSplitButton : Button {
         pauseMenu.Alpha = 0f;
         level.Add(confirmMenu);
         level.OnEndOfFrame += () => level.Entities.UpdateLists();
+        return true;
     }
 }

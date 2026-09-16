@@ -8,12 +8,16 @@ public class SaveAndQuitSplitButton : Button {
         ConfirmSfx = SFX.ui_main_message_confirm;
     }
 
-    public static void PressedHandler(Level level) {
-        if (level == null) return;
+    /// <summary>
+    ///     Closes the pause menu and arms the split. False when it was refused.
+    /// </summary>
+    public static bool PressedHandler(Level level) {
+        if (level == null) return false;
         bool armed = SaveAndQuitTimer.HandleButtonPressed();
         level.Unpause();
         // Never fade out unarmed: nothing would ever end the wipe. See HandleButtonPressed.
         if (armed && SomeSplitButtonsModule.Settings.SaveAndQuitAndReenter) BeginFadeOut(level);
+        return armed;
     }
 
     /// <summary>

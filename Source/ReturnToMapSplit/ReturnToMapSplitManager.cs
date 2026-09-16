@@ -14,15 +14,19 @@ public static class ReturnToMapTimer {
         counter = 0;
     }
 
-    public static void HandleButtonPressed() {
-        if (Engine.Scene is not Level) return;
+    /// <summary>
+    ///     Arms the split. False when it was refused.
+    /// </summary>
+    public static bool HandleButtonPressed() {
+        if (Engine.Scene is not Level) return false;
         if (CollectCheck.BlockedMessage() is string blocked) {
             SomeSplitButtonsModule.PopupMessage(blocked);
-            return;
+            return false;
         }
 
         pressed = true;
         counter = 0;
+        return true;
     }
 
     public static void Update() {
