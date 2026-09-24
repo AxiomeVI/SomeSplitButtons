@@ -1,44 +1,54 @@
 namespace Celeste.Mod.SomeSplitButtons;
-public static class DialogIds {
+internal static class DialogIds {
     // Menu
-    public const string SomeSplitButtonsId = "SSB_SOME_SPLIT_BUTTONS";
-    public const string EnabledId = "SSB_ENABLED";
-    public const string EnableSaveAndQuitSplitButtonId = "SSB_ENABLE_SAVE_AND_QUIT_SPLIT_BUTTON";
-    public const string SaveAndQuitSplitButtonId = "SSB_SAVE_AND_QUIT_SPLIT_BUTTON";
-    public const string EnableSkipCutsceneSplitButtonId = "SSB_ENABLE_SKIP_CUTSCENE_SPLIT_BUTTON";
-    public const string EnableSkipCutsceneSplitButtonDescId = "SSB_ENABLE_SKIP_CUTSCENE_SPLIT_BUTTON_DESC";
-    public const string SkipCutsceneSplitButtonId = "SSB_SKIP_CUTSCENE_SPLIT_BUTTON";
-    public const string ToggleSaveQuitKeyId = "SSB_TOGGLE_SAVE_QUIT_KEY";
-    public const string ToggleSkipCutsceneKeyId = "SSB_TOGGLE_SKIP_CUTSCENE_KEY";
-    public const string SQButtonDesc = "SSB_SQ_BUTTON_DESC";
-    public const string SQButtonReenterDesc = "SSB_SQ_REENTER_BUTTON_DESC";
-    public const string SCSButtonDesc = "SSB_SCS_BUTTON_DESC";
-    public const string SCSPrologueButtonDesc = "SSB_SCS_PROLOGUE_BUTTON_DESC";
-    public const string SaveAndQuitAndReenterId = "SSB_SQ_REENTER_OPTIONS";
-    public const string SaveAndQuitAndReenterDescId = "SSB_SQ_REENTER_OPTIONS_DESC";
-    public const string EnableReturnToMapSplitButtonId = "SSB_ENABLE_RETURN_TO_MAP_SPLIT_BUTTON";
-    public const string ReturnToMapSplitButtonId = "SSB_RETURN_TO_MAP_SPLIT_BUTTON";
-    public const string ToggleReturnToMapKeyId = "SSB_TOGGLE_RETURN_TO_MAP_KEY";
-    public const string RTMButtonDesc = "SSB_RTM_BUTTON_DESC";
-    public const string ReturnToMapSplitMenuHeaderId = "SSB_RTM_SPLIT_MENU_HEADER";
-    public const string BerryCollectProtectionId = "SSB_BERRY_COLLECT_PROTECTION";
-    public const string BerryCollectProtectionDescId = "SSB_BERRY_COLLECT_PROTECTION_DESC";
-    public const string BerryBlocksSplitId = "SSB_BERRY_BLOCKS_SPLIT";
-    public const string BerrySlowdownId = "SSB_BERRY_SLOWDOWN";
-    public const string HeartBlocksSplitId = "SSB_HEART_BLOCKS_SPLIT";
-    public const string ButtonEnabledId = "SSB_BUTTON_ENABLED";
-    public const string ButtonDisabledId = "SSB_BUTTON_DISABLED";
+    internal const string SomeSplitButtonsId = "SSB_SOME_SPLIT_BUTTONS";
+    internal const string EnabledId = "SSB_ENABLED";
+    internal const string EnableSaveAndQuitSplitButtonId = "SSB_ENABLE_SAVE_AND_QUIT_SPLIT_BUTTON";
+    internal const string EnableSaveAndQuitSplitButtonDescId = "SSB_ENABLE_SAVE_AND_QUIT_SPLIT_BUTTON_DESC";
+    internal const string SaveAndQuitSplitButtonId = "SSB_SAVE_AND_QUIT_SPLIT_BUTTON";
+    internal const string EnableSkipCutsceneSplitButtonId = "SSB_ENABLE_SKIP_CUTSCENE_SPLIT_BUTTON";
+    internal const string EnableSkipCutsceneSplitButtonDescId = "SSB_ENABLE_SKIP_CUTSCENE_SPLIT_BUTTON_DESC";
+    internal const string SkipCutsceneSplitButtonId = "SSB_SKIP_CUTSCENE_SPLIT_BUTTON";
+    internal const string ToggleSaveQuitKeyId = "SSB_TOGGLE_SAVE_QUIT_KEY";
+    internal const string ToggleSkipCutsceneKeyId = "SSB_TOGGLE_SKIP_CUTSCENE_KEY";
+    internal const string SQButtonDesc = "SSB_SQ_BUTTON_DESC";
+    internal const string SQButtonReenterDesc = "SSB_SQ_REENTER_BUTTON_DESC";
+    internal const string SCSButtonDesc = "SSB_SCS_BUTTON_DESC";
+    internal const string SCSPrologueButtonDesc = "SSB_SCS_PROLOGUE_BUTTON_DESC";
+    internal const string SaveAndQuitAndReenterId = "SSB_SQ_REENTER_OPTIONS";
+    internal const string SaveAndQuitAndReenterDescId = "SSB_SQ_REENTER_OPTIONS_DESC";
+    internal const string EnableReturnToMapSplitButtonId = "SSB_ENABLE_RETURN_TO_MAP_SPLIT_BUTTON";
+    internal const string EnableReturnToMapSplitButtonDescId = "SSB_ENABLE_RETURN_TO_MAP_SPLIT_BUTTON_DESC";
+    internal const string ReturnToMapSplitButtonId = "SSB_RETURN_TO_MAP_SPLIT_BUTTON";
+    internal const string ToggleReturnToMapKeyId = "SSB_TOGGLE_RETURN_TO_MAP_KEY";
+    internal const string RTMButtonDesc = "SSB_RTM_BUTTON_DESC";
+    internal const string ReturnToMapSplitMenuHeaderId = "SSB_RTM_SPLIT_MENU_HEADER";
+    internal const string BerryCollectProtectionId = "SSB_BERRY_COLLECT_PROTECTION";
+    internal const string BerryCollectProtectionDescId = "SSB_BERRY_COLLECT_PROTECTION_DESC";
+    internal const string BerryBlocksSplitId = "SSB_BERRY_BLOCKS_SPLIT";
+    internal const string BerrySlowdownId = "SSB_BERRY_SLOWDOWN";
+    internal const string HeartBlocksSplitId = "SSB_HEART_BLOCKS_SPLIT";
+    internal const string ButtonEnabledId = "SSB_BUTTON_ENABLED";
+    internal const string ButtonDisabledId = "SSB_BUTTON_DISABLED";
 
     // Vanilla Celeste ids, reused so the confirmation prompt reads like the real Return to Map one
-    public const string VanillaReturnContinueId = "MENU_RETURN_CONTINUE";
-    public const string VanillaReturnCancelId = "MENU_RETURN_CANCEL";
+    internal const string VanillaReturnContinueId = "MENU_RETURN_CONTINUE";
+    internal const string VanillaReturnCancelId = "MENU_RETURN_CANCEL";
+
+    // The vanilla pause-menu buttons each split button is gated on. Their presence says this menu is
+    // one where the split belongs; it no longer says anything about where the split button goes.
+    internal const string VanillaPauseSkipCutsceneId = "menu_pause_skip_cutscene";
+    internal const string VanillaPauseSaveQuitId = "menu_pause_savequit";
+    internal const string VanillaPauseReturnId = "menu_pause_return";
+    internal const string VanillaPauseOptionsId = "menu_pause_options";
 
     // Keybind config UI
-    public const string KeybindConfigId = "SSB_KEYBIND_CONFIG";
-    public const string KeybindComboSubId = "SSB_KEYBIND_COMBO_SUB";
-    public const string KeyConfigTitle = "KEY_CONFIG_TITLE";
-    public const string BtnConfigTitle = "BTN_CONFIG_TITLE";
-    public const string KeyConfigChanging = "KEY_CONFIG_CHANGING";
-    public const string BtnConfigChanging = "BTN_CONFIG_CHANGING";
-    public const string BtnConfigNoController = "BTN_CONFIG_NOCONTROLLER";
+    internal const string KeybindConfigId = "SSB_KEYBIND_CONFIG";
+    internal const string KeybindComboSubId = "SSB_KEYBIND_COMBO_SUB";
+    internal const string KeybindTimeoutId = "SSB_KEYBIND_TIMEOUT";
+    internal const string KeyConfigTitle = "KEY_CONFIG_TITLE";
+    internal const string BtnConfigTitle = "BTN_CONFIG_TITLE";
+    internal const string KeyConfigChanging = "KEY_CONFIG_CHANGING";
+    internal const string BtnConfigChanging = "BTN_CONFIG_CHANGING";
+    internal const string BtnConfigNoController = "BTN_CONFIG_NOCONTROLLER";
 }

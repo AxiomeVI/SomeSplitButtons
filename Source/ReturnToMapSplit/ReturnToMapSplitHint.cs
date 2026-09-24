@@ -4,17 +4,24 @@ using Monocle;
 
 namespace Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 
-/// <summary>
-///     The vanilla Return to Map hint with its caption replaced.
-/// </summary>
-public class ReturnToMapSplitHint : ReturnMapHint {
+/// <summary>The vanilla Return to Map hint with its caption replaced.</summary>
+internal class ReturnToMapSplitHint : ReturnMapHint {
+    // Same entry as the pause-menu button's description, and parameterised, so it has to be formatted
+    // here too — Dialog.Clean would leave "{0}" on screen. Once, not per Render: neither the dialog
+    // entry nor the frame count can change while the prompt is open, and this drew a fresh string and
+    // measured it sixty times a second.
+    private readonly string text =
+        string.Format(Dialog.Get(DialogIds.RTMButtonDesc), SplitTimings.WIPE_FADEOUT_FRAMES);
+
+    private readonly float textWidth;
+
+    internal ReturnToMapSplitHint() {
+        textWidth = ActiveFont.Measure(text).X * 0.75f;
+    }
+
     public override void Render() {
         MTexture icon = GFX.Gui["checkpoint"];
         MTexture polaroid = MTN.Checkpoints["polaroid"];
-        // Same entry as the pause-menu button's description, and now parameterised, so it has to be
-        // formatted here too — Dialog.Clean would leave "{0}" on screen.
-        string text = string.Format(Dialog.Get(DialogIds.RTMButtonDesc), SplitTimings.WIPE_FADEOUT_FRAMES);
-        float textWidth = ActiveFont.Measure(text).X * 0.75f;
 
         if (checkpoint != null) {
             float polaroidWidth = polaroid.Width * 0.25f;

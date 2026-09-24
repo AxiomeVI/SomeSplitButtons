@@ -7,7 +7,12 @@
         <LangVersion>latest</LangVersion>
         <CelestePrefix Condition="'$(CelestePrefix)' == '' And Exists('..\..\..\Celeste.dll')">..\..\..</CelestePrefix>
         <CelestePrefix Condition="'$(CelestePrefix)' == ''">..\..\..\..\lib-stripped</CelestePrefix>
-        <ZippedFiles>..\everest.yaml;..\bin\**\*.*;..\Audio\**\*.*;..\Dialog\**\*.*;..\Graphics\**\*.*;..\Ahorn\**\*.*;..\Loenn\**\*.*</ZippedFiles>
+        <!-- SpeedrunTool.dll is NOT in the Celeste install root: it ships inside Mods/SpeedrunTool.zip
+             and has to be copied out by hand, or pointed at here. A fresh clone does not build until
+             it is somewhere this property names. See the README's Building section. -->
+        <SpeedrunToolPath Condition="'$(SpeedrunToolPath)' == ''">$(CelestePrefix)\SpeedrunTool.dll</SpeedrunToolPath>
+        <!-- Audio, Graphics, Ahorn and Loenn were template residue: this mod has no assets. -->
+        <ZippedFiles>..\everest.yaml;..\.everestignore;..\bin\**\*.*;..\Dialog\**\*.*;..\LICENSE</ZippedFiles>
     </PropertyGroup>
 
     <!--Disable "Copy Local" for all references-->
@@ -18,15 +23,16 @@
 
     <ItemGroup>
         <PackageReference Include="MonoMod.RuntimeDetour" Version="25.3.1" PrivateAssets="all" ExcludeAssets="runtime" />
-        <PackageReference Include="MonoMod.Patcher" Version="25.0.0-prerelease.2" />
-        <PackageReference Include="CelesteAnalyzer" Version="*" />
+        <!-- Exact versions, not "*". A floating analyser or publicizer means a build that succeeded
+             yesterday can fail today for a reason nothing in this repo changed. -->
+        <PackageReference Include="CelesteAnalyzer" Version="1.0.3.1" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="CelesteMod.Publicizer" Version="*" CelesteAssembly="$(CelestePrefix)\Celeste.dll" />
+        <PackageReference Include="CelesteMod.Publicizer" Version="1.1.2" CelesteAssembly="$(CelestePrefix)\Celeste.dll" />
         <Reference Include="$(CelestePrefix)\MMHOOK_Celeste.dll" Private="false" />
         <Reference Include="$(CelestePrefix)\FNA.dll" Private="false" />
-        <Reference Include="$(CelestePrefix)\SpeedrunTool.dll"/>
+        <Reference Include="$(SpeedrunToolPath)" Private="false" />
     </ItemGroup>
 
     <Target Name="CopyFiles" AfterTargets="Build" Inputs="$(OutputPath)\$(AssemblyName).dll;$(OutputPath)\$(AssemblyName).pdb" Outputs="..\bin\$(AssemblyName).dll;..\bin\$(AssemblyName).pdb">
