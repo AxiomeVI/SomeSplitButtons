@@ -5,8 +5,8 @@ namespace Celeste.Mod.SomeSplitButtons.Splits;
 ///     told, and where each figure comes from.
 /// </summary>
 // Derived from vanilla's wipes, not tuned: a split that looks a frame off is a wrong derivation and
-// not a number to nudge. README.md quotes them in prose; .github/check-docs.sh fails when that copy
-// stops matching.
+// not a number to nudge. Nothing outside this file spells them out — the pause-menu descriptions
+// read them through a {0}, and the README describes the waits without quoting them.
 internal static class SplitTimings {
     /// <summary>A pause-menu exit's screen wipe, press to <c>Engine.Scene = new LevelExit(...)</c>.</summary>
     // Duration = 0.5f, so Percent advances 1/30 per frame and reaches 1 on update 30; one more sets
