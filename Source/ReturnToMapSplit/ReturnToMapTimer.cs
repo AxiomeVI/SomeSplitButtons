@@ -8,7 +8,10 @@ namespace Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 internal static class ReturnToMapTimer {
     private static readonly SplitCountdown countdown = new(() => SplitTimings.WIPE_FADEOUT_FRAMES);
 
-    internal static void Reset() => countdown.Reset();
+    internal static void Reset() {
+        ReturnToMapReentry.Reset();
+        countdown.Reset();
+    }
 
     /// <summary>Arms the split, unless a collectible the player would lose refuses it.</summary>
     internal static bool HandleButtonPressed() => countdown.TryArm();
@@ -30,7 +33,12 @@ internal static class ReturnToMapTimer {
         level.OnEndOfFrame += () => level.Entities.UpdateLists();
     }
 
-    internal static void Update() {
-        if (countdown.Tick()) SkipCutsceneRoomTimer.Split();
+    internal static void Update(Level level) {
+        if (!countdown.Tick()) return;
+
+        SkipCutsceneRoomTimer.Split();
+        if (SomeSplitButtonsModule.Settings.ReturnToMapCheckpointMenu) {
+            ReturnToMapReentry.Begin(level);
+        }
     }
 }
