@@ -17,12 +17,26 @@ namespace Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 internal static class ArrivalSplitSwallow {
     private static bool armed;
 
-    // ⚠️ Not one update: measured 2026-09-24 against a real LevelLoader reload, SpeedrunTool's own
-    // detection does not call UpdateTimerState until the new Level's *third* Update — the first two
-    // run with nothing to consume. 3 gives that exactly one update of margin, and stays under the 5
-    // real updates swallow_does_not_outlive_its_frame waits before checking that an unrelated,
-    // never-consumed arm has cleared; a wider margin here would make that file start failing.
-    private const int GraceUpdates = 3;
+    // ⚠️ Not one update: measured 2026-09-24 against a real LevelLoader reload, with the budget
+    // opened wide to observe rather than enforce it. Two ClearIfFrameDiffers calls run with nothing
+    // to consume — the arming update itself (the old level, still finishing its own Level_OnUpdate),
+    // then the new level's first Update — before SpeedrunTool's own detection calls UpdateTimerState
+    // on the new level's *second* Update. 2 is therefore the bare minimum that still catches it; 3
+    // ships instead, one update of margin for a checkpoint whose spawn-in settles a frame slower.
+    // That margin stays well under the 5 real updates swallow_does_not_outlive_its_frame waits
+    // before checking that an unrelated, never-consumed arm has cleared — a wider budget here would
+    // make that file start failing.
+    //
+    // ⚠️ If SpeedrunTool's detection ever lands later than this budget — a heavier checkpoint room,
+    // a future SpeedrunTool change — the failure is a visible extra split, not corruption: Consume
+    // returns false because ClearIfFrameDiffers has already disarmed, so the arrival's own
+    // UpdateTimerState call goes through unswallowed and roomNumber advances one further than
+    // intended, exactly the bug this swallow exists to prevent. Nothing silently mismeasures a
+    // legitimate split, because the two calls this budget skips both fire before the reloaded level
+    // hands control back — Everest's own spawn-in (fade, then the player's first controllable
+    // update) has no path to move Madeline into a different room inside a handful of Updates, so
+    // there is no genuine room-change split for this window to eat by mistake.
+    internal const int GraceUpdates = 3;
     private static int updatesRemaining;
 
     internal static bool Armed => armed;
