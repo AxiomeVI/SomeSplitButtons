@@ -68,12 +68,85 @@ internal static class ReturnToMapReentry {
         holding = false;
     }
 
+    /// <summary>Builds the session for the chosen checkpoint and reloads the level into it.</summary>
     private static void Load(string checkpointKey) {
-        // Task 7.
+        if (Engine.Scene is not Level level) return;
+
+        Session outgoing = level.Session;
+        Session next = BuildSession(outgoing, checkpointKey);
+
+        CloseMenu(level);
+        holding = false;
+
+        // A one-shot reset, not a sustained modification: LoadLevel does not put TimeRate back, so
+        // splitting during a seeker or Oshiro slowdown would start the new level at reduced speed.
+        // Vanilla's own Return to Map confirm does the same before leaving.
+#pragma warning disable CS0618
+        Engine.TimeRate = 1f;
+#pragma warning restore CS0618
+
+        // Audio.SetMusic returns early when the requested track is already playing, so without this
+        // the load's Session.Audio.Apply leaves the music running instead of restarting it. A
+        // checkpoint in the same chapter usually carries the same event, so this is the common case
+        // and not the corner.
+        Audio.SetMusic(null);
+        Audio.BusStopAll(Buses.GAMEPLAY, immediate: true);
+
+        // ⚠️ Armed from inside an update, not a console command — ArrivalSplitSwallow counts
+        // Level_OnUpdate calls from here, and a command runs between updates, off that count.
+        ArrivalSplitSwallow.Arm(Engine.FrameCounter);
+
+        Engine.Scene = new LevelLoader(next);
+    }
+
+    /// <summary>
+    ///     A checkpoint start with the attempt carried onto it: the constructor settles what the
+    ///     checkpoint owns, and the fields below are what one attempt keeps across the load.
+    /// </summary>
+    // ⚠️ Copies, not references. These are HashSets and a bool[]; assigning them would leave the new
+    // session sharing mutable state with the abandoned one.
+    private static Session BuildSession(Session outgoing, string checkpointKey) {
+        Session next = new(outgoing.Area, CheckpointList.StripAreaPrefix(checkpointKey)) {
+            Time = outgoing.Time,
+            Deaths = outgoing.Deaths,
+            Dashes = outgoing.Dashes,
+            Cassette = outgoing.Cassette,
+            HeartGem = outgoing.HeartGem,
+            GrabbedGolden = outgoing.GrabbedGolden,
+            UnlockedCSide = outgoing.UnlockedCSide,
+            Strawberries = new(outgoing.Strawberries),
+            DoNotLoad = new(outgoing.DoNotLoad),
+            Keys = new(outgoing.Keys),
+        };
+        // Both sides guarded: the constructor always sizes next.SummitGems today, but nothing here
+        // may lean on that staying true, and outgoing.SummitGems is null whenever that save has
+        // never touched a summit chapter.
+        if (outgoing.SummitGems != null && next.SummitGems != null) {
+            outgoing.SummitGems.CopyTo(next.SummitGems, 0);
+        }
+        return next;
     }
 
     /// <summary>Backing out of the picker is just letting go of the hold — no load to stage.</summary>
     private static void Cancel() {
         Reset();
+    }
+
+    /// <summary>
+    ///     Closes the picker and the pause under it, and hands the level back to the player.
+    /// </summary>
+    // ⚠️ Not level.Unpause(). That hands the first TextMenu in the scene — which is this picker — to
+    // CloseAndRun(Everest.SaveSettings()), so it stays in the scene until a settings file has been
+    // written. ReturnToMapSplitConfirmMenu.LeaveThePause documents the same hazard for the confirm
+    // prompt, and vanilla's own Return to Map prompt hand-rolls these lines for the same reason.
+    private static void CloseMenu(Level level) {
+        foreach (ReturnToMapCheckpointMenu menu in level.Entities.FindAll<ReturnToMapCheckpointMenu>()) {
+            menu.Close();
+            menu.RemoveSelf();
+        }
+        level.PauseMainMenuOpen = false;
+        level.Paused = false;
+        Audio.Play(SFX.ui_game_unpause);
+        level.unpauseTimer = 0.15f;
     }
 }
