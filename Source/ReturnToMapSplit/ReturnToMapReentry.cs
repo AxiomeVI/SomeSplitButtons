@@ -94,7 +94,7 @@ internal static class ReturnToMapReentry {
 
         // ⚠️ Armed from inside an update, not a console command — ArrivalSplitSwallow counts
         // Level_OnUpdate calls from here, and a command runs between updates, off that count.
-        ArrivalSplitSwallow.Arm(Engine.FrameCounter);
+        ArrivalSplitSwallow.Arm();
 
         Engine.Scene = new LevelLoader(next);
     }
