@@ -1,4 +1,5 @@
 using System;
+using Celeste.Mod.SpeedrunTool.RoomTimer;
 using Monocle;
 
 namespace Celeste.Mod.SomeSplitButtons.Integration;
@@ -6,22 +7,31 @@ namespace Celeste.Mod.SomeSplitButtons.Integration;
 /// <summary>
 ///     The two handlers behind <see cref="SpeedrunToolHooks"/>, and the freeze state they share.
 /// </summary>
-// Split out of SkipCutsceneTimer, which held a twenty-line state machine and these sixty lines of
-// SpeedrunTool internals in one class. They are the most delicate code in the repo and they reason
-// about things this mod does not own — RoomTimerData's record keys, when roomNumber advances, which
-// branch of UpdateTimerState writes what — so they belong next to the hooks that install them and
-// under the same rule: everything that breaks when SpeedrunTool changes lives in Integration/.
-//
-// The freeze flags live here rather than with the timer because they exist for nothing else. The
-// timer owns "how many frames until the split"; this owns "what SpeedrunTool is allowed to see
-// while that runs".
+// Reasons about things this mod does not own — RoomTimerData's record keys, when roomNumber
+// advances, which branch of UpdateTimerState writes what. Everything that breaks when SpeedrunTool
+// changes lives in Integration/.
 internal static class SkipCutsceneRoomTimer {
     private static bool freezeLevelCompleted = true;
     private static bool endingSplitRecorded = false;
+    private static bool splittingOnOurOwnButton = false;
 
     internal static void Reset() {
         freezeLevelCompleted = true;
         endingSplitRecorded = false;
+    }
+
+    /// <summary>Splits SpeedrunTool's room timer on behalf of one of this mod's own buttons.</summary>
+    // The Save and Quit and Return to Map timers must call this and not RoomTimerManager directly,
+    // or the freeze below swallows their split inside an ending cutscene. The finally is what makes
+    // the flag safe: a throw out of SpeedrunTool would leave every later split going through.
+    internal static void Split() {
+        splittingOnOurOwnButton = true;
+        try {
+            RoomTimerManager.UpdateTimerState();
+        }
+        finally {
+            splittingOnOurOwnButton = false;
+        }
     }
 
     /// <summary>
@@ -30,9 +40,7 @@ internal static class SkipCutsceneRoomTimer {
     /// </summary>
     internal static void Release() => freezeLevelCompleted = false;
 
-    /// <summary>
-    ///     Whether SpeedrunTool should currently be kept from seeing a completed level.
-    /// </summary>
+    /// <summary>Whether SpeedrunTool should currently be kept from seeing a completed level.</summary>
     private static bool ShouldFreezeLevelCompleted(Level level) =>
         level != null &&
         SomeSplitButtonsModule.Settings.Enabled &&
@@ -43,9 +51,8 @@ internal static class SkipCutsceneRoomTimer {
     /// <summary>
     ///     Keeps SpeedrunTool's room timer running through the ending, then puts the flag back.
     /// </summary>
-    // The restore is in a finally because the flag is vanilla's, not ours: letting an exception out
-    // of SpeedrunTool would leave the level permanently marked incomplete, which is a worse failure
-    // than whatever threw — the chapter would never register as finished for anything that reads it.
+    // The restore is in a finally because the flag is vanilla's: an exception out of SpeedrunTool
+    // would otherwise leave the level permanently marked incomplete, which is worse than the throw.
     public static void OnTiming(Action<object, Level> orig, object self, Level level) {
         bool wasCompleted = level.Completed;
         if (ShouldFreezeLevelCompleted(level)) {
@@ -62,28 +69,29 @@ internal static class SkipCutsceneRoomTimer {
     ///     Lets the split that opens the ending through, then swallows SpeedrunTool's timer-state
     ///     transitions for the rest of the freeze.
     /// </summary>
-    // Without this mod, SpeedrunTool splits the moment the ending cutscene triggers and then locks:
-    // nothing can split again. The runner wants to keep that first split *and* still split at the
-    // button, so exactly one call gets through per freeze.
+    // Without this mod, SpeedrunTool splits the moment the ending cutscene triggers and then locks.
+    // The runner wants that first split *and* one at the button, so exactly one call gets through
+    // per freeze — not "stop swallowing", because both `case Timing:` and `case Completed:` write
+    // ThisRunTimes[key] = Time and level.Completed stays true for the whole cutscene, so every later
+    // call would overwrite the first split with a larger time.
     //
-    // Not "stop swallowing": both `case Timing:` and `case Completed:` of RoomTimerData.
-    // UpdateTimerState write ThisRunTimes[key] = Time, and level.Completed stays true for every
-    // frame of the cutscene — so every later call would overwrite that first split with a larger
-    // time, and the split would drift until the button was pressed.
-    //
-    // That one call is also made to look like an ordinary room split, by hiding level.Completed for
-    // its duration. SpeedrunTool keys every record on `TimeKeyPrefix + roomNumber` and only advances
-    // roomNumber under `if (!level.Completed)` — so without this both splits land on the same key
-    // and the button's overwrites the ending's instead of joining it. Hiding the flag also makes
-    // SpeedrunTool take its `break` before the second write to `ThisRunTimes[pbTimeKey]`, so the
-    // call still produces exactly one record.
+    // ⚠️ Hiding level.Completed is what makes that call land as its own room. SpeedrunTool keys every
+    // record on `TimeKeyPrefix + roomNumber` and only advances roomNumber under `if
+    // (!level.Completed)`, so without it both splits share a key and the second overwrites the
+    // first. It also makes SpeedrunTool break before the second write to ThisRunTimes[pbTimeKey], so
+    // the call still produces exactly one record.
     public static void OnUpdateTimerState(Action<bool> orig, bool endPoint) {
-        if (ShouldFreezeLevelCompleted(Engine.Scene as Level) is false) {
+        if (!ShouldFreezeLevelCompleted(Engine.Scene as Level)) {
             orig(endPoint);
             return;
         }
-        if (endingSplitRecorded) return;
-        endingSplitRecorded = true;
+        // The mod's own buttons go through on the ending split's terms rather than being counted
+        // against its one-call budget: level.Completed is hidden for them too, so SpeedrunTool
+        // advances roomNumber and records a new room instead of overwriting the ending's time.
+        if (!splittingOnOurOwnButton) {
+            if (endingSplitRecorded) return;
+            endingSplitRecorded = true;
+        }
 
         Level level = (Level) Engine.Scene;
         bool wasCompleted = level.Completed;

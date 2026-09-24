@@ -45,12 +45,29 @@ public static class SplitStages {
 internal static class SplitEvents {
     private static readonly List<Action<string, string, ulong>> observers = new();
 
+    /// <summary>The observers already reported as throwing, so each is reported once.</summary>
+    private static readonly HashSet<Action<string, string, ulong>> warnedObservers = new();
+
     internal static void Add(Action<string, string, ulong> observer) {
         if (observer != null) observers.Add(observer);
     }
 
     internal static void Remove(Action<string, string, ulong> observer) {
-        if (observer != null) observers.Remove(observer);
+        if (observer == null) return;
+        observers.Remove(observer);
+        // Forgotten on the way out, so a mod that removes a broken observer and adds a fixed one
+        // gets told if the new one throws too.
+        warnedObservers.Remove(observer);
+    }
+
+    /// <summary>Reports an observer's exception, once per observer.</summary>
+    // An observer that throws usually throws every time, and this runs on every button press — one
+    // broken mod would otherwise repeat the same stack trace into the log for a whole session. The
+    // first throw carries the exception; after that there is nothing new to say.
+    private static void Warn(Action<string, string, ulong> observer, string action, string stage, Exception e) {
+        if (!warnedObservers.Add(observer)) return;
+        Logger.Warn(nameof(SomeSplitButtonsModule),
+            $"A split observer threw on {action} {stage} and will not be reported again: {e}");
     }
 
     internal static void Emit(string action, string stage) {
@@ -63,8 +80,7 @@ internal static class SplitEvents {
                 observer(action, stage, frame);
             }
             catch (Exception e) {
-                Logger.Log(LogLevel.Warn, nameof(SomeSplitButtonsModule),
-                    $"A split observer threw on {action} {stage}: {e}");
+                Warn(observer, action, stage, e);
             }
         }
     }

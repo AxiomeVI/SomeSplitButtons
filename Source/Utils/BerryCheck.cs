@@ -16,14 +16,11 @@ namespace Celeste.Mod.SomeSplitButtons.Utils;
 /// that loses it, so a split button must refuse to fire and report the missing frames instead —
 /// unless the player has turned that refusal off.
 /// </summary>
-public static class BerryCheck {
+internal static class BerryCheck {
     private const float BERRY_COLLECT_TIMER = 0.15f;
 
-    // CelesteTAS info hud function https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/ae25bf3f2fa931d362c3a321c2cf8dae58d2eb28/CelesteTAS-EverestInterop/Source/TAS/GameInfo.cs#L546
-    //
-    // Private and not an extension. It was `internal static int ToCeilingFrames(this float ...)`,
-    // which put a generically named method on every float in the assembly to serve one call site
-    // twenty lines below.
+    // Adapted from CelesteTAS's info HUD:
+    // https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/ae25bf3f2fa931d362c3a321c2cf8dae58d2eb28/CelesteTAS-EverestInterop/Source/TAS/GameInfo.cs#L546
     private static int ToCeilingFrames(float timer, float deltaTime) {
         if (timer <= 0.0f) {
             return 0;
@@ -64,17 +61,12 @@ public static class BerryCheck {
     /// Why the caller must not split, or null when nothing blocks it. The text says how many frames
     /// are still missing before the carried berries are secured.
     /// </summary>
-    // Returns the message instead of showing it. This used to be `bool BlocksSplit()` that popped a
-    // message on its way out — a predicate with a side effect its name did not admit — and it was
-    // the one place where a class in Utils/ reached back to the root module. Both problems have the
-    // same fix: the caller already knows how to talk to the player, and this does not need to.
-    //
-    // Callers must still say something. The refusal is otherwise invisible: the button does nothing
-    // and the split silently does not happen.
-    public static string? BlockedMessage() {
-        // Read here and not at the call sites, so every button that asks whether a berry blocks it
-        // gets the same answer, including one added later. This is a read back to the root module,
-        // which the note above rules out only for the popup — showing it stays the caller's job.
+    // Returns the message rather than showing it, so this stays a predicate. Callers must still say
+    // something: a refusal is otherwise invisible, since the button does nothing and the split
+    // silently does not happen.
+    internal static string? BlockedMessage() {
+        // Read here and not at the call sites, so every button that asks gets the same answer,
+        // including one added later.
         if (!SomeSplitButtonsModule.Settings.BerryCollectProtection) return null;
         if (CurrentRemainingFrames is not int frames) return null;
 
@@ -102,9 +94,12 @@ public static class BerryCheck {
     /// <summary>
     /// The <c>collectTimer</c> of every red berry the player is carrying, in follower order.
     /// </summary>
-    // Every red berry, not just the first one. StrawberryRegistry.IsFirstStrawberry gates the
-    // countdown, so berries bank one at a time and the wait is their sum. Reading the first follower
-    // alone reports the moment the player loses one berry fewer than they are carrying.
+    // Every red berry, not just the first. StrawberryRegistry.IsFirstStrawberry gates the countdown,
+    // so berries bank one at a time and the wait is their sum; reading the first follower alone
+    // reports the moment the player loses one berry fewer than they are carrying.
+    //
+    // Vanilla `Strawberry` only. Golden berries are excluded on purpose, and modded collectibles
+    // that are not Strawberry — CollabUtils silver and speed berries among them — are not seen.
     private static IEnumerable<float> CarriedRedBerryTimers(Player player) {
         foreach (Follower follower in player.Leader.Followers) {
             if (follower.Entity is Strawberry {Golden: false} redBerry) {
@@ -113,17 +108,13 @@ public static class BerryCheck {
         }
     }
 
-    /// <summary>
-    /// The frames those berries still need, or null when the sequence is empty.
-    /// </summary>
-    // Split from the follower walk above so it can be tested without an engine: this is the only
-    // part of the mod that is pure arithmetic over a case nobody can produce on demand in a `.tas`.
-    // See UnitTests/ on the tests branch.
+    /// <summary>The frames those berries still need, or null when the sequence is empty.</summary>
+    // Split from the follower walk above so it is pure arithmetic, testable without an engine.
     //
-    // CelesteTAS info hud function https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/ae25bf3f2fa931d362c3a321c2cf8dae58d2eb28/CelesteTAS-EverestInterop/Source/TAS/GameInfo.cs#L307
     // A negative collectTimer means the berry first has to climb back out of it: either the player
     // is off safe ground, or the berry is queued behind another and pinned at -0.15. A queued berry
-    // therefore costs a full 18 frames here, which is what it really costs.
+    // therefore costs a full 18 frames here, which is what it really costs. From CelesteTAS:
+    // https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/ae25bf3f2fa931d362c3a321c2cf8dae58d2eb28/CelesteTAS-EverestInterop/Source/TAS/GameInfo.cs#L307
     internal static int? FramesForBerries(IEnumerable<float> collectTimers, float deltaTime) {
         int redBerries = 0;
         int collectFrames = 0;
