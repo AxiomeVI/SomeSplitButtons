@@ -127,9 +127,14 @@ internal static class ReturnToMapReentry {
         return next;
     }
 
-    /// <summary>Backing out of the picker is just letting go of the hold — no load to stage.</summary>
+    // ⚠️ Not Reset() — Reset never sets unpauseTimer, so a cancel through it lets the Back press
+    // (bound to Dash by default) bleed into a dash the next frame. CloseMenu is the exit path that
+    // already guards this, same as ReturnToMapSplitConfirmMenu.LeaveThePause.
     private static void Cancel() {
-        Reset();
+        if (Engine.Scene is not Level level) return;
+        level.TimerStopped = false;
+        holding = false;
+        CloseMenu(level);
     }
 
     /// <summary>
