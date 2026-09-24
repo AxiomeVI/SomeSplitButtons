@@ -8,6 +8,10 @@ public class SomeSplitButtonsModuleSettings : EverestModuleSettings {
     public bool SaveAndQuitAndReenter { get; set; } = true;
     public bool ShowReturnToMapSplitButton { get; set; } = false;
 
+    // Default off: it reloads the level, which is a much larger effect than the split alone, and a
+    // player who enabled the Return to Map button did not ask for that.
+    public bool ReturnToMapCheckpointMenu { get; set; } = false;
+
     // Default on: a berry lost to a split is gone for the run, and turning the refusal off is one
     // menu away for a player who wants the split regardless.
     public bool BerryCollectProtection { get; set; } = true;

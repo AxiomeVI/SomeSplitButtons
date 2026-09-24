@@ -23,6 +23,10 @@ internal static class DialogIds {
     internal const string ToggleReturnToMapKeyId = "SSB_TOGGLE_RETURN_TO_MAP_KEY";
     internal const string RTMButtonDesc = "SSB_RTM_BUTTON_DESC";
     internal const string ReturnToMapSplitMenuHeaderId = "SSB_RTM_SPLIT_MENU_HEADER";
+    internal const string ReturnToMapCheckpointMenuId = "SSB_RTM_CHECKPOINT_MENU";
+    internal const string ReturnToMapCheckpointMenuDescId = "SSB_RTM_CHECKPOINT_MENU_DESC";
+    internal const string CheckpointMenuHeaderId = "SSB_RTM_CHECKPOINT_MENU_HEADER";
+    internal const string CheckpointMenuStartOfChapterId = "SSB_RTM_CHECKPOINT_START";
     internal const string BerryCollectProtectionId = "SSB_BERRY_COLLECT_PROTECTION";
     internal const string BerryCollectProtectionDescId = "SSB_BERRY_COLLECT_PROTECTION_DESC";
     internal const string BerryBlocksSplitId = "SSB_BERRY_BLOCKS_SPLIT";

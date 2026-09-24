@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Celeste.Mod.SomeSplitButtons.Splits;
 using Monocle;
@@ -7,13 +8,24 @@ namespace Celeste.Mod.SomeSplitButtons.UI;
 /// <summary>The mod's section of Mod Options.</summary>
 internal static class ModMenuOptions {
     internal static void CreateMenu(TextMenu menu) {
-        // Belongs to the Save and Quit button, so it is built first and slotted in behind that row
-        // below. Nothing else in the loop needs a companion, which is why this is the one exception
-        // rather than a second table.
-        TextMenu.OnOff saveAndQuitAndReenter =
-            new(Dialog.Clean(DialogIds.SaveAndQuitAndReenterId),
-                SomeSplitButtonsModule.Settings.SaveAndQuitAndReenter);
-        saveAndQuitAndReenter.Change(value => SomeSplitButtonsModule.Settings.SaveAndQuitAndReenter = value);
+        // One companion row per feature that has one, built before the loop because each is slotted
+        // in directly behind its own feature's row. A table rather than two special cases: the
+        // second companion is what made the old "one exception" comment false.
+        Dictionary<SplitFeature, TextMenu.OnOff> companions = new() {
+            [SplitFeatures.SaveAndQuit] = MakeCompanion(
+                DialogIds.SaveAndQuitAndReenterId,
+                SomeSplitButtonsModule.Settings.SaveAndQuitAndReenter,
+                value => SomeSplitButtonsModule.Settings.SaveAndQuitAndReenter = value),
+            [SplitFeatures.ReturnToMap] = MakeCompanion(
+                DialogIds.ReturnToMapCheckpointMenuId,
+                SomeSplitButtonsModule.Settings.ReturnToMapCheckpointMenu,
+                value => SomeSplitButtonsModule.Settings.ReturnToMapCheckpointMenu = value),
+        };
+
+        Dictionary<SplitFeature, string> companionDescriptions = new() {
+            [SplitFeatures.SaveAndQuit] = DialogIds.SaveAndQuitAndReenterDescId,
+            [SplitFeatures.ReturnToMap] = DialogIds.ReturnToMapCheckpointMenuDescId,
+        };
 
         // One row per split button, in the order the player meets them in the pause menu — the mod
         // menu used to list them in a third order of its own.
@@ -22,19 +34,17 @@ internal static class ModMenuOptions {
         foreach (SplitFeature feature in SplitFeatures.InMenuOrder) {
             SplitFeature captured = feature;
             TextMenu.OnOff row = new(Dialog.Clean(feature.NameId), feature.Enabled());
-            if (feature == SplitFeatures.SaveAndQuit) {
-                row.Change(value => {
-                    captured.Toggle(value);
-                    saveAndQuitAndReenter.Disabled = !value;
-                });
-            }
-            else {
-                row.Change(value => captured.Toggle(value));
-            }
+            row.Change(value => {
+                captured.Toggle(value);
+                // A companion belongs to its feature and is greyed out whenever that feature is off.
+                if (companions.TryGetValue(captured, out TextMenu.OnOff companion)) {
+                    companion.Disabled = !value;
+                }
+            });
 
             featureRows.Add(row);
             subOptions.Add(row);
-            if (feature == SplitFeatures.SaveAndQuit) subOptions.Add(saveAndQuitAndReenter);
+            if (companions.TryGetValue(feature, out TextMenu.OnOff own)) subOptions.Add(own);
         }
 
         // After both buttons it applies to, which is where a player looks for it.
@@ -61,9 +71,10 @@ internal static class ModMenuOptions {
         // added above cannot be forgotten here.
         void SetSubOptionsVisible(bool visible) {
             foreach (TextMenu.Item item in subOptions) item.Visible = visible;
-            // Not part of the visibility rule, but always true alongside it: the re-entry option
-            // belongs to the Save and Quit button and is greyed out whenever that button is off.
-            saveAndQuitAndReenter.Disabled = !SomeSplitButtonsModule.Settings.ShowSaveAndQuitSplitButton;
+            // Not part of the visibility rule, but always true alongside it.
+            foreach ((SplitFeature feature, TextMenu.OnOff companion) in companions) {
+                companion.Disabled = !feature.Enabled();
+            }
         }
 
         TextMenu.OnOff enabled =
@@ -90,7 +101,15 @@ internal static class ModMenuOptions {
             string descriptionId = SplitFeatures.InMenuOrder[i].MenuDescriptionId;
             if (descriptionId != null) featureRows[i].AddDescription(menu, Dialog.Clean(descriptionId));
         }
-        saveAndQuitAndReenter.AddDescription(menu, Dialog.Clean(DialogIds.SaveAndQuitAndReenterDescId));
+        foreach ((SplitFeature feature, TextMenu.OnOff companion) in companions) {
+            companion.AddDescription(menu, Dialog.Clean(companionDescriptions[feature]));
+        }
         berryCollectProtection.AddDescription(menu, Dialog.Clean(DialogIds.BerryCollectProtectionDescId));
+    }
+
+    private static TextMenu.OnOff MakeCompanion(string labelId, bool value, Action<bool> setter) {
+        TextMenu.OnOff row = new(Dialog.Clean(labelId), value);
+        row.Change(v => setter(v));
+        return row;
     }
 }
