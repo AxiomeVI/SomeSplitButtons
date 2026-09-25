@@ -232,6 +232,16 @@ internal sealed class KeybindScreen<TSettings> : TextMenu where TSettings : clas
         Close();
     }
 
+    // The overlay's lines are the mod's own text, one line each. A line wider than this is drawn
+    // smaller instead of running off both edges of the screen.
+    internal const float MaxLineWidth = 1760f;
+
+    /// <summary><paramref name="preferred"/>, or less if the line would be wider than <see cref="MaxLineWidth"/>.</summary>
+    internal static float FitScale(string line, float preferred) {
+        float width = ActiveFont.Measure(line).X * preferred;
+        return width <= MaxLineWidth ? preferred : preferred * MaxLineWidth / width;
+    }
+
     public override void Render() {
         Draw.Rect(-10f, -10f, 1940f, 1100f, Color.Black * Ease.CubeOut(Alpha));
         base.Render();
@@ -247,19 +257,23 @@ internal sealed class KeybindScreen<TSettings> : TextMenu where TSettings : clas
             return;
         }
 
-        ActiveFont.Draw(Dialog.Clean(text.ComboHintId), centre + new Vector2(0f, -32f),
-                        new Vector2(0.5f, 2f), Vector2.One * 0.7f, grey);
+        string hint = Dialog.Clean(text.ComboHintId);
+        ActiveFont.Draw(hint, centre + new Vector2(0f, -32f),
+                        new Vector2(0.5f, 2f), Vector2.One * FitScale(hint, 0.7f), grey);
         ActiveFont.Draw(Dialog.Clean(recordingKeyboard ? VanillaKeyChanging : VanillaButtonChanging),
                         centre + new Vector2(0f, -8f), new Vector2(0.5f, 1f), Vector2.One * 0.7f, grey);
-        ActiveFont.Draw(Dialog.Clean(recordingKeybind.LabelId), centre + new Vector2(0f, 8f),
-                        new Vector2(0.5f, 0f), Vector2.One * 2f, Color.White * Ease.CubeIn(recordingEase));
+        string label = Dialog.Clean(recordingKeybind.LabelId);
+        float labelScale = FitScale(label, 2f);
+        ActiveFont.Draw(label, centre + new Vector2(0f, 8f),
+                        new Vector2(0.5f, 0f), Vector2.One * labelScale, Color.White * Ease.CubeIn(recordingEase));
         // The screen used to give up after five seconds with nothing said, which reads as the binding
         // having failed. Ceiling, so the first thing the player sees is the full five and the last
         // whole second is not skipped.
         //
-        // ⚠️ Placed from the font, not by a constant: the label above is top-justified at scale 2 from
-        // +8, so it ends 2 × LineHeight lower, and any fixed offset crosses it at some font size.
-        float belowLabel = 8f + ActiveFont.LineHeight * 2f + 8f;
+        // ⚠️ Placed from the font, not by a constant: the label above is top-justified at labelScale
+        // from +8, so it ends labelScale × LineHeight lower, and any fixed offset crosses it at some
+        // font size or label length.
+        float belowLabel = 8f + ActiveFont.LineHeight * labelScale + 8f;
         ActiveFont.Draw(string.Format(Dialog.Get(text.TimeoutFormatId), (int) Math.Ceiling(Math.Max(0f, timeout))),
                         centre + new Vector2(0f, belowLabel), new Vector2(0.5f, 0f), Vector2.One * 0.7f, grey);
     }
