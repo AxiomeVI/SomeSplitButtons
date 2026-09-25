@@ -27,14 +27,14 @@ The wait is what makes the split land where it would in a run rather than where 
 - **Skip Cutscene Split** only appears during an end-of-chapter cutscene, and disappears after one
   use until the level is reloaded.
 - **Save and Quit Split** re-enters the room afterwards by default, exactly as the game does when a
-  chapter is resumed after a real Save and Quit. Turn *Re-enter the Room After the Split* off to
+  chapter is resumed after a real Save and Quit. Turn *Reload the Room After the S&Q Split* off to
   split without reloading; the chapter clock is then held stopped until you have control again,
   which is what a real Save and Quit would have done to it.
 - **Return to Map Split** asks for confirmation first, the way vanilla Return to Map does. Turn on
-  *Choose a Checkpoint After the Split* in Mod Options to open a picker of the chapter's unlocked
+  *Choose a Checkpoint After the RTM Split* in Mod Options to open a list of the chapter's unlocked
   checkpoints right after the split instead of leaving the level; loading into one holds the chapter
-  clock stopped from the split until you have control again, the same way *Re-enter the Room After
-  the Split* holds it for Save and Quit. Cancelling the picker resumes where you stood, split and
+  clock stopped from the split until you have control again, the same way *Reload the Room After
+  the S&Q Split* holds it for Save and Quit. Cancelling the list resumes where you stood, split and
   all. The checkpoint loads the way a real Return to Map leaves it: collected berries, hearts and
   cassettes come back as ghosts, keys go back to their spot and opened doors close. Only the
   chapter clock, deaths and dashes carry over.
@@ -50,10 +50,10 @@ Quit and Return to Map splits refuse to fire and say how many frames are still n
   practice where the berry is not the point. **Vanilla red berries only**: golden berries are
   ignored on purpose, and modded collectibles that are not `Strawberry` — CollabUtils silver and
   speed berries, for instance — are not seen at all.
-- **With the checkpoint picker on, the protection is asked at the press only.** A refused press
-  means no split and no picker. The 31 frames after an accepted press stand in for vanilla's
-  fade-out, so anything picked up in them is not a real collect: loading a checkpoint discards it,
-  and Cancel keeps it.
+- **With *Choose a Checkpoint After the RTM Split* on, the protection is asked at the press
+  only.** A refused press means no split and no checkpoint list. The 31 frames after an accepted
+  press stand in for vanilla's fade-out, so anything picked up in them is not a real collect:
+  loading a checkpoint discards it, and Cancel keeps it.
 
 ⚠️ **While the Skip Cutscene button is enabled, SpeedrunTool's room timer keeps running through
 every chapter ending**, including ones you finish by watching the cutscene or by using vanilla Skip
