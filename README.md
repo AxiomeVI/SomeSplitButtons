@@ -48,6 +48,10 @@ Quit and Return to Map splits refuse to fire and say how many frames are still n
   practice where the berry is not the point. **Vanilla red berries only**: golden berries are
   ignored on purpose, and modded collectibles that are not `Strawberry` — CollabUtils silver and
   speed berries, for instance — are not seen at all.
+- **With *Berry Collect Protection* off, the checkpoint picker destroys any carried red berry.**
+  Turning that protection off used to cost nothing on a Return to Map split, because the split
+  never actually left the level; loading into a checkpoint does. Crystal hearts are unaffected —
+  heart protection is never optional.
 
 ⚠️ **While the Skip Cutscene button is enabled, SpeedrunTool's room timer keeps running through
 every chapter ending**, including ones you finish by watching the cutscene or by using vanilla Skip
