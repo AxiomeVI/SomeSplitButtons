@@ -39,6 +39,19 @@ The wait is what makes the split land where it would in a run rather than where 
   cassettes come back as ghosts, keys go back to their spot and opened doors close. Only the
   chapter clock, deaths and dashes carry over.
 
+## Hotkeys
+
+Each button can be switched on and off from gameplay. The hotkeys start unbound; set them in
+**Mod Options → Some Split Buttons → Hotkeys**.
+
+- **A hotkey is a combo**: every key bound to it must be held at once. The keyboard combo and the
+  controller combo are alternatives.
+- **A modifier you did not bind blocks it**: a hotkey on `F` does not fire on `Ctrl+F`.
+- On the Hotkeys screen, pressing a bound key again removes it, and **Journal** or **Delete** clears
+  the whole row. F1, F2, F3 and F5 are Everest's debug keys and cannot be bound.
+- Hotkeys do nothing while the debug console is open, while the game window is unfocused, and while
+  any Hotkeys screen is open.
+
 ## Collect protections
 
 Leaving a chapter while a collectible is still being written to the save loses it, so the Save and

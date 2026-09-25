@@ -50,5 +50,6 @@ SSB_TOGGLE_SKIP_CUTSCENE_KEY=                     Toggle Skip Cutscene Split But
 SSB_TOGGLE_SAVE_QUIT_KEY=                         Toggle Save and Quit Split Button
 SSB_TOGGLE_RETURN_TO_MAP_KEY=                     Toggle Return to Map Split Button
 SSB_KEYBIND_COMBO_SUB=                            Each key you bind joins the combo (all must be held); bind it again to remove it
+SSB_KEYBIND_CLEAR_SUB=                            Press Journal or Delete to clear the selected row
 # {0} is the seconds left before the overlay gives up and binds nothing.
-SSB_KEYBIND_TIMEOUT=                              Cancelling in {0}s — press Escape to cancel now
+SSB_KEYBIND_TIMEOUT=                              Cancelling in {0}s - press Escape to cancel now

@@ -1,4 +1,5 @@
 using System;
+using Celeste.Mod.CelesteHotkeys;
 using Celeste.Mod.SpeedrunTool.Message;
 using Celeste.Mod.SomeSplitButtons.SaveAndQuitSplit;
 using Celeste.Mod.SomeSplitButtons.SkipCutsceneSplit;
@@ -8,7 +9,6 @@ using Celeste.Mod.SomeSplitButtons.Integration;
 using Celeste.Mod.SomeSplitButtons.UI;
 using Celeste.Mod.SomeSplitButtons.Splits;
 using Celeste.Mod.SomeSplitButtons.Utils;
-using Microsoft.Xna.Framework.Input;
 using MonoMod.ModInterop;
 using MonoMod.RuntimeDetour;
 using static Celeste.TextMenuExt;
@@ -74,18 +74,10 @@ public class SomeSplitButtonsModule : EverestModule {
             Logger.Warn(nameof(SomeSplitButtonsModule),
                 "SpeedrunTool.SaveLoad ModInterop not found — the split timers will not be disarmed around save states.");
         }
-        foreach (SplitFeature feature in SplitFeatures.All) {
-            // ⚠️ Keys.None must not survive into a hotkey. It is FNA's "no XNA key for this"
-            // sentinel, and a keyboard state reports it held whenever an unmappable key is —
-            // AZERTY's ")" is one — so a binding carrying it fires on an unrelated press. Settings
-            // seeded with it are on disk, so strip it on the way in rather than trusting the file.
-            feature.Binding().Keys.RemoveAll(key => key == Keys.None);
-            feature.Hotkey = new ComboHotkey(feature.Binding());
-        }
-        SplitFeatures.CacheHotkeys();
+        // Settings written by older builds can carry Keys.None, which fires on every unmappable key.
+        Bindable.Sanitize(Settings);
         // Engine.Update, not Level.Update: the hotkeys arm split buttons for a run that has not
-        // started yet, so they have to answer on the overworld and the chapter card too. The
-        // instances above must exist before the hook goes up.
+        // started yet, so they have to answer on the overworld and the chapter card too.
         On.Monocle.Engine.Update += Engine_OnUpdate;
 
         SpeedrunToolHooks.Install();
@@ -194,30 +186,13 @@ public class SomeSplitButtonsModule : EverestModule {
     private static void Engine_OnUpdate(On.Monocle.Engine.orig_Update orig, Monocle.Engine self, Microsoft.Xna.Framework.GameTime gameTime) {
         orig(self, gameTime);
 
+        // Polled even while the mod is off, which counts as a pause: a combo held while the mod is
+        // switched back on must not read as a fresh press.
+        Hotkeys.Set.Update(Settings.Enabled);
         if (!Settings.Enabled) return;
 
-        // One snapshot for every hotkey, so they all answer the same input frame: handling a toggle
-        // writes settings and shows a popup, which a live read could sit in the middle of.
-        InputSnapshot input = InputSnapshot.Current();
-
-        // Resync and leave, rather than simply leaving: Resync swallows whatever is held right now,
-        // so the keys typed while muted cannot fire an edge the instant the console closes.
-        if (HotkeysMuted()) {
-            foreach (SplitFeature feature in SplitFeatures.All) feature.Hotkey.Resync(input);
-            return;
-        }
-
         foreach (SplitFeature feature in SplitFeatures.All) {
-            feature.Hotkey.Update(input);
-        }
-        // After every hotkey has answered and before any of them acts: a binding that is a strict
-        // subset of another one firing this frame is the shorter reading of the same press, and
-        // acting on it toggled two buttons at once. Between the loops rather than inside either,
-        // because the answer depends on all three.
-        ComboHotkey.SuppressSubsetPresses(SplitFeatures.Hotkeys);
-
-        foreach (SplitFeature feature in SplitFeatures.All) {
-            if (!feature.Hotkey.Pressed) continue;
+            if (!Hotkeys.Set.Pressed(feature.Keybind)) continue;
 
             bool enabled = !feature.Enabled();
             feature.Toggle(enabled);
@@ -225,27 +200,6 @@ public class SomeSplitButtonsModule : EverestModule {
             // on a hotkey's behalf.
             Instance.SaveSettings();
             AnnounceToggle(feature.NameId, enabled);
-        }
-    }
-
-    /// <summary>
-    ///     Whether the player is typing rather than playing, so the hotkeys must keep out of it.
-    /// </summary>
-    // Everest's debug console, where typing a command toggles a split button on every letter that
-    // happens to be bound; and this mod's own remap overlay, where pressing a key already bound to
-    // another slot records it there *and* toggles that other button.
-    private static bool HotkeysMuted() =>
-        Monocle.Engine.Commands.Open
-        || Monocle.Engine.Scene?.Tracker.GetEntity<KeybindConfigUi>() is {Remapping: true};
-
-    /// <summary>Marks the hotkeys' current input state as already consumed.</summary>
-    // Called right after a rebind. ComboHotkey fires on a rising edge, and the key that was just
-    // bound is still held when the remap screen hands focus back — so without this, binding a key
-    // immediately toggles the button it was bound to.
-    internal static void ResyncHotkeys() {
-        InputSnapshot input = InputSnapshot.Current();
-        foreach (SplitFeature feature in SplitFeatures.All) {
-            feature.Hotkey.Resync(input);
         }
     }
 }

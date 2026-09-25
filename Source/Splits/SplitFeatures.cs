@@ -1,9 +1,9 @@
 using System;
+using Celeste.Mod.CelesteHotkeys;
 using Celeste.Mod.SomeSplitButtons.Interop;
 using Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 using Celeste.Mod.SomeSplitButtons.SaveAndQuitSplit;
 using Celeste.Mod.SomeSplitButtons.SkipCutsceneSplit;
-using Celeste.Mod.SomeSplitButtons.UI;
 using Monocle;
 
 namespace Celeste.Mod.SomeSplitButtons.Splits;
@@ -18,8 +18,8 @@ internal sealed class SplitFeature {
     /// <summary>Dialog id of the button's name, used when a hotkey announces the toggle.</summary>
     internal required string NameId { get; init; }
 
-    /// <summary>Dialog id of this feature's row on the hotkey screen.</summary>
-    internal required string HotkeyLabelId { get; init; }
+    /// <summary>The hotkey that toggles this button: its row on the hotkey screen and its binding.</summary>
+    internal required Keybind<SomeSplitButtonsModuleSettings> Keybind { get; init; }
 
     /// <summary>
     ///     Dialog id of the line that fades in under this feature's mod-menu row, or null for the
@@ -74,7 +74,6 @@ internal sealed class SplitFeature {
     internal required Func<Level, TextMenu, string> Press { get; init; }
     internal required Func<bool> Enabled { get; init; }
     internal required Action<bool> SetEnabled { get; init; }
-    internal required Func<ButtonBinding> Binding { get; init; }
     internal required Action Reset { get; init; }
     internal required Action<Level> Update { get; init; }
 
@@ -99,9 +98,6 @@ internal sealed class SplitFeature {
     /// </summary>
     internal Action<Level> OnLevelKnown { get; init; }
 
-    /// <summary>Built in <c>Load()</c>, once Settings exist.</summary>
-    internal ComboHotkey Hotkey;
-
     /// <summary>
     ///     Turns the button on or off: writes the setting, disarms the timer, and refreshes what the
     ///     feature derives from the chapter it is in.
@@ -125,11 +121,10 @@ internal sealed class SplitFeature {
 internal static class SplitFeatures {
     internal static readonly SplitFeature SaveAndQuit = new() {
         NameId = DialogIds.EnableSaveAndQuitSplitButtonId,
-        HotkeyLabelId = DialogIds.ToggleSaveQuitKeyId,
+        Keybind = new(DialogIds.ToggleSaveQuitKeyId, nameof(SomeSplitButtonsModuleSettings.ButtonToggleSaveQuit)),
         MenuDescriptionId = DialogIds.EnableSaveAndQuitSplitButtonDescId,
         Enabled = () => SomeSplitButtonsModule.Settings.ShowSaveAndQuitSplitButton,
         SetEnabled = value => SomeSplitButtonsModule.Settings.ShowSaveAndQuitSplitButton = value,
-        Binding = () => SomeSplitButtonsModule.Settings.ButtonToggleSaveQuit,
         Reset = SaveAndQuitTimer.Reset,
         Update = SaveAndQuitTimer.Update,
         ButtonLabelId = DialogIds.SaveAndQuitSplitButtonId,
@@ -153,11 +148,10 @@ internal static class SplitFeatures {
 
     internal static readonly SplitFeature SkipCutscene = new() {
         NameId = DialogIds.EnableSkipCutsceneSplitButtonId,
-        HotkeyLabelId = DialogIds.ToggleSkipCutsceneKeyId,
+        Keybind = new(DialogIds.ToggleSkipCutsceneKeyId, nameof(SomeSplitButtonsModuleSettings.ButtonToggleSkipCutscene)),
         MenuDescriptionId = DialogIds.EnableSkipCutsceneSplitButtonDescId,
         Enabled = () => SomeSplitButtonsModule.Settings.ShowSkipCutsceneSplitButton,
         SetEnabled = value => SomeSplitButtonsModule.Settings.ShowSkipCutsceneSplitButton = value,
-        Binding = () => SomeSplitButtonsModule.Settings.ButtonToggleSkipCutscene,
         Reset = SkipCutsceneTimer.Reset,
         Update = SkipCutsceneTimer.Update,
         OnLevelKnown = level => SkipCutsceneTimer.PrologueCheck(level.Session.Area.ChapterIndex),
@@ -181,11 +175,10 @@ internal static class SplitFeatures {
 
     internal static readonly SplitFeature ReturnToMap = new() {
         NameId = DialogIds.EnableReturnToMapSplitButtonId,
-        HotkeyLabelId = DialogIds.ToggleReturnToMapKeyId,
+        Keybind = new(DialogIds.ToggleReturnToMapKeyId, nameof(SomeSplitButtonsModuleSettings.ButtonToggleReturnToMap)),
         MenuDescriptionId = DialogIds.EnableReturnToMapSplitButtonDescId,
         Enabled = () => SomeSplitButtonsModule.Settings.ShowReturnToMapSplitButton,
         SetEnabled = value => SomeSplitButtonsModule.Settings.ShowReturnToMapSplitButton = value,
-        Binding = () => SomeSplitButtonsModule.Settings.ButtonToggleReturnToMap,
         Reset = ReturnToMapTimer.Reset,
         Update = ReturnToMapTimer.Update,
         ButtonLabelId = DialogIds.ReturnToMapSplitButtonId,
@@ -221,18 +214,6 @@ internal static class SplitFeatures {
     // each insertion is measured against the menu as it stands, so a lower slot inserted after a
     // higher one pushes the higher one down.
     internal static readonly SplitFeature[] InMenuOrder = { SkipCutscene, SaveAndQuit, ReturnToMap };
-
-    /// <summary>The same hotkeys as <c>All[i].Hotkey</c>, in the same order, as one array.</summary>
-    // Filled by Load() once every Hotkey exists, and kept only so the per-frame subset pass has an
-    // array to walk without building one. Null until then, which is also when Engine_OnUpdate is
-    // hooked, so nothing can read it early.
-    internal static ComboHotkey[] Hotkeys;
-
-    /// <summary>Caches <see cref="Hotkeys"/> from the features' current <c>Hotkey</c> instances.</summary>
-    internal static void CacheHotkeys() {
-        Hotkeys = new ComboHotkey[All.Length];
-        for (int i = 0; i < All.Length; i++) Hotkeys[i] = All[i].Hotkey;
-    }
 
     /// <summary>Disarms every split timer, enabled or not.</summary>
     // Unconditional on purpose: a disabled feature can still be armed, because arming is not gated
