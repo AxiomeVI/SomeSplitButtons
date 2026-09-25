@@ -30,7 +30,12 @@ The wait is what makes the split land where it would in a run rather than where 
   chapter is resumed after a real Save and Quit. Turn *Re-enter the Room After the Split* off to
   split without reloading; the chapter clock is then held stopped until you have control again,
   which is what a real Save and Quit would have done to it.
-- **Return to Map Split** asks for confirmation first, the way vanilla Return to Map does.
+- **Return to Map Split** asks for confirmation first, the way vanilla Return to Map does. Turn on
+  *Choose a Checkpoint After the Split* in Mod Options to open a picker of the chapter's unlocked
+  checkpoints right after the split instead of leaving the level; loading into one holds the chapter
+  clock stopped from the split until you have control again, the same way *Re-enter the Room After
+  the Split* holds it for Save and Quit. Cancelling the picker resumes where you stood, split and
+  all.
 
 ## Collect protections
 
