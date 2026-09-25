@@ -40,19 +40,20 @@ internal static class ReturnToMapTimer {
         SkipCutsceneRoomTimer.Split();
         if (!SomeSplitButtonsModule.Settings.ReturnToMapCheckpointMenu) return;
 
-        // The collect protection ran at arm time, and 31 frames of live gameplay have passed since.
-        // The split alone never left the level, so a collectible picked up in that window cost
-        // nothing; the reload destroys it. Re-ask before opening, and keep the split either way — it
-        // has already fired and cannot be unfired.
-        if (CollectCheck.BlockedMessage() is string blocked) {
-            SomeSplitButtonsModule.PopupMessage(blocked);
-            return;
-        }
-
         // Nothing to pick when the save has reached no checkpoint here, so leave the clock running.
         List<(string Key, string Label)> rows = CheckpointList.ForArea(level.Session.Area);
         if (rows.Count == 0) return;
 
-        ReturnToMapReentry.Begin(level, rows);
+        ReturnToMapReentry.Begin(level, rows, PickerWarningId());
+    }
+
+    /// <summary>The dialog id of the picker's warning line, or null when loading costs nothing.</summary>
+    // The 31 frames stand in for vanilla's fade-out, so anything picked up in them is not a real
+    // collect and the load may discard it. The picker still opens; it only says what loading loses.
+    // Asked through the same checks as the button, so the berry line honours the protection setting.
+    private static string PickerWarningId() {
+        if (HeartCheck.BlockedMessage() != null) return DialogIds.PickerHeartWarningId;
+        if (BerryCheck.BlockedMessage() != null) return DialogIds.PickerBerryWarningId;
+        return null;
     }
 }
