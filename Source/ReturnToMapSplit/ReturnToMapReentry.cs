@@ -106,26 +106,18 @@ internal static class ReturnToMapReentry {
     /// </summary>
     // ⚠️ Copies, not references. These are HashSets and a bool[]; assigning them would leave the new
     // session sharing mutable state with the abandoned one.
+    // Everything else starts fresh, as after a real Return to Map: collected berries, hearts and
+    // cassettes come back as ghosts (SaveData already has them), keys return to their spot and
+    // opened doors close, because all of that is read from the session, not the save.
     private static Session BuildSession(Session outgoing, string checkpointKey) {
-        Session next = new(outgoing.Area, CheckpointList.StripAreaPrefix(checkpointKey)) {
+        return new Session(outgoing.Area, CheckpointList.StripAreaPrefix(checkpointKey)) {
             Time = outgoing.Time,
             Deaths = outgoing.Deaths,
             Dashes = outgoing.Dashes,
-            Cassette = outgoing.Cassette,
-            HeartGem = outgoing.HeartGem,
-            GrabbedGolden = outgoing.GrabbedGolden,
+            // Only drives the C-side postcard, which vanilla shows on the way back to the overworld.
+            // The re-entry never goes there, so dropping this would lose the postcard for good.
             UnlockedCSide = outgoing.UnlockedCSide,
-            Strawberries = new(outgoing.Strawberries),
-            DoNotLoad = new(outgoing.DoNotLoad),
-            Keys = new(outgoing.Keys),
         };
-        // Both sides guarded: the constructor always sizes next.SummitGems today, but nothing here
-        // may lean on that staying true, and outgoing.SummitGems is null whenever that save has
-        // never touched a summit chapter.
-        if (outgoing.SummitGems != null && next.SummitGems != null) {
-            outgoing.SummitGems.CopyTo(next.SummitGems, 0);
-        }
-        return next;
     }
 
     // ⚠️ Not Reset() — Reset never sets unpauseTimer, so a cancel through it lets the Back press

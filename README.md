@@ -35,7 +35,9 @@ The wait is what makes the split land where it would in a run rather than where 
   checkpoints right after the split instead of leaving the level; loading into one holds the chapter
   clock stopped from the split until you have control again, the same way *Re-enter the Room After
   the Split* holds it for Save and Quit. Cancelling the picker resumes where you stood, split and
-  all.
+  all. The checkpoint loads the way a real Return to Map leaves it: collected berries, hearts and
+  cassettes come back as ghosts, keys go back to their spot and opened doors close. Only the
+  chapter clock, deaths and dashes carry over.
 
 ## Collect protections
 
