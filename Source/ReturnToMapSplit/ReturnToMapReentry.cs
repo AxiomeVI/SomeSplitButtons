@@ -131,9 +131,9 @@ internal static class ReturnToMapReentry {
     // (bound to Dash by default) bleed into a dash the next frame. CloseMenu is the exit path that
     // already guards this, same as ReturnToMapSplitConfirmMenu.LeaveThePause.
     private static void Cancel() {
+        holding = false;
         if (Engine.Scene is not Level level) return;
         level.TimerStopped = false;
-        holding = false;
         CloseMenu(level);
     }
 
