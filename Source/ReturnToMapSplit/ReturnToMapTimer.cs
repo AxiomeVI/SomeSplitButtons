@@ -37,8 +37,17 @@ internal static class ReturnToMapTimer {
         if (!countdown.Tick()) return;
 
         SkipCutsceneRoomTimer.Split();
-        if (SomeSplitButtonsModule.Settings.ReturnToMapCheckpointMenu) {
-            ReturnToMapReentry.Begin(level);
+        if (!SomeSplitButtonsModule.Settings.ReturnToMapCheckpointMenu) return;
+
+        // The collect protection ran at arm time, and 31 frames of live gameplay have passed since.
+        // The split alone never left the level, so a collectible picked up in that window cost
+        // nothing; the reload destroys it. Re-ask before opening, and keep the split either way — it
+        // has already fired and cannot be unfired.
+        if (CollectCheck.BlockedMessage() is string blocked) {
+            SomeSplitButtonsModule.PopupMessage(blocked);
+            return;
         }
+
+        ReturnToMapReentry.Begin(level);
     }
 }
