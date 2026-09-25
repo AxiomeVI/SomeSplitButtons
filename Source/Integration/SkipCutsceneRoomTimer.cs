@@ -1,4 +1,5 @@
 using System;
+using Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 using Celeste.Mod.SpeedrunTool.RoomTimer;
 using Monocle;
 
@@ -81,6 +82,14 @@ internal static class SkipCutsceneRoomTimer {
     // first. It also makes SpeedrunTool break before the second write to ThisRunTimes[pbTimeKey], so
     // the call still produces exactly one record.
     public static void OnUpdateTimerState(Action<bool> orig, bool endPoint) {
+        // ⚠️ First statement, above the freeze check. A freshly loaded checkpoint satisfies none of
+        // ShouldFreezeLevelCompleted's conjuncts, so the early return below is the path it takes —
+        // a swallow placed inside the freeze branch never runs in the only case it exists for.
+        //
+        // The mod's own splits are excluded: splittingOnOurOwnButton is set only inside Split(), and
+        // a same-frame split of ours must not be eaten by a flag armed for the arrival.
+        if (!splittingOnOurOwnButton && ArrivalSplitSwallow.Consume()) return;
+
         if (!ShouldFreezeLevelCompleted(Engine.Scene as Level)) {
             orig(endPoint);
             return;

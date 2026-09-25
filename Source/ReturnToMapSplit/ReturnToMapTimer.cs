@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Celeste.Mod.SomeSplitButtons.Integration;
 using Celeste.Mod.SomeSplitButtons.Splits;
 using Celeste.Mod.SomeSplitButtons.Utils;
@@ -8,7 +9,10 @@ namespace Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 internal static class ReturnToMapTimer {
     private static readonly SplitCountdown countdown = new(() => SplitTimings.WIPE_FADEOUT_FRAMES);
 
-    internal static void Reset() => countdown.Reset();
+    internal static void Reset() {
+        ReturnToMapReentry.Reset();
+        countdown.Reset();
+    }
 
     /// <summary>Arms the split, unless a collectible the player would lose refuses it.</summary>
     internal static bool HandleButtonPressed() => countdown.TryArm();
@@ -30,7 +34,20 @@ internal static class ReturnToMapTimer {
         level.OnEndOfFrame += () => level.Entities.UpdateLists();
     }
 
-    internal static void Update() {
-        if (countdown.Tick()) SkipCutsceneRoomTimer.Split();
+    internal static void Update(Level level) {
+        if (!countdown.Tick()) return;
+
+        SkipCutsceneRoomTimer.Split();
+        if (!SomeSplitButtonsModule.Settings.ReturnToMapCheckpointMenu) return;
+
+        // The collect protection ran at the press, which is where vanilla leaves the level; a
+        // refused press never reaches here. The 31 frames since stand in for the fade-out, so
+        // anything picked up in them is not a real collect and the load may discard it.
+
+        // Nothing to pick when the save has reached no checkpoint here, so leave the clock running.
+        List<(string Key, string Label)> rows = CheckpointList.ForArea(level.Session.Area);
+        if (rows.Count == 0) return;
+
+        ReturnToMapReentry.Begin(level, rows);
     }
 }

@@ -5,15 +5,17 @@
 SSB_SOME_SPLIT_BUTTONS=                           Some Split Buttons
 SSB_ENABLED=                                      Enabled
 SSB_ENABLE_SKIP_CUTSCENE_SPLIT_BUTTON=            Skip Cutscene Split Button
-SSB_ENABLE_SKIP_CUTSCENE_SPLIT_BUTTON_DESC=       Only during end-of-chapter cutscenes. While on, SpeedrunTool's room timer keeps running through every chapter ending
+SSB_ENABLE_SKIP_CUTSCENE_SPLIT_BUTTON_DESC=       End-of-chapter cutscenes only. While on, SpeedrunTool's room timer runs through chapter endings
 SSB_ENABLE_SAVE_AND_QUIT_SPLIT_BUTTON=            Save and Quit Split Button
 SSB_ENABLE_SAVE_AND_QUIT_SPLIT_BUTTON_DESC=       Second entry in the pause menu
 SSB_ENABLE_RETURN_TO_MAP_SPLIT_BUTTON=            Return to Map Split Button
 SSB_ENABLE_RETURN_TO_MAP_SPLIT_BUTTON_DESC=       Last entry in the pause menu, behind a confirmation
-SSB_SQ_REENTER_OPTIONS=                           Re-enter the Room After the Split
-SSB_SQ_REENTER_OPTIONS_DESC=                      Reloads the room as a real Save and Quit does
+SSB_SQ_REENTER_OPTIONS=                           Reload the Room After the S&Q Split
+SSB_SQ_REENTER_OPTIONS_DESC=                      Reloads the room as a real Save and Quit does, keeping SRT timer alive
+SSB_RTM_CHECKPOINT_MENU=                          Choose a Checkpoint After the RTM Split
+SSB_RTM_CHECKPOINT_MENU_DESC=                     Opens a checkpoint list and loads into it, keeping SRT timer alive
 SSB_BERRY_COLLECT_PROTECTION=                     Berry Collect Protection
-SSB_BERRY_COLLECT_PROTECTION_DESC=                Refuse to split while a carried red berry would be lost. Heart protection is always on
+SSB_BERRY_COLLECT_PROTECTION_DESC=                Refuse to split while a carried red berry would be lost
 SSB_KEYBIND_CONFIG=                               Hotkeys
 
 # ============================ Pause-Menu Buttons ==============================
@@ -28,6 +30,7 @@ SSB_SQ_BUTTON_DESC=                               Unpauses, then splits the Spee
 SSB_SQ_REENTER_BUTTON_DESC=                       Unpauses, splits the SpeedrunTool room timer after {0} frames, then re-enters the room
 SSB_RTM_BUTTON_DESC=                              Unpauses, then splits the SpeedrunTool room timer after {0} frames
 SSB_RTM_SPLIT_MENU_HEADER=                        RETURN TO MAP SPLIT?
+SSB_RTM_CHECKPOINT_MENU_HEADER=                   LOAD WHICH CHECKPOINT?
 
 # ============================== Messages ======================================
 # {0} is a frame count at normal speed: every carried red berry summed, since they bank one at a

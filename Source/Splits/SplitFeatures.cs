@@ -187,7 +187,7 @@ internal static class SplitFeatures {
         SetEnabled = value => SomeSplitButtonsModule.Settings.ShowReturnToMapSplitButton = value,
         Binding = () => SomeSplitButtonsModule.Settings.ButtonToggleReturnToMap,
         Reset = ReturnToMapTimer.Reset,
-        Update = _ => ReturnToMapTimer.Update(),
+        Update = ReturnToMapTimer.Update,
         ButtonLabelId = DialogIds.ReturnToMapSplitButtonId,
         InteropAction = SplitActions.ReturnToMap,
         AnchorDialogId = DialogIds.VanillaPauseReturnId,
@@ -200,6 +200,10 @@ internal static class SplitFeatures {
             ReturnToMapTimer.Press(level, pauseMenu);
             return null;
         },
+        // Borrows level.TimerStopped between the split and the checkpoint load, for the same reason
+        // Save and Quit does and with the same outside-the-gates rule.
+        UpdateHold = ReturnToMapReentry.UpdateHold,
+        BeforeSaveState = ReturnToMapReentry.ReleaseHoldForSaveState,
     };
 
     /// <summary>

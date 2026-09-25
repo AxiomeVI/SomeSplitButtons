@@ -180,6 +180,11 @@ public class SomeSplitButtonsModule : EverestModule {
         // cannot switch off, so what it counts on must not be counted by something they can.
         HeartCheck.Update(self);
 
+        // Also above the gate: a flag armed and then the mod disabled must still clear. SpeedrunTool's
+        // timing runs inside orig, so a clear placed after it and before the feature loop still sees
+        // the frame the split just landed on.
+        ArrivalSplitSwallow.TickGraceBudget();
+
         if (!Settings.Enabled) return;
         foreach (SplitFeature feature in SplitFeatures.All) {
             if (feature.Enabled()) feature.Update(self);
