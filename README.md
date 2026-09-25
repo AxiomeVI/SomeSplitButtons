@@ -50,11 +50,10 @@ Quit and Return to Map splits refuse to fire and say how many frames are still n
   practice where the berry is not the point. **Vanilla red berries only**: golden berries are
   ignored on purpose, and modded collectibles that are not `Strawberry` — CollabUtils silver and
   speed berries, for instance — are not seen at all.
-- **The checkpoint picker opens even when a protection would have refused the split.** The 31
-  frames before the split stand in for vanilla's fade-out, so anything picked up in them is not a
-  real collect. The picker says so in a line under its header when a berry or the heart is still
-  collecting, and loading a checkpoint loses it; Cancel keeps it. With *Berry Collect Protection*
-  off, the berry line is not shown.
+- **With the checkpoint picker on, the protection is asked at the press only.** A refused press
+  means no split and no picker. The 31 frames after an accepted press stand in for vanilla's
+  fade-out, so anything picked up in them is not a real collect: loading a checkpoint discards it,
+  and Cancel keeps it.
 
 ⚠️ **While the Skip Cutscene button is enabled, SpeedrunTool's room timer keeps running through
 every chapter ending**, including ones you finish by watching the cutscene or by using vanilla Skip

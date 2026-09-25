@@ -15,15 +15,12 @@ internal class ReturnToMapCheckpointMenu : TextMenu {
     /// <summary>The row count of the most recently built picker, for the fixtures.</summary>
     internal static int lastRowCount;
 
-    /// <summary>The warning line's dialog id in the most recently built picker, or "none".</summary>
-    internal static string lastWarningId = "none";
-
     private bool finished;
     private readonly Action<string> onChosen;
     private readonly Action onCancelled;
 
-    internal ReturnToMapCheckpointMenu(List<(string Key, string Label)> rows, string warningId,
-        Action<string> onChosen, Action onCancelled) {
+    internal ReturnToMapCheckpointMenu(List<(string Key, string Label)> rows, Action<string> onChosen,
+        Action onCancelled) {
         this.onChosen = onChosen;
         this.onCancelled = onCancelled;
 
@@ -31,8 +28,6 @@ internal class ReturnToMapCheckpointMenu : TextMenu {
         Position = new Vector2(Engine.Width / 2f, Engine.Height / 2f - 100f);
 
         Add(new Header(Dialog.Clean(DialogIds.CheckpointMenuHeaderId)));
-        if (warningId != null) Add(new SubHeader(Dialog.Clean(warningId)));
-        lastWarningId = warningId ?? "none";
 
         // No start-of-chapter row: a player who wants the start restarts the chapter instead.
         foreach ((string key, string label) in rows) {

@@ -40,20 +40,14 @@ internal static class ReturnToMapTimer {
         SkipCutsceneRoomTimer.Split();
         if (!SomeSplitButtonsModule.Settings.ReturnToMapCheckpointMenu) return;
 
+        // The collect protection ran at the press, which is where vanilla leaves the level; a
+        // refused press never reaches here. The 31 frames since stand in for the fade-out, so
+        // anything picked up in them is not a real collect and the load may discard it.
+
         // Nothing to pick when the save has reached no checkpoint here, so leave the clock running.
         List<(string Key, string Label)> rows = CheckpointList.ForArea(level.Session.Area);
         if (rows.Count == 0) return;
 
-        ReturnToMapReentry.Begin(level, rows, PickerWarningId());
-    }
-
-    /// <summary>The dialog id of the picker's warning line, or null when loading costs nothing.</summary>
-    // The 31 frames stand in for vanilla's fade-out, so anything picked up in them is not a real
-    // collect and the load may discard it. The picker still opens; it only says what loading loses.
-    // Asked through the same checks as the button, so the berry line honours the protection setting.
-    private static string PickerWarningId() {
-        if (HeartCheck.BlockedMessage() != null) return DialogIds.PickerHeartWarningId;
-        if (BerryCheck.BlockedMessage() != null) return DialogIds.PickerBerryWarningId;
-        return null;
+        ReturnToMapReentry.Begin(level, rows);
     }
 }
