@@ -19,7 +19,8 @@ internal class ReturnToMapCheckpointMenu : TextMenu {
     private readonly Action<string> onChosen;
     private readonly Action onCancelled;
 
-    internal ReturnToMapCheckpointMenu(Level level, Action<string> onChosen, Action onCancelled) {
+    internal ReturnToMapCheckpointMenu(List<(string Key, string Label)> rows, Action<string> onChosen,
+        Action onCancelled) {
         this.onChosen = onChosen;
         this.onCancelled = onCancelled;
 
@@ -28,11 +29,7 @@ internal class ReturnToMapCheckpointMenu : TextMenu {
 
         Add(new Header(Dialog.Clean(DialogIds.CheckpointMenuHeaderId)));
 
-        Button startOfChapter = new(Dialog.Clean(DialogIds.CheckpointMenuStartOfChapterId));
-        startOfChapter.Pressed(() => Choose(null));
-        Add(startOfChapter);
-
-        List<(string Key, string Label)> rows = CheckpointList.ForArea(level.Session.Area);
+        // No start-of-chapter row: a player who wants the start restarts the chapter instead.
         foreach ((string key, string label) in rows) {
             string captured = key;
             Button row = new(label);
@@ -44,8 +41,8 @@ internal class ReturnToMapCheckpointMenu : TextMenu {
         cancel.Pressed(() => Cancel());
         Add(cancel);
 
-        // Header is not a row the player counts; the two fixed buttons plus the checkpoints are.
-        lastRowCount = rows.Count + 2;
+        // Header is not a row the player counts; the checkpoints and Cancel are.
+        lastRowCount = rows.Count + 1;
 
         OnCancel = OnESC = OnPause = Cancel;
     }

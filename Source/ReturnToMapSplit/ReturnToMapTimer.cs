@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Celeste.Mod.SomeSplitButtons.Integration;
 using Celeste.Mod.SomeSplitButtons.Splits;
 using Celeste.Mod.SomeSplitButtons.Utils;
@@ -48,6 +49,10 @@ internal static class ReturnToMapTimer {
             return;
         }
 
-        ReturnToMapReentry.Begin(level);
+        // Nothing to pick when the save has reached no checkpoint here, so leave the clock running.
+        List<(string Key, string Label)> rows = CheckpointList.ForArea(level.Session.Area);
+        if (rows.Count == 0) return;
+
+        ReturnToMapReentry.Begin(level, rows);
     }
 }

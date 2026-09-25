@@ -31,7 +31,6 @@ SSB_SQ_REENTER_BUTTON_DESC=                       Unpauses, splits the SpeedrunT
 SSB_RTM_BUTTON_DESC=                              Unpauses, then splits the SpeedrunTool room timer after {0} frames
 SSB_RTM_SPLIT_MENU_HEADER=                        RETURN TO MAP SPLIT?
 SSB_RTM_CHECKPOINT_MENU_HEADER=                   LOAD WHICH CHECKPOINT?
-SSB_RTM_CHECKPOINT_START=                         Start of Chapter
 
 # ============================== Messages ======================================
 # {0} is a frame count at normal speed: every carried red berry summed, since they bank one at a

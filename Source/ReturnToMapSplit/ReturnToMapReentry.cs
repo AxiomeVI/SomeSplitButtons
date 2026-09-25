@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Monocle;
 
 namespace Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
@@ -13,12 +14,12 @@ internal static class ReturnToMapReentry {
     internal static bool Holding => holding;
 
     /// <summary>Holds the clock, pauses the level and opens the picker.</summary>
-    internal static void Begin(Level level) {
+    internal static void Begin(Level level, List<(string Key, string Label)> rows) {
         holding = true;
         level.TimerStopped = true;
         level.Paused = true;
 
-        ReturnToMapCheckpointMenu menu = new(level, Load, Cancel);
+        ReturnToMapCheckpointMenu menu = new(rows, Load, Cancel);
         level.Add(menu);
         // The picker is added from the mod's post-orig hook, so without this it first updates on the
         // following frame. Same nudge ReturnToMapTimer.Press gives the confirm prompt.
