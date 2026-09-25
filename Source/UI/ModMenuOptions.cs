@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Celeste.Mod.CelesteHotkeys;
 using Celeste.Mod.SomeSplitButtons.Splits;
 using Monocle;
 
@@ -54,18 +55,9 @@ internal static class ModMenuOptions {
         berryCollectProtection.Change(value => SomeSplitButtonsModule.Settings.BerryCollectProtection = value);
         subOptions.Add(berryCollectProtection);
 
-        TextMenu.Button keybindButton = new(Dialog.Clean(DialogIds.KeybindConfigId));
-        keybindButton.Pressed(() => {
-            menu.Focused = false;
-            KeybindConfigUi ui = new() {OnClose = () => menu.Focused = true};
-            // The scene is captured, not read again at end of frame: Engine.Scene can be replaced
-            // between the two, and the lambda would then flush the entity lists of whatever scene
-            // came after while this one kept the menu queued.
-            Scene scene = Engine.Scene;
-            scene.Add(ui);
-            scene.OnEndOfFrame += () => scene.Entities.UpdateLists();
-        });
-        subOptions.Add(keybindButton);
+        // Last, and inside the range the master toggle hides: it is the only way to bind a hotkey.
+        subOptions.Add(HotkeyMenu.OpenButton(
+            menu, Hotkeys.Set, Hotkeys.Text, SomeSplitButtonsModule.Instance.SaveSettings));
 
         // Everything below the master toggle appears and disappears with it. One list, so a row
         // added above cannot be forgotten here.

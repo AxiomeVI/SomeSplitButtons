@@ -4,6 +4,7 @@
 # to the ZippedFiles tag in the .csproj file, or the artifact paths in the
 # Github workflow file if you're using GitHub actions for publishing.
 Source/
+CelesteHotkeys/
 SomeSplitButtons.zip
 # Loaded straight from a git checkout during development, Everest also indexes these. None of them
 # is content, so the cost is only a longer scan — but GameBanana/ holds four full-size PNGs.

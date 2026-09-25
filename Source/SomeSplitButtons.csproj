@@ -35,6 +35,17 @@
         <Reference Include="$(SpeedrunToolPath)" Private="false" />
     </ItemGroup>
 
+    <!-- The hotkey layer and remap screen, shared with other mods. CelesteHotkeys/src is a copy of
+         that shared source: edit it there, not here, or the next copy silently reverts the change. -->
+    <ItemGroup>
+        <Compile Include="..\CelesteHotkeys\src\**\*.cs" />
+    </ItemGroup>
+
+    <Target Name="CheckCelesteHotkeys" BeforeTargets="BeforeBuild">
+        <Error Condition="!Exists('$(MSBuildThisFileDirectory)..\CelesteHotkeys\src')"
+               Text="CelesteHotkeys/src is missing. It is committed in this repository; restore it from git." />
+    </Target>
+
     <Target Name="CopyFiles" AfterTargets="Build" Inputs="$(OutputPath)\$(AssemblyName).dll;$(OutputPath)\$(AssemblyName).pdb" Outputs="..\bin\$(AssemblyName).dll;..\bin\$(AssemblyName).pdb">
         <Copy SourceFiles="$(OutputPath)\$(AssemblyName).dll" DestinationFolder="..\bin" />
         <Copy SourceFiles="$(OutputPath)\$(AssemblyName).pdb" DestinationFolder="..\bin" />
