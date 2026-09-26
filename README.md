@@ -31,7 +31,7 @@ The wait is what makes the split land where it would in a run rather than where 
   reloading; the chapter clock is then held stopped until you have control again,
   which is what a real Save and Quit would have done to it.
 - **Return to Map Split** asks for confirmation first, the way vanilla Return to Map does. Turn on
-  *Then Choose a Checkpoint to Load Into* in Mod Options to open a list of the chapter's unlocked
+  *Then Load a Checkpoint* in Mod Options to open a list of the chapter's unlocked
   checkpoints right after the split instead of leaving the level; loading into one holds the chapter
   clock stopped from the split until you have control again, the same way *Then Reload the Room*
   holds it for Save and Quit. Cancelling the list resumes where you stood, split and
@@ -50,7 +50,7 @@ Quit and Return to Map splits refuse to fire and say how many frames are still n
   practice where the berry is not the point. **Vanilla red berries only**: golden berries are
   ignored on purpose, and modded collectibles that are not `Strawberry` — CollabUtils silver and
   speed berries, for instance — are not seen at all.
-- **With *Then Choose a Checkpoint to Load Into* on, the protection is asked at the press
+- **With *Then Load a Checkpoint* on, the protection is asked at the press
   only.** A refused press means no split and no checkpoint list. The 31 frames after an accepted
   press stand in for vanilla's fade-out, so anything picked up in them is not a real collect:
   loading a checkpoint discards it, and Cancel keeps it.

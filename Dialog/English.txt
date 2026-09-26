@@ -5,12 +5,12 @@
 SSB_SOME_SPLIT_BUTTONS=                           Some Split Buttons
 SSB_ENABLED=                                      Enabled
 SSB_ENABLE_SKIP_CUTSCENE_SPLIT_BUTTON=            Skip Cutscene Split Button
-SSB_ENABLE_SKIP_CUTSCENE_SPLIT_BUTTON_DESC=       End-of-chapter cutscenes only. While on, SpeedrunTool's room timer runs through chapter endings
+SSB_ENABLE_SKIP_CUTSCENE_SPLIT_BUTTON_DESC=       End-of-chapter cutscenes only
 SSB_ENABLE_SAVE_AND_QUIT_SPLIT_BUTTON=            Save and Quit Split Button
 SSB_ENABLE_RETURN_TO_MAP_SPLIT_BUTTON=            Return to Map Split Button
 SSB_SQ_REENTER_OPTIONS=                           Then Reload the Room
 SSB_SQ_REENTER_OPTIONS_DESC=                      Vanilla S&Q reload: room state resets, Core mode included
-SSB_RTM_CHECKPOINT_MENU=                          Then Choose a Checkpoint to Load Into
+SSB_RTM_CHECKPOINT_MENU=                          Then Load a Checkpoint
 SSB_RTM_CHECKPOINT_MENU_DESC=                     Opens a checkpoint list and loads into it
 SSB_BERRY_COLLECT_PROTECTION=                     Berry Collect Protection
 SSB_BERRY_COLLECT_PROTECTION_DESC=                Refuse to split while a carried red berry would be lost
