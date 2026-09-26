@@ -10,10 +10,10 @@
 # ============================== Mod Menu ======================================
 SSB_SOME_SPLIT_BUTTONS=                           Some Split Buttons
 SSB_ENABLED=                                      Enabled
-SSB_ENABLE_SKIP_CUTSCENE_SPLIT_BUTTON=            Skip Cutscene Split Button
+SSB_ENABLE_SKIP_CUTSCENE_SPLIT_BUTTON=            Skip Cutscene
 SSB_ENABLE_SKIP_CUTSCENE_SPLIT_BUTTON_DESC=       End-of-chapter cutscenes only
-SSB_ENABLE_SAVE_AND_QUIT_SPLIT_BUTTON=            Save and Quit Split Button
-SSB_ENABLE_RETURN_TO_MAP_SPLIT_BUTTON=            Return to Map Split Button
+SSB_ENABLE_SAVE_AND_QUIT_SPLIT_BUTTON=            Save and Quit
+SSB_ENABLE_RETURN_TO_MAP_SPLIT_BUTTON=            Return to Map
 SSB_SQ_REENTER_OPTIONS=                           Then Reload the Room
 SSB_SQ_REENTER_OPTIONS_DESC=                      Vanilla S&Q reload: room state resets, Core mode included
 SSB_RTM_CHECKPOINT_MENU=                          Then Load a Checkpoint
@@ -31,7 +31,7 @@ SSB_RETURN_TO_MAP_SPLIT_BUTTON=                   Return to Map Split
 SSB_SCS_BUTTON_DESC=                              Unpauses, then splits the SpeedrunTool room timer after {0} frames
 SSB_SCS_PROLOGUE_BUTTON_DESC=                     Unpauses, then splits the SpeedrunTool room timer after {0} frames (~{1}s)
 SSB_SQ_BUTTON_DESC=                               Unpauses, then splits the SpeedrunTool room timer after {0} frames
-SSB_SQ_REENTER_BUTTON_DESC=                       Unpauses, splits the SpeedrunTool room timer after {0} frames, then re-enters the room
+SSB_SQ_REENTER_BUTTON_DESC=                       Unpauses, splits the SpeedrunTool room timer after {0} frames, then reloads the room
 SSB_RTM_BUTTON_DESC=                              Unpauses, then splits the SpeedrunTool room timer after {0} frames
 SSB_RTM_SPLIT_MENU_HEADER=                        RETURN TO MAP SPLIT?
 SSB_RTM_CHECKPOINT_MENU_HEADER=                   LOAD WHICH CHECKPOINT?
@@ -47,15 +47,19 @@ SSB_BERRY_SLOWDOWN=                               ({0} at {1}x speed)
 # save. Leaving the chapter before that loses the heart, so the split refuses.
 SSB_HEART_BLOCKS_SPLIT=                           Split refused: the heart needs {0} more frames to collect
 SSB_HEART_BLOCKS_SPLIT_ONE=                       Split refused: the heart needs {0} more frame to collect
-# {0} is a split button name, taken from the mod menu labels above.
+# {0} is a split button name, taken from the pause-menu button labels above.
 SSB_BUTTON_ENABLED=                               {0} enabled
 SSB_BUTTON_DISABLED=                              {0} disabled
 
 # ============================ Keybind Config UI ================================
-SSB_TOGGLE_SKIP_CUTSCENE_KEY=                     Toggle Skip Cutscene Split Button
-SSB_TOGGLE_SAVE_QUIT_KEY=                         Toggle Save and Quit Split Button
-SSB_TOGGLE_RETURN_TO_MAP_KEY=                     Toggle Return to Map Split Button
+# The rows name the button and nothing else: SSB_KEYBIND_CLEAR_SUB, at the top of the screen, says
+# once for all of them that a hotkey turns its button on or off.
+# ⚠️ Keep SSB_KEYBIND_CLEAR_SUB short, about 65 characters at most. The menu is as wide as its
+# widest left-hand text plus its widest binding, and past that sum it runs off both screen edges.
+SSB_TOGGLE_SKIP_CUTSCENE_KEY=                     Skip Cutscene
+SSB_TOGGLE_SAVE_QUIT_KEY=                         Save and Quit
+SSB_TOGGLE_RETURN_TO_MAP_KEY=                     Return to Map
 SSB_KEYBIND_COMBO_SUB=                            Each key you bind joins the combo (all must be held); bind it again to remove it
-SSB_KEYBIND_CLEAR_SUB=                            Press Journal or Delete to clear the selected row
+SSB_KEYBIND_CLEAR_SUB=                            Turns the button on or off. Journal or Delete clears the row
 # {0} is the seconds left before the overlay gives up and binds nothing.
 SSB_KEYBIND_TIMEOUT=                              Cancelling in {0}s - press Escape to cancel now

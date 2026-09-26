@@ -199,7 +199,7 @@ public class SomeSplitButtonsModule : EverestModule {
             // The mod menu leaves this to Everest, which saves when the menu closes. Nothing closes
             // on a hotkey's behalf.
             Instance.SaveSettings();
-            AnnounceToggle(feature.NameId, enabled);
+            AnnounceToggle(feature.ButtonLabelId, enabled);
         }
     }
 }

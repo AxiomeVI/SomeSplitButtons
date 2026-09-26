@@ -15,7 +15,9 @@ namespace Celeste.Mod.SomeSplitButtons.Splits;
 // ⚠️ Every delegate that touches Settings is deferred. This table is built at type load, and
 // SomeSplitButtonsModule.Settings needs Instance._Settings, which Everest fills in later.
 internal sealed class SplitFeature {
-    /// <summary>Dialog id of the button's name, used when a hotkey announces the toggle.</summary>
+    /// <summary>Dialog id of this feature's row in the mod menu.</summary>
+    // Not the name a hotkey announces. The row sits under the mod's own header and says only
+    // "Skip Cutscene"; out of that context, "Skip Cutscene enabled" reads as the vanilla button.
     internal required string NameId { get; init; }
 
     /// <summary>The hotkey that toggles this button: its row on the hotkey screen and its binding.</summary>
@@ -27,7 +29,10 @@ internal sealed class SplitFeature {
     /// </summary>
     internal string MenuDescriptionId { get; init; }
 
-    /// <summary>Dialog id of this feature's button in the pause menu.</summary>
+    /// <summary>
+    ///     Dialog id of this feature's button in the pause menu, and the name a hotkey announces when
+    ///     it toggles the feature.
+    /// </summary>
     internal required string ButtonLabelId { get; init; }
 
     /// <summary>The <see cref="SplitActions"/> string this feature's interop events carry.</summary>
