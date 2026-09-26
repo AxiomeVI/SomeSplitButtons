@@ -1,0 +1,37 @@
+# Only the entries worth translating are here. The rest (the mod's name, the button names and the
+# Return to Map confirmation title) is left out on purpose and shows in English: Everest falls back
+# to English.txt one id at a time.
+# See English.txt for what each entry is, what fills {0} and {1}, and the _ONE plural forms.
+
+# ============================== Mod Menu ======================================
+SSB_ENABLED=                                      Activé
+SSB_ENABLE_SKIP_CUTSCENE_SPLIT_BUTTON_DESC=       Cutscenes de fin de chapitre uniquement
+SSB_SQ_REENTER_OPTIONS=                           Puis recharger la salle
+SSB_SQ_REENTER_OPTIONS_DESC=                      Comme un S&Q vanilla : salle et mode du Cœur réinitialisés
+SSB_RTM_CHECKPOINT_MENU=                          Puis charger un checkpoint
+SSB_RTM_CHECKPOINT_MENU_DESC=                     Ouvre la liste des checkpoints et charge celui choisi
+SSB_BERRY_COLLECT_PROTECTION=                     Protection des fraises
+SSB_BERRY_COLLECT_PROTECTION_DESC=                Refuse de split tant qu'une fraise rouge portée serait perdue
+SSB_KEYBIND_CONFIG=                               Raccourcis
+
+# ============================ Pause-Menu Buttons ==============================
+SSB_SCS_BUTTON_DESC=                              Ferme la pause et split le room timer de SpeedrunTool après {0} frames
+SSB_SCS_PROLOGUE_BUTTON_DESC=                     Ferme la pause et split le room timer de SpeedrunTool après {0} frames (~{1} s)
+SSB_SQ_BUTTON_DESC=                               Ferme la pause et split le room timer de SpeedrunTool après {0} frames
+SSB_SQ_REENTER_BUTTON_DESC=                       Ferme la pause, split le room timer de SpeedrunTool après {0} frames, puis recharge la salle
+SSB_RTM_BUTTON_DESC=                              Ferme la pause et split le room timer de SpeedrunTool après {0} frames
+SSB_RTM_CHECKPOINT_MENU_HEADER=                   QUEL CHECKPOINT CHARGER ?
+
+# ============================== Messages ======================================
+SSB_BERRY_BLOCKS_SPLIT=                           Split refusé : encore {0} frames pour collecter une fraise
+SSB_BERRY_BLOCKS_SPLIT_ONE=                       Split refusé : encore {0} frame pour collecter une fraise
+SSB_BERRY_SLOWDOWN=                               ({0} à vitesse {1}x)
+SSB_HEART_BLOCKS_SPLIT=                           Split refusé : encore {0} frames pour collecter le cœur
+SSB_HEART_BLOCKS_SPLIT_ONE=                       Split refusé : encore {0} frame pour collecter le cœur
+SSB_BUTTON_ENABLED=                               {0} activé
+SSB_BUTTON_DISABLED=                              {0} désactivé
+
+# ============================ Keybind Config UI ================================
+SSB_KEYBIND_COMBO_SUB=                            Chaque touche assignée s'ajoute au combo (toutes doivent être maintenues) ; réassigne-la pour la retirer
+SSB_KEYBIND_CLEAR_SUB=                            Active ou désactive le bouton. Journal ou Suppr efface la ligne
+SSB_KEYBIND_TIMEOUT=                              Annulation dans {0} s - appuie sur Échap pour annuler maintenant
