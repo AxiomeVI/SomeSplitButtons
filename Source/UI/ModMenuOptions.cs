@@ -1,107 +1,107 @@
 using System;
 using System.Collections.Generic;
 using Celeste.Mod.CelesteHotkeys;
+using Celeste.Mod.SomeSplitButtons.MenuTools;
 using Celeste.Mod.SomeSplitButtons.Splits;
+using Microsoft.Xna.Framework;
 using Monocle;
 
 namespace Celeste.Mod.SomeSplitButtons.UI;
 
 /// <summary>The mod's section of Mod Options.</summary>
 internal static class ModMenuOptions {
+    // How far a follow-up row sits right of the button it belongs to.
+    private const float CompanionIndent = 40f;
+
     internal static void CreateMenu(TextMenu menu) {
-        // One companion row per feature that has one, built before the loop because each is slotted
-        // in directly behind its own feature's row. A table rather than two special cases: the
-        // second companion is what made the old "one exception" comment false.
-        Dictionary<SplitFeature, TextMenu.OnOff> companions = new() {
+        SomeSplitButtonsModuleSettings settings = SomeSplitButtonsModule.Settings;
+
+        // Everything below the master toggle, flush with it, appearing and disappearing with it.
+        RecursiveNakedSubMenu section = new(initiallyExpanded: settings.Enabled);
+
+        // One indented group per feature that has a follow-up row, open while that feature is on.
+        // Built before the loop because each is slotted in directly behind its own feature's row.
+        Dictionary<SplitFeature, RecursiveNakedSubMenu> companions = new() {
             [SplitFeatures.SaveAndQuit] = MakeCompanion(
+                menu, SplitFeatures.SaveAndQuit,
                 DialogIds.SaveAndQuitAndReenterId,
-                SomeSplitButtonsModule.Settings.SaveAndQuitAndReenter,
-                value => SomeSplitButtonsModule.Settings.SaveAndQuitAndReenter = value),
+                DialogIds.SaveAndQuitAndReenterDescId,
+                settings.SaveAndQuitAndReenter,
+                value => settings.SaveAndQuitAndReenter = value),
             [SplitFeatures.ReturnToMap] = MakeCompanion(
+                menu, SplitFeatures.ReturnToMap,
                 DialogIds.ReturnToMapCheckpointMenuId,
-                SomeSplitButtonsModule.Settings.ReturnToMapCheckpointMenu,
-                value => SomeSplitButtonsModule.Settings.ReturnToMapCheckpointMenu = value),
+                DialogIds.ReturnToMapCheckpointMenuDescId,
+                settings.ReturnToMapCheckpointMenu,
+                value => settings.ReturnToMapCheckpointMenu = value),
         };
 
-        Dictionary<SplitFeature, string> companionDescriptions = new() {
-            [SplitFeatures.SaveAndQuit] = DialogIds.SaveAndQuitAndReenterDescId,
-            [SplitFeatures.ReturnToMap] = DialogIds.ReturnToMapCheckpointMenuDescId,
-        };
+        // Berry Collect Protection guards the S&Q and RTM splits only, so it is shown only while one
+        // of them is on. Skip Cutscene arms unconditionally.
+        static bool BerryApplies() => SplitFeatures.SaveAndQuit.Enabled() || SplitFeatures.ReturnToMap.Enabled();
+        RecursiveNakedSubMenu berry = new(initiallyExpanded: BerryApplies());
+        TextMenu.OnOff berryCollectProtection =
+            new(Dialog.Clean(DialogIds.BerryCollectProtectionId), settings.BerryCollectProtection);
+        berryCollectProtection.Change(value => settings.BerryCollectProtection = value);
+        AddWithDescription(berry, berryCollectProtection, DialogIds.BerryCollectProtectionDescId, menu);
 
-        // One row per split button, in the order the player meets them in the pause menu — the mod
-        // menu used to list them in a third order of its own.
-        List<TextMenu.Item> subOptions = new();
-        List<TextMenu.OnOff> featureRows = new();
+        // One row per split button, in the order the player meets them in the pause menu.
         foreach (SplitFeature feature in SplitFeatures.InMenuOrder) {
             SplitFeature captured = feature;
             TextMenu.OnOff row = new(Dialog.Clean(feature.NameId), feature.Enabled());
             row.Change(value => {
                 captured.Toggle(value);
-                // A companion belongs to its feature and is greyed out whenever that feature is off.
-                if (companions.TryGetValue(captured, out TextMenu.OnOff companion)) {
-                    companion.Disabled = !value;
-                }
+                if (companions.TryGetValue(captured, out RecursiveNakedSubMenu group)) group.Expanded = value;
+                berry.Expanded = BerryApplies();
             });
-
-            featureRows.Add(row);
-            subOptions.Add(row);
-            if (companions.TryGetValue(feature, out TextMenu.OnOff own)) subOptions.Add(own);
+            AddWithDescription(section, row, feature.MenuDescriptionId, menu);
+            if (companions.TryGetValue(feature, out RecursiveNakedSubMenu own)) section.AddItem(own);
         }
-
         // After both buttons it applies to, which is where a player looks for it.
-        TextMenu.OnOff berryCollectProtection =
-            new(Dialog.Clean(DialogIds.BerryCollectProtectionId),
-                SomeSplitButtonsModule.Settings.BerryCollectProtection);
-        berryCollectProtection.Change(value => SomeSplitButtonsModule.Settings.BerryCollectProtection = value);
-        subOptions.Add(berryCollectProtection);
+        section.AddItem(berry);
 
-        // Last, and inside the range the master toggle hides: it is the only way to bind a hotkey.
-        subOptions.Add(HotkeyMenu.OpenButton(
-            menu, Hotkeys.Set, Hotkeys.Text, SomeSplitButtonsModule.Instance.SaveSettings));
+        // At the root, never inside `section`: the hotkey screen only unfocuses `menu`, and a submenu
+        // holding the selection reads input itself, so it would keep moving behind the screen.
+        // The cost is that this row snaps in and out while the section animates.
+        TextMenu.Button hotkeys = HotkeyMenu.OpenButton(
+            menu, Hotkeys.Set, Hotkeys.Text, SomeSplitButtonsModule.Instance.SaveSettings);
 
-        // Everything below the master toggle appears and disappears with it. One list, so a row
-        // added above cannot be forgotten here.
-        void SetSubOptionsVisible(bool visible) {
-            foreach (TextMenu.Item item in subOptions) item.Visible = visible;
-            // Not part of the visibility rule, but always true alongside it.
-            foreach ((SplitFeature feature, TextMenu.OnOff companion) in companions) {
-                companion.Disabled = !feature.Enabled();
-            }
-        }
-
-        TextMenu.OnOff enabled =
-            new(Dialog.Clean(DialogIds.EnabledId), SomeSplitButtonsModule.Settings.Enabled);
+        TextMenu.OnOff enabled = new(Dialog.Clean(DialogIds.EnabledId), settings.Enabled);
         enabled.Change(value => {
-            SomeSplitButtonsModule.Settings.Enabled = value;
-            SetSubOptionsVisible(value);
+            settings.Enabled = value;
+            section.Expanded = value;
+            hotkeys.Visible = value;
             SplitFeatures.ResetAll();
             if (value && Engine.Scene is Level level) SplitFeatures.RefreshAll(level);
         });
 
+        // A recursive submenu must not be the menu's first item. Everest's section header is.
         menu.Add(enabled);
-        foreach (TextMenu.Item item in subOptions) menu.Add(item);
-
-        SetSubOptionsVisible(SomeSplitButtonsModule.Settings.Enabled);
-
-        // After the Add calls, not before: AddDescription inserts the description at the option's
-        // index in the menu and does nothing at all when the option is not in it yet.
-        //
-        // The descriptions are not listed in subOptions, and must not be. They start invisible and
-        // only fade in from the option's OnEnter — an option hidden by the master toggle can never
-        // be hovered, so it can never show its description.
-        for (int i = 0; i < SplitFeatures.InMenuOrder.Length; i++) {
-            string descriptionId = SplitFeatures.InMenuOrder[i].MenuDescriptionId;
-            if (descriptionId != null) featureRows[i].AddDescription(menu, Dialog.Clean(descriptionId));
-        }
-        foreach ((SplitFeature feature, TextMenu.OnOff companion) in companions) {
-            companion.AddDescription(menu, Dialog.Clean(companionDescriptions[feature]));
-        }
-        berryCollectProtection.AddDescription(menu, Dialog.Clean(DialogIds.BerryCollectProtectionDescId));
+        menu.Add(section);
+        menu.Add(hotkeys);
+        hotkeys.Visible = settings.Enabled;
     }
 
-    private static TextMenu.OnOff MakeCompanion(string labelId, bool value, Action<bool> setter) {
+    private static RecursiveNakedSubMenu MakeCompanion(TextMenu menu, SplitFeature feature, string labelId,
+                                                       string descriptionId, bool value, Action<bool> setter) {
+        RecursiveNakedSubMenu group = new(initiallyExpanded: feature.Enabled(), itemIndent: CompanionIndent);
         TextMenu.OnOff row = new(Dialog.Clean(labelId), value);
         row.Change(v => setter(v));
-        return row;
+        AddWithDescription(group, row, descriptionId, menu);
+        return group;
+    }
+
+    // Everest's AddDescription only inserts into the TextMenu itself, and adds nothing at all for an
+    // option inside a submenu. This is its behaviour rebuilt as items of the submenu.
+    private static void AddWithDescription(RecursiveSubMenuBase group, TextMenu.Item item, string descriptionId,
+                                           TextMenu menu) {
+        group.AddItem(item);
+        if (descriptionId == null) return;
+        ParentAwareEaseInSubHeader description = new(Dialog.Clean(descriptionId), false, menu) {
+            TextColor = Color.Gray, HeightExtra = 0f,
+        };
+        group.AddItem(description);
+        item.OnEnter += () => description.FadeVisible = true;
+        item.OnLeave += () => description.FadeVisible = false;
     }
 }

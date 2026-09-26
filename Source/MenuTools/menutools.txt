@@ -1,0 +1,11 @@
+# Files copied from CelesteMenuTools by its tools/vendor.sh.
+# Don't edit them here. Re-vendor with: tools/vendor.sh --update <this folder>
+commit: 92a71afc70c2fba088ad90c56301ec4b0bc79664
+namespace: Celeste.Mod.SomeSplitButtons.MenuTools
+names: RecursiveNakedSubMenu ParentAwareEaseInSubHeader
+file: IInputHoldingItem.cs
+file: ISubMenuAwareItem.cs
+file: ParentAwareEaseInSubHeader.cs
+file: RecursiveNakedSubMenu.cs
+file: RecursiveSubMenuBase.cs
+file: LICENSE
