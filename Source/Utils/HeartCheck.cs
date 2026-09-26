@@ -56,6 +56,6 @@ internal static class HeartCheck {
         // Never zero: the count outruns the constant if the routine is ever longer than it was
         // measured to be, and "0 more frames" beside a refusal reads as a bug.
         int remaining = Math.Max(COLLECT_UPDATES - updates, 1);
-        return string.Format(Dialog.Get(DialogIds.HeartBlocksSplitId), remaining);
+        return string.Format(PluralDialog.Get(DialogIds.HeartBlocksSplitId, remaining), remaining);
     }
 }
