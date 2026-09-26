@@ -122,7 +122,6 @@ internal static class SplitFeatures {
     internal static readonly SplitFeature SaveAndQuit = new() {
         NameId = DialogIds.EnableSaveAndQuitSplitButtonId,
         Keybind = new(DialogIds.ToggleSaveQuitKeyId, nameof(SomeSplitButtonsModuleSettings.ButtonToggleSaveQuit)),
-        MenuDescriptionId = DialogIds.EnableSaveAndQuitSplitButtonDescId,
         Enabled = () => SomeSplitButtonsModule.Settings.ShowSaveAndQuitSplitButton,
         SetEnabled = value => SomeSplitButtonsModule.Settings.ShowSaveAndQuitSplitButton = value,
         Reset = SaveAndQuitTimer.Reset,
@@ -176,7 +175,6 @@ internal static class SplitFeatures {
     internal static readonly SplitFeature ReturnToMap = new() {
         NameId = DialogIds.EnableReturnToMapSplitButtonId,
         Keybind = new(DialogIds.ToggleReturnToMapKeyId, nameof(SomeSplitButtonsModuleSettings.ButtonToggleReturnToMap)),
-        MenuDescriptionId = DialogIds.EnableReturnToMapSplitButtonDescId,
         Enabled = () => SomeSplitButtonsModule.Settings.ShowReturnToMapSplitButton,
         SetEnabled = value => SomeSplitButtonsModule.Settings.ShowReturnToMapSplitButton = value,
         Reset = ReturnToMapTimer.Reset,

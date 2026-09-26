@@ -4,7 +4,6 @@ internal static class DialogIds {
     internal const string SomeSplitButtonsId = "SSB_SOME_SPLIT_BUTTONS";
     internal const string EnabledId = "SSB_ENABLED";
     internal const string EnableSaveAndQuitSplitButtonId = "SSB_ENABLE_SAVE_AND_QUIT_SPLIT_BUTTON";
-    internal const string EnableSaveAndQuitSplitButtonDescId = "SSB_ENABLE_SAVE_AND_QUIT_SPLIT_BUTTON_DESC";
     internal const string SaveAndQuitSplitButtonId = "SSB_SAVE_AND_QUIT_SPLIT_BUTTON";
     internal const string EnableSkipCutsceneSplitButtonId = "SSB_ENABLE_SKIP_CUTSCENE_SPLIT_BUTTON";
     internal const string EnableSkipCutsceneSplitButtonDescId = "SSB_ENABLE_SKIP_CUTSCENE_SPLIT_BUTTON_DESC";
@@ -18,7 +17,6 @@ internal static class DialogIds {
     internal const string SaveAndQuitAndReenterId = "SSB_SQ_REENTER_OPTIONS";
     internal const string SaveAndQuitAndReenterDescId = "SSB_SQ_REENTER_OPTIONS_DESC";
     internal const string EnableReturnToMapSplitButtonId = "SSB_ENABLE_RETURN_TO_MAP_SPLIT_BUTTON";
-    internal const string EnableReturnToMapSplitButtonDescId = "SSB_ENABLE_RETURN_TO_MAP_SPLIT_BUTTON_DESC";
     internal const string ReturnToMapSplitButtonId = "SSB_RETURN_TO_MAP_SPLIT_BUTTON";
     internal const string ToggleReturnToMapKeyId = "SSB_TOGGLE_RETURN_TO_MAP_KEY";
     internal const string RTMButtonDesc = "SSB_RTM_BUTTON_DESC";
