@@ -1,4 +1,5 @@
 using Celeste.Mod.SomeSplitButtons.Splits;
+using Celeste.Mod.SomeSplitButtons.Utils;
 using Microsoft.Xna.Framework;
 using Monocle;
 
@@ -11,7 +12,8 @@ internal class ReturnToMapSplitHint : ReturnMapHint {
     // entry nor the frame count can change while the prompt is open, and this drew a fresh string and
     // measured it sixty times a second.
     private readonly string text =
-        string.Format(Dialog.Get(DialogIds.RTMButtonDesc), SplitTimings.WIPE_FADEOUT_FRAMES);
+        string.Format(PluralDialog.Get(DialogIds.RTMButtonDesc, SplitTimings.WIPE_FADEOUT_FRAMES),
+                      SplitTimings.WIPE_FADEOUT_FRAMES);
 
     private readonly float textWidth;
 

@@ -16,8 +16,7 @@ Inspired by [WonderMods](https://github.com/WonderGinger/WonderMods)' Return to 
 ## Getting started
 
 **All three buttons are off by default.** Installing the mod and pausing shows nothing until you
-turn one on, in **Mod Options → Some Split Buttons**. Each button can also be toggled from gameplay
-with a hotkey — see below.
+turn one on, in **Mod Options → Some Split Buttons**.
 
 ## The buttons
 
@@ -26,7 +25,7 @@ The wait is what makes the split land where it would in a run rather than where 
 
 - **Skip Cutscene Split** only appears during an end-of-chapter cutscene, and disappears after one
   use until the level is reloaded.
-- **Save and Quit Split** re-enters the room afterwards by default, exactly as the game does when a
+- **Save and Quit Split** reloads the room afterwards by default, exactly as the game does when a
   chapter is resumed after a real Save and Quit. Turn *Then Reload the Room* off to split without
   reloading; the chapter clock is then held stopped until you have control again,
   which is what a real Save and Quit would have done to it.

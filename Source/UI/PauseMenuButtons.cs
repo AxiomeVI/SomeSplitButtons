@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Celeste.Mod.SomeSplitButtons.Interop;
 using Celeste.Mod.SomeSplitButtons.Splits;
+using Celeste.Mod.SomeSplitButtons.Utils;
 using static Celeste.TextMenuExt;
 
 namespace Celeste.Mod.SomeSplitButtons.UI;
@@ -64,7 +65,7 @@ internal static class PauseMenuButtons {
     // the sentence reaches the player as "after  frames". Every parameterised string in this mod is
     // read this way. Both arguments are always supplied; entries quoting only frames ignore {1}.
     private static string Description(string dialogId, int frames)
-        => string.Format(Dialog.Get(dialogId), frames, SplitTimings.ToSeconds(frames));
+        => string.Format(PluralDialog.Get(dialogId, frames), frames, SplitTimings.ToSeconds(frames));
 
     /// <summary>
     ///     The insertion index that makes a new entry the <paramref name="slot"/>-th one the cursor
