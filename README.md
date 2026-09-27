@@ -81,6 +81,7 @@ public static class SomeSplitButtons {
     public static Action<Action<string, string, ulong>> AddSplitObserver;
     public static Action<Action<string, string, ulong>> RemoveSplitObserver;
     public static Func<int> InteropVersion;
+    public static Func<int> FramesUntilSplitAllowed;   // version 2
 }
 
 // In Load(), after typeof(SomeSplitButtons).ModInterop():
@@ -103,7 +104,11 @@ SomeSplitButtons.AddSplitObserver?.Invoke((action, stage, frame) =>
   A SpeedrunTool load state emits no stage: loading a state saved during the wait restores the
   pending split without a new `Pressed`, and loading an earlier state drops it without a word.
 - **`Refused`** means a collect protection turned the press down; the player keeps playing.
-- **`InteropVersion()`** returns `1`, and goes up whenever an action, a stage or a signature changes.
+- **`FramesUntilSplitAllowed()`** (version 2) is how many frames until a Save and Quit or Return to
+  Map split would be accepted: `0` when one would be now, at least `1` while a collect protection
+  would refuse it. Berries count only while Berry Collect Protection is on. The figure is a floor —
+  a berry only collects on safe ground — so read `0` as "allowed" and anything else as "not yet".
+- **`InteropVersion()`** returns `2`, and goes up whenever an action, a stage or a signature changes.
 - An observer that throws is reported once in the log and cannot break a split or the other
   observers.
 

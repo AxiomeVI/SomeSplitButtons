@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Monocle;
 using MonoMod.ModInterop;
+using Celeste.Mod.SomeSplitButtons.Utils;
 
 namespace Celeste.Mod.SomeSplitButtons.Interop;
 
@@ -21,7 +22,14 @@ public static class SplitButtonsInterop {
 
     public static void RemoveSplitObserver(Action<string, string, ulong> observer) => SplitEvents.Remove(observer);
 
-    public static int InteropVersion() => 1;
+    /// <summary>
+    ///     Frames until a Save and Quit or Return to Map split would be accepted: 0 when one would be
+    ///     now, at least 1 while a collect protection would refuse it. Berries count only while
+    ///     Berry Collect Protection is on. Added in version 2.
+    /// </summary>
+    public static int FramesUntilSplitAllowed() => CollectCheck.FramesUntilSplitAllowed();
+
+    public static int InteropVersion() => 2;
 }
 
 public static class SplitActions {

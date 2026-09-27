@@ -64,11 +64,17 @@ internal static class BerryCheck {
     // Returns the message rather than showing it, so this stays a predicate. Callers must still say
     // something: a refusal is otherwise invisible, since the button does nothing and the split
     // silently does not happen.
+    /// <summary>
+    ///     The frames the carried berries still need, or null when none blocks a split — including
+    ///     whenever the protection is off.
+    /// </summary>
+    internal static int? ProtectedRemainingFrames()
+        => SomeSplitButtonsModule.Settings.BerryCollectProtection ? CurrentRemainingFrames : null;
+
     internal static string? BlockedMessage() {
         // Read here and not at the call sites, so every button that asks gets the same answer,
         // including one added later.
-        if (!SomeSplitButtonsModule.Settings.BerryCollectProtection) return null;
-        if (CurrentRemainingFrames is not int frames) return null;
+        if (ProtectedRemainingFrames() is not int frames) return null;
 
         string message = string.Format(PluralDialog.Get(DialogIds.BerryBlocksSplitId, frames), frames);
 
