@@ -14,6 +14,14 @@ internal static class ReturnToMapTimer {
         countdown.Reset();
     }
 
+    internal static bool Armed => countdown.Armed;
+
+    // The countdown only. Its hold stands while the picker — a pause — is open, and a player cannot
+    // take a save state while paused.
+    internal static object Snapshot() => countdown.State;
+
+    internal static void Restore(object snapshot) => countdown.State = ((bool, int)) snapshot;
+
     /// <summary>Arms the split, unless a collectible the player would lose refuses it.</summary>
     internal static bool HandleButtonPressed() => countdown.TryArm();
 
@@ -37,6 +45,7 @@ internal static class ReturnToMapTimer {
     internal static void Update(Level level) {
         if (!countdown.Tick()) return;
 
+        Logger.Info(nameof(SomeSplitButtonsModule), $"ReturnToMap split in {level.Session.Level} on frame {Engine.FrameCounter}");
         SkipCutsceneRoomTimer.Split();
         if (!SomeSplitButtonsModule.Settings.ReturnToMapCheckpointMenu) return;
 

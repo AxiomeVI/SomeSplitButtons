@@ -72,11 +72,23 @@ internal static class Bindable {
         return null;
     }
 
-    /// <summary>Adds an input to a binding, or removes it if it is already there.</summary>
+    /// <summary>The most inputs one binding may hold. Every one must be held for the combo to fire.</summary>
+    // More than a hand holds at once is not a combo anyone can press, and the cap also bounds how wide
+    // the remap screen has to draw a binding.
+    internal const int MaxComboInputs = 4;
+
+    /// <summary>
+    ///     Adds an input to a binding, or removes it if it is already there. False when the binding
+    ///     already holds <see cref="MaxComboInputs"/> and nothing changed.
+    /// </summary>
     // Pressing a bound input again is how a single input is unbound; clearing a whole row is the
-    // Journal action or Delete on the screen.
-    internal static void Toggle<T>(List<T> inputs, T input) {
-        if (!inputs.Remove(input)) inputs.Add(input);
+    // Journal action or Delete on the screen. A full binding refuses a new input rather than dropping
+    // its oldest, as vanilla does: dropping one would silently turn the combo into a different one.
+    internal static bool Toggle<T>(List<T> inputs, T input) {
+        if (inputs.Remove(input)) return true;
+        if (inputs.Count >= MaxComboInputs) return false;
+        inputs.Add(input);
+        return true;
     }
 
     /// <summary>

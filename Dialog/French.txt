@@ -20,6 +20,7 @@ SSB_SCS_PROLOGUE_BUTTON_DESC=                     Ferme la pause et split le roo
 SSB_SQ_BUTTON_DESC=                               Ferme la pause et split le room timer de SpeedrunTool après {0} frames
 SSB_SQ_REENTER_BUTTON_DESC=                       Ferme la pause, split le room timer de SpeedrunTool après {0} frames, puis recharge la salle
 SSB_RTM_BUTTON_DESC=                              Ferme la pause et split le room timer de SpeedrunTool après {0} frames
+SSB_END_POINT_IGNORES_SPLIT=                      Point d'arrivée SpeedrunTool actif : ce split ne sera pas enregistré
 SSB_RTM_CHECKPOINT_MENU_HEADER=                   QUEL CHECKPOINT CHARGER ?
 
 # ============================== Messages ======================================
@@ -32,6 +33,6 @@ SSB_BUTTON_ENABLED=                               {0} activé
 SSB_BUTTON_DISABLED=                              {0} désactivé
 
 # ============================ Keybind Config UI ================================
-SSB_KEYBIND_COMBO_SUB=                            Chaque touche assignée s'ajoute au combo (toutes doivent être maintenues) ; réassigne-la pour la retirer
+SSB_KEYBIND_COMBO_SUB=                            Chaque touche assignée s'ajoute au combo (4 max, toutes maintenues) ; réassigne-la pour la retirer
 SSB_KEYBIND_CLEAR_SUB=                            Active ou désactive le bouton. Journal ou Suppr efface la ligne
 SSB_KEYBIND_TIMEOUT=                              Annulation dans {0} s - appuie sur Échap pour annuler maintenant

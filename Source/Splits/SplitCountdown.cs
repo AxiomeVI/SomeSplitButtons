@@ -1,4 +1,5 @@
 using System;
+using Celeste.Mod.SomeSplitButtons.Integration;
 using Celeste.Mod.SomeSplitButtons.Utils;
 using Monocle;
 
@@ -14,6 +15,12 @@ internal sealed class SplitCountdown(Func<int> frames) {
 
     /// <summary>Whether a press is waiting to become a split.</summary>
     internal bool Armed => armed;
+
+    /// <summary>Everything the countdown is, for a save state to carry.</summary>
+    internal (bool Armed, int Counter) State {
+        get => (armed, counter);
+        set => (armed, counter) = value;
+    }
 
     internal void Arm() {
         armed = true;
@@ -33,11 +40,17 @@ internal sealed class SplitCountdown(Func<int> frames) {
     internal bool TryArm() {
         if (Engine.Scene is not Level) return false;
         if (CollectCheck.BlockedMessage() is string blocked) {
+            Logger.Info(nameof(SomeSplitButtonsModule), $"refused: {blocked}");
             SomeSplitButtonsModule.PopupMessage(blocked);
             return false;
         }
 
         Arm();
+        // Armed all the same: the split's reload or picker still happens, only the room timer
+        // ignores it. The player was told by the button's description (PauseMenuButtons).
+        if (SpeedrunToolHooks.EndPointExists) {
+            Logger.Info(nameof(SomeSplitButtonsModule), "armed with a SpeedrunTool end point set: the room timer will ignore this split");
+        }
         return true;
     }
 

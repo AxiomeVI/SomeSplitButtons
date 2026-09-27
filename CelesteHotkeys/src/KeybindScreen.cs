@@ -72,7 +72,7 @@ internal sealed class KeybindScreen<TSettings> : TextMenu where TSettings : clas
 
         Reload();
         OnESC = OnCancel = () => { Focused = false; closing = true; };
-        MinWidth = 600f;
+        MinWidth = MinMenuWidth;
         Position.Y = ScrollTargetY;
         Alpha = 0f;
     }
@@ -133,7 +133,24 @@ internal sealed class KeybindScreen<TSettings> : TextMenu where TSettings : clas
                 .AltPressed(() => ClearRow(keybind, keyboard: false)));
         }
 
+        FitBindings();
         if (index >= 0) Selection = index;
+    }
+
+    // TextMenu makes the menu as wide as its widest label plus its widest binding, centres it, and
+    // draws every label at its left edge: a wide enough binding pushed the labels off the screen. The
+    // bindings get what is left of MaxLineWidth after the label column, and a wider one shrinks.
+    // The label column is measured the way TextMenu measures it, over the items it counts.
+    private void FitBindings() {
+        float labelColumn = 0f;
+        foreach (Item item in Items) {
+            if (item.IncludeWidthInMeasurement) labelColumn = Math.Max(labelColumn, item.LeftWidth());
+        }
+
+        float room = Math.Max(0f, MaxLineWidth - labelColumn);
+        foreach (Item item in Items) {
+            if (item is Row row) row.BindingRoom = room;
+        }
     }
 
     private void StartRecording(Keybind<TSettings> keybind, bool keyboard) {
@@ -147,7 +164,10 @@ internal sealed class KeybindScreen<TSettings> : TextMenu where TSettings : clas
     private void Record<T>(List<T> inputs, T input) {
         recording = false;
         refocusDelay = RefocusDelay;
-        Bindable.Toggle(inputs, input);
+        if (!Bindable.Toggle(inputs, input)) {
+            Audio.Play(InvalidSound);
+            return;
+        }
         Changed();
     }
 
@@ -242,13 +262,51 @@ internal sealed class KeybindScreen<TSettings> : TextMenu where TSettings : clas
         return width <= MaxLineWidth ? preferred : preferred * MaxLineWidth / width;
     }
 
+    // Vanilla's keyboard config is 881 px wide with its default bindings. The same floor puts the labels
+    // where vanilla's are while nothing is bound, and a first binding does not move them.
+    internal const float MinMenuWidth = 880f;
+
     // TextMenu puts the longest label and the widest binding side by side with nothing between them.
     internal const float LabelGap = 64f;
 
     private sealed class Row : Setting {
+        /// <summary>The widest this row's binding may be drawn. Set by the screen once every row exists.</summary>
+        internal float BindingRoom = float.MaxValue;
+
         internal Row(string label, List<Keys> keys) : base(label, keys) { }
         internal Row(string label, List<Buttons> buttons) : base(label, buttons) { }
         public override float LeftWidth() => base.LeftWidth() + LabelGap;
+
+        // Capped, so the menu's width, the widest label plus this, stays within MaxLineWidth.
+        public override float RightWidth() => Math.Min(base.RightWidth(), BindingRoom);
+
+        public override void Render(Vector2 position, bool highlighted) {
+            float natural = base.RightWidth();
+            if (natural <= BindingRoom) {
+                base.Render(position, highlighted);
+                return;
+            }
+
+            // Setting.Render, with the binding drawn at BindingRoom / natural of its size.
+            float scale = BindingRoom / natural;
+            float alpha = Container.Alpha;
+            Color stroke = Color.Black * (alpha * alpha * alpha);
+            Color color = Disabled ? Color.DarkSlateGray : (highlighted ? Container.HighlightColor : Color.White) * alpha;
+            ActiveFont.DrawOutline(Label, position, new Vector2(0f, 0.5f), Vector2.One, color, 2f, stroke);
+
+            float x = Container.Width - BindingRoom;
+            foreach (object value in Values) {
+                if (value is MTexture texture) {
+                    texture.DrawJustified(position + new Vector2(x, 0f), new Vector2(0f, 0.5f), Color.White * alpha, scale);
+                    x += texture.Width * scale;
+                } else if (value is string name) {
+                    float width = (ActiveFont.Measure(name).X * 0.7f + 16f) * scale;
+                    ActiveFont.DrawOutline(name, position + new Vector2(x + width * 0.5f, 0f), new Vector2(0.5f, 0.5f),
+                                           Vector2.One * (0.7f * scale), Color.LightGray * alpha, 2f, stroke);
+                    x += width;
+                }
+            }
+        }
     }
 
     // ⚠️ The clear hint is the mod's own text, of any length in any language. A plain SubHeader counts

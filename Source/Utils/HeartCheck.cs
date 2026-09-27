@@ -51,11 +51,15 @@ internal static class HeartCheck {
 
     /// <summary>Why the caller must not split, or null when no heart blocks it.</summary>
     internal static string? BlockedMessage() {
-        if (Engine.Scene is not Level level || !Collecting(level)) return null;
-
-        // Never zero: the count outruns the constant if the routine is ever longer than it was
-        // measured to be, and "0 more frames" beside a refusal reads as a bug.
-        int remaining = Math.Max(COLLECT_UPDATES - updates, 1);
+        if (RemainingFrames() is not int remaining) return null;
         return string.Format(PluralDialog.Get(DialogIds.HeartBlocksSplitId, remaining), remaining);
+    }
+
+    /// <summary>The frames the collect routine still needs, or null when no heart blocks a split.</summary>
+    // Never zero: the count outruns the constant if the routine is ever longer than it was measured
+    // to be, and "0 more frames" beside a refusal reads as a bug.
+    internal static int? RemainingFrames() {
+        if (Engine.Scene is not Level level || !Collecting(level)) return null;
+        return Math.Max(COLLECT_UPDATES - updates, 1);
     }
 }

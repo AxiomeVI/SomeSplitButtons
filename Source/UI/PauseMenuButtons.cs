@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Celeste.Mod.SomeSplitButtons.Integration;
 using Celeste.Mod.SomeSplitButtons.Interop;
 using Celeste.Mod.SomeSplitButtons.Splits;
 using Celeste.Mod.SomeSplitButtons.Utils;
@@ -24,17 +25,27 @@ internal static class PauseMenuButtons {
             if (feature.Available != null && !feature.Available(level)) continue;
 
             bool warn = feature.WarnsWhenAnchorMissingInMinimal || !minimal;
-            if (VanillaButtonIndex(menu, feature.AnchorDialogId, warn) < 0) continue;
+            int anchor = VanillaButtonIndex(menu, feature.AnchorDialogId, warn);
+            if (anchor < 0) continue;
 
-            SplitButton button = new(feature, Dialog.Clean(feature.ButtonLabelId));
+            SplitButton button = new(feature, Dialog.Clean(feature.ButtonLabelId)) {
+                // Greyed out with the vanilla button it stands for — Save and Quit under
+                // SaveQuitDisabled, for one. A split for an exit the game would not allow is not a
+                // faster version of it, which is the heart protection's rule too.
+                Disabled = menu.Items[anchor].Disabled,
+            };
             button.Pressed(() => {
                 SplitEvents.Emit(feature.InteropAction, SplitStages.Pressed);
                 string terminal = feature.Press(level, menu);
                 if (terminal != null) SplitEvents.Emit(feature.InteropAction, terminal);
             });
 
-            Insert(menu, SlotIndex(menu, feature.Slot), button,
-                Description(feature.DescriptionId(), feature.DescriptionFrames()));
+            // In the menu rather than a popup at the press: Save and Quit's fade-out starts on the
+            // press and draws over any popup.
+            string description = feature.IgnoredAtEndPoint && SpeedrunToolHooks.EndPointExists
+                ? Dialog.Clean(DialogIds.EndPointIgnoresSplitId)
+                : Description(feature.DescriptionId(), feature.DescriptionFrames());
+            Insert(menu, SlotIndex(menu, feature.Slot), button, description);
         }
     }
 
@@ -90,7 +101,7 @@ internal static class PauseMenuButtons {
     }
 
     private static void Insert(TextMenu menu, int index, TextMenu.Button button, string description) {
-        EaseInSubHeaderExt descriptionText = new(description, false, menu, null) {
+        FittedDescription descriptionText = new(description, menu) {
             HeightExtra = 0f
         };
         // Description first, same index: the button displaces it and ends up above it. Swapping

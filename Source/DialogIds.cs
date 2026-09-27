@@ -29,6 +29,7 @@ internal static class DialogIds {
     internal const string BerryBlocksSplitId = "SSB_BERRY_BLOCKS_SPLIT";
     internal const string BerrySlowdownId = "SSB_BERRY_SLOWDOWN";
     internal const string HeartBlocksSplitId = "SSB_HEART_BLOCKS_SPLIT";
+    internal const string EndPointIgnoresSplitId = "SSB_END_POINT_IGNORES_SPLIT";
     internal const string ButtonEnabledId = "SSB_BUTTON_ENABLED";
     internal const string ButtonDisabledId = "SSB_BUTTON_DISABLED";
 

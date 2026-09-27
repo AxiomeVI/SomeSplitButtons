@@ -1,3 +1,4 @@
+using Celeste.Mod.SpeedrunTool.Message;
 using Celeste.Mod.SpeedrunTool.RoomTimer;
 using MonoMod.RuntimeDetour;
 using System;
@@ -6,8 +7,8 @@ using System.Reflection;
 namespace Celeste.Mod.SomeSplitButtons.Integration;
 
 /// <summary>
-///     The two SpeedrunTool methods this mod detours, resolved by reflection so a rename on its side
-///     costs a warning instead of a crash.
+///     The two SpeedrunTool methods this mod detours and the two it calls, resolved by reflection so
+///     a rename on its side costs a warning instead of a crash.
 /// </summary>
 // Gathered here so that every way this mod can break when SpeedrunTool changes lives in one
 // directory, and so that Load() reads as a list of what the mod installs rather than as the
@@ -21,18 +22,53 @@ namespace Celeste.Mod.SomeSplitButtons.Integration;
 // Everything degrades to a warning, including the three faults that used to throw out of Load() and
 // make Everest refuse the whole mod: a changed signature, a new overload making GetMethod
 // ambiguous, and a renamed handler on this side. Hence the explicit parameter types and nameof.
+//
+// The calls too, not only the detours: a direct call compiles against SpeedrunTool and throws
+// MissingMethodException inside Level.Update at the moment of a split.
 internal static class SpeedrunToolHooks {
     private static Hook timingHook;
     private static Hook updateTimerStateHook;
+    private static Action<bool> updateTimerState;
+    private static Action<string, string> showPopup;
+    private static Func<bool> endPointExists;
+
+    /// <summary>Splits SpeedrunTool's room timer. Does nothing when the method was not found.</summary>
+    // Through the detour above, like any other caller: it patches the method, not a call site.
+    internal static void UpdateTimerState() => updateTimerState?.Invoke(false);
+
+    /// <summary>Shows a SpeedrunTool popup. Does nothing when the method was not found.</summary>
+    internal static void ShowPopup(string message) => showPopup?.Invoke(message, null);
+
+    /// <summary>
+    ///     Whether an end point is set. While one is, SpeedrunTool records a split only at the end
+    ///     point or on a completed level, so Save and Quit and Return to Map splits register nothing.
+    /// </summary>
+    internal static bool EndPointExists => endPointExists?.Invoke() ?? false;
 
     internal static void Install() {
+        Func<MethodInfo> updateTimerStateMethod = () => typeof(RoomTimerManager).GetMethod(
+            nameof(RoomTimerManager.UpdateTimerState),
+            BindingFlags.Public | BindingFlags.Static,
+            null, new[] {typeof(bool)}, null);
         updateTimerStateHook = TryHook(
-            () => typeof(RoomTimerManager).GetMethod(
-                nameof(RoomTimerManager.UpdateTimerState),
-                BindingFlags.Public | BindingFlags.Static,
-                null, new[] {typeof(bool)}, null),
+            updateTimerStateMethod,
             nameof(SkipCutsceneRoomTimer.OnUpdateTimerState),
             "SpeedrunTool RoomTimerManager.UpdateTimerState not found — the Skip Cutscene split will not hold back the room timer.");
+        updateTimerState = TryBind<Action<bool>>(
+            updateTimerStateMethod,
+            "SpeedrunTool RoomTimerManager.UpdateTimerState not found — the split buttons will not split the room timer.");
+        showPopup = TryBind<Action<string, string>>(
+            () => typeof(PopupMessageUtils).GetMethod(
+                nameof(PopupMessageUtils.Show),
+                BindingFlags.Public | BindingFlags.Static,
+                null, new[] {typeof(string), typeof(string)}, null),
+            "SpeedrunTool PopupMessageUtils.Show not found — hotkey toggles and refused splits will not show a message.");
+        endPointExists = TryBind<Func<bool>>(
+            () => typeof(RoomTimerManager).Assembly
+                .GetType("Celeste.Mod.SpeedrunTool.RoomTimer.EndPoint")
+                ?.GetProperty("IsExist", BindingFlags.Public | BindingFlags.Static)
+                ?.GetMethod,
+            "SpeedrunTool EndPoint.IsExist not found — a split an end point ignores will not say so.");
 
         // RoomTimerData is internal to SpeedrunTool, so it has to come from the assembly by name
         // rather than from a typeof. A missing *type* carries the same warning as a missing method,
@@ -64,10 +100,27 @@ internal static class SpeedrunToolHooks {
         return null;
     }
 
+    /// <summary>Binds a delegate to one method, or logs <paramref name="warning"/> and returns null.</summary>
+    // CreateDelegate throws on a changed signature, which lands in the same catch as the lookup.
+    private static T TryBind<T>(Func<MethodInfo> target, string warning) where T : Delegate {
+        try {
+            MethodInfo method = target();
+            if (method != null) return method.CreateDelegate<T>();
+            Logger.Warn(nameof(SomeSplitButtonsModule), warning);
+        }
+        catch (Exception e) {
+            Logger.Warn(nameof(SomeSplitButtonsModule), $"{warning} ({e.GetType().Name}: {e.Message})");
+        }
+        return null;
+    }
+
     internal static void Uninstall() {
         timingHook?.Dispose();
         timingHook = null;
         updateTimerStateHook?.Dispose();
         updateTimerStateHook = null;
+        updateTimerState = null;
+        showPopup = null;
+        endPointExists = null;
     }
 }
