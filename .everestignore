@@ -6,8 +6,7 @@
 Source/
 CelesteHotkeys/
 SomeSplitButtons.zip
-# Loaded straight from a git checkout during development, Everest also indexes these. None of them
-# is content, so the cost is only a longer scan — but GameBanana/ holds four full-size PNGs.
+# Not mod content. LICENSE also ships in the release zip; the others only exist in a git checkout.
 GameBanana/
 *.sln
 README.md
