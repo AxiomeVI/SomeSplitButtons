@@ -33,6 +33,6 @@ SSB_BUTTON_ENABLED=                               {0} activé
 SSB_BUTTON_DISABLED=                              {0} désactivé
 
 # ============================ Keybind Config UI ================================
-SSB_KEYBIND_COMBO_SUB=                            Chaque touche assignée s'ajoute au combo (toutes doivent être maintenues) ; réassigne-la pour la retirer
+SSB_KEYBIND_COMBO_SUB=                            Chaque touche assignée s'ajoute au combo (4 max, toutes maintenues) ; réassigne-la pour la retirer
 SSB_KEYBIND_CLEAR_SUB=                            Active ou désactive le bouton. Journal ou Suppr efface la ligne
 SSB_KEYBIND_TIMEOUT=                              Annulation dans {0} s - appuie sur Échap pour annuler maintenant
