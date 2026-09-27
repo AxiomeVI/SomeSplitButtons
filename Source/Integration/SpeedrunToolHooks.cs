@@ -7,8 +7,8 @@ using System.Reflection;
 namespace Celeste.Mod.SomeSplitButtons.Integration;
 
 /// <summary>
-///     The two SpeedrunTool methods this mod detours and the two it calls, resolved by reflection so
-///     a rename on its side costs a warning instead of a crash.
+///     The SpeedrunTool methods this mod detours and calls, and the field it clears, resolved by
+///     reflection so a rename on its side costs a warning instead of a crash.
 /// </summary>
 // Gathered here so that every way this mod can break when SpeedrunTool changes lives in one
 // directory, and so that Load() reads as a list of what the mod installs rather than as the
@@ -31,6 +31,7 @@ internal static class SpeedrunToolHooks {
     private static Action<bool> updateTimerState;
     private static Action<string, string> showPopup;
     private static Func<bool> endPointExists;
+    private static FieldInfo previousRoom;
 
     /// <summary>Splits SpeedrunTool's room timer. Does nothing when the method was not found.</summary>
     // Through the detour above, like any other caller: it patches the method, not a call site.
@@ -44,6 +45,12 @@ internal static class SpeedrunToolHooks {
     ///     point or on a completed level, so Save and Quit and Return to Map splits register nothing.
     /// </summary>
     internal static bool EndPointExists => endPointExists?.Invoke() ?? false;
+
+    /// <summary>
+    ///     Forgets the room SpeedrunTool last timed, as its own reset does, so the next level it
+    ///     times raises no room-change split. Does nothing when the field was not found.
+    /// </summary>
+    internal static void ForgetPreviousRoom() => previousRoom?.SetValue(null, null);
 
     internal static void Install() {
         Func<MethodInfo> updateTimerStateMethod = () => typeof(RoomTimerManager).GetMethod(
@@ -69,6 +76,13 @@ internal static class SpeedrunToolHooks {
                 ?.GetProperty("IsExist", BindingFlags.Public | BindingFlags.Static)
                 ?.GetMethod,
             "SpeedrunTool EndPoint.IsExist not found — a split an end point ignores will not say so.");
+
+        previousRoom = typeof(RoomTimerManager).GetField("previousRoom", BindingFlags.NonPublic | BindingFlags.Static);
+        if (previousRoom?.FieldType != typeof(string)) {
+            previousRoom = null;
+            Logger.Warn(nameof(SomeSplitButtonsModule),
+                "SpeedrunTool RoomTimerManager.previousRoom not found — a checkpoint picked after the Return to Map split will split the room timer again on arrival.");
+        }
 
         // RoomTimerData is internal to SpeedrunTool, so it has to come from the assembly by name
         // rather than from a typeof. A missing *type* carries the same warning as a missing method,
@@ -122,5 +136,6 @@ internal static class SpeedrunToolHooks {
         updateTimerState = null;
         showPopup = null;
         endPointExists = null;
+        previousRoom = null;
     }
 }

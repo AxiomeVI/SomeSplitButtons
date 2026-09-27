@@ -1,5 +1,4 @@
 using System;
-using Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 using Celeste.Mod.SomeSplitButtons.SkipCutsceneSplit;
 using Celeste.Mod.SomeSplitButtons.Splits;
 using Monocle;
@@ -78,18 +77,19 @@ internal static class SkipCutsceneRoomTimer {
     /// </summary>
     // The restore is in a finally because the flag is vanilla's: an exception out of SpeedrunTool
     // would otherwise leave the level permanently marked incomplete, which is worse than the throw.
-    // Also where a ClockHold stops the room timer: Timing accumulates only while the level reads
-    // !TimerStopped, and a hold does not write that flag.
+    // Also where a ClockHold stops the room timer, by giving it no time to add. Showing it a stopped
+    // level would skip Timing whole, and with it the line that ends the Completed state a split
+    // leaves when rooms remain: the timer would show a finished room at 0.000 through the hold.
     public static void OnTiming(Action<object, Level> orig, object self, Level level) {
         bool wasCompleted = level.Completed;
-        bool wasStopped = level.TimerStopped;
+        float rawDeltaTime = Engine.RawDeltaTime;
         level.Completed = !ShouldFreezeLevelCompleted(level) && CompletedAsShown(level);
-        level.TimerStopped = wasStopped || ClockHold.Held;
+        if (ClockHold.Held) Engine.RawDeltaTime = 0f;
         try {
             orig(self, level);
         } finally {
             level.Completed = wasCompleted;
-            level.TimerStopped = wasStopped;
+            Engine.RawDeltaTime = rawDeltaTime;
         }
     }
 
@@ -109,14 +109,6 @@ internal static class SkipCutsceneRoomTimer {
     // first. It also makes SpeedrunTool break before the second write to ThisRunTimes[pbTimeKey], so
     // the call still produces exactly one record.
     public static void OnUpdateTimerState(Action<bool> orig, bool endPoint) {
-        // ⚠️ First statement, above the freeze check. A freshly loaded checkpoint satisfies none of
-        // ShouldFreezeLevelCompleted's conjuncts, so the early return below is the path it takes —
-        // a swallow placed inside the freeze branch never runs in the only case it exists for.
-        //
-        // The mod's own splits are excluded: splittingOnOurOwnButton is set only inside Split(), and
-        // a same-frame split of ours must not be eaten by a flag armed for the arrival.
-        if (!splittingOnOurOwnButton && ArrivalSplitSwallow.Consume()) return;
-
         Level current = Engine.Scene as Level;
         if (!ShouldFreezeLevelCompleted(current)) {
             if (current == null) {
