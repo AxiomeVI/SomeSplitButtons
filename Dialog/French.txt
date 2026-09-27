@@ -17,9 +17,10 @@ SSB_KEYBIND_CONFIG=                               Raccourcis
 # ============================ Pause-Menu Buttons ==============================
 SSB_SCS_BUTTON_DESC=                              Ferme la pause et split le room timer de SpeedrunTool après {0} frames
 SSB_SCS_PROLOGUE_BUTTON_DESC=                     Ferme la pause et split le room timer de SpeedrunTool après {0} frames (~{1} s)
-SSB_SQ_BUTTON_DESC=                               Ferme la pause et split le room timer de SpeedrunTool après {0} frames
-SSB_SQ_REENTER_BUTTON_DESC=                       Ferme la pause, split le room timer de SpeedrunTool après {0} frames, puis recharge la salle
-SSB_RTM_BUTTON_DESC=                              Ferme la pause et split le room timer de SpeedrunTool après {0} frames
+SSB_SQ_BUTTON_DESC=                               Split le room timer de SpeedrunTool après {0} frames, puis ferme la pause
+SSB_SQ_REENTER_BUTTON_DESC=                       Split le room timer de SpeedrunTool après {0} frames, puis recharge la salle
+SSB_RTM_BUTTON_DESC=                              Split le room timer de SpeedrunTool après {0} frames, puis ferme la pause
+SSB_RTM_PICKER_BUTTON_DESC=                       Split le room timer de SpeedrunTool après {0} frames, puis ouvre la liste des checkpoints
 SSB_END_POINT_IGNORES_SPLIT=                      Point d'arrivée SpeedrunTool actif : ce split ne sera pas enregistré
 SSB_RTM_CHECKPOINT_MENU_HEADER=                   QUEL CHECKPOINT CHARGER ?
 

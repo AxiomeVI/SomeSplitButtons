@@ -47,8 +47,12 @@ internal class ReturnToMapSplitConfirmMenu : TextMenu {
 
         Button confirmButton = new(Dialog.Clean(DialogIds.VanillaReturnContinueId));
         confirmButton.Pressed(() => {
-            Finish(ReturnToMapTimer.HandleButtonPressed() ? SplitStages.Confirmed : SplitStages.Refused);
-            LeaveThePause(level, pauseMenu);
+            bool armed = ReturnToMapTimer.HandleButtonPressed();
+            Finish(armed ? SplitStages.Confirmed : SplitStages.Refused);
+            // Armed, the level stays paused through the wait (PausedWait), as vanilla's prompt
+            // leaves it through its wipe. Refused, the player has the refusal to wait out in play.
+            if (armed) CloseTheMenus(level, pauseMenu);
+            else LeaveThePause(level, pauseMenu);
         });
 
         Button cancelButton = new(Dialog.Clean(DialogIds.VanillaReturnCancelId));
@@ -70,12 +74,17 @@ internal class ReturnToMapSplitConfirmMenu : TextMenu {
     // Vanilla's own Return to Map prompt hand-rolls these four lines for the same reason, and saves
     // no settings either: a confirmation prompt changes none.
     private void LeaveThePause(Level level, TextMenu pauseMenu) {
-        Close();
-        pauseMenu.RemoveSelf();
-        level.PauseMainMenuOpen = false;
+        CloseTheMenus(level, pauseMenu);
         level.Paused = false;
         Audio.Play(SFX.ui_game_unpause);
         level.unpauseTimer = 0.15f;
+    }
+
+    // After Close(), whose OnClose hands focus back to the pause menu and sets PauseMainMenuOpen.
+    private void CloseTheMenus(Level level, TextMenu pauseMenu) {
+        Close();
+        pauseMenu.RemoveSelf();
+        level.PauseMainMenuOpen = false;
     }
 
     // The two ways out that bypass Close(): something else removing the entity, and the scene ending

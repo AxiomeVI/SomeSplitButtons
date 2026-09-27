@@ -20,8 +20,11 @@ turn one on, in **Mod Options → Some Split Buttons**.
 
 ## The buttons
 
-Each one unpauses, waits the number of frames the real action would have taken, and then splits.
-The wait is what makes the split land where it would in a run rather than where you pressed.
+Each one waits the number of frames the real action would have taken, and then splits. The wait is
+what makes the split land where it would in a run rather than where you pressed. Save and Quit and
+Return to Map keep the game paused through it, as the real buttons keep it through their fade-out:
+nothing can move, die or be picked up in those frames. Skip Cutscene unpauses, and the cutscene plays
+on.
 
 - **Skip Cutscene Split** only appears during an end-of-chapter cutscene, and disappears after one
   use until the level is reloaded. It does not appear in the Epilogue, where no time runs. It splits
@@ -43,8 +46,7 @@ The wait is what makes the split land where it would in a run rather than where 
 
 A pressed button finishes its split even if you switch it off during the wait, and it is not offered
 again until the split lands. A button is greyed out wherever the game greys out the action it stands
-for. SpeedrunTool save states keep a split in flight: saving does not cancel it, and loading a state
-saved during the wait splits again from the same point.
+for. SpeedrunTool's save and load hotkeys do nothing during a paused wait, as in any pause.
 
 If a SpeedrunTool end point is set, SpeedrunTool records nothing for the Save and Quit and Return to
 Map splits. Their descriptions in the pause menu say so.
@@ -61,9 +63,8 @@ Quit and Return to Map splits refuse to fire and say how many frames are still n
   ignored on purpose, and modded collectibles that are not `Strawberry` — CollabUtils silver and
   speed berries, for instance — are not seen at all.
 - **With *Then Load a Checkpoint* on, the protection is asked at the press
-  only.** A refused press means no split and no checkpoint list. The 31 frames after an accepted
-  press stand in for vanilla's fade-out, so anything picked up in them is not a real collect:
-  loading a checkpoint discards it, and Cancel keeps it.
+  only.** A refused press means no split and no checkpoint list. The game stays paused from an
+  accepted press to the list, so nothing can be picked up in between.
 
 ⚠️ **While the Skip Cutscene button is enabled, SpeedrunTool's room timer keeps running through
 every chapter ending**, including ones you finish by watching the cutscene or by using vanilla Skip
