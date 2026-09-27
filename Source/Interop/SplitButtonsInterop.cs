@@ -71,8 +71,11 @@ internal static class SplitEvents {
     }
 
     internal static void Emit(string action, string stage) {
-        if (observers.Count == 0) return;
         ulong frame = Engine.FrameCounter;
+        // Info, not Verbose: release builds log this mod at Info, and these lines are what a
+        // runner's log.txt has to show for a split that did not do what they expected.
+        Logger.Info(nameof(SomeSplitButtonsModule), $"{action} {stage} on frame {frame}");
+        if (observers.Count == 0) return;
         // A copy, so an observer may remove itself; a try per observer, so another mod's exception
         // can neither break a split nor starve the observers after it.
         foreach (Action<string, string, ulong> observer in observers.ToArray()) {

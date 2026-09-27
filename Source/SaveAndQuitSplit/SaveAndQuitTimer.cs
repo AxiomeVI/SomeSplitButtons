@@ -1,3 +1,4 @@
+using System;
 using Celeste.Mod.SomeSplitButtons.Integration;
 using Celeste.Mod.SomeSplitButtons.Splits;
 using Celeste.Mod.SomeSplitButtons.Utils;
@@ -6,30 +7,21 @@ using Monocle;
 namespace Celeste.Mod.SomeSplitButtons.SaveAndQuitSplit;
 internal static class SaveAndQuitTimer {
     private static readonly SplitCountdown countdown = new(() => SplitTimings.WIPE_FADEOUT_FRAMES);
-    private static bool keepTimerStopped = false;
+    private static bool fadingOut = false;
 
-    /// <summary>
-    ///     Releases the chapter clock just before SpeedrunTool clones the level, so no saved state
-    ///     carries a hold this manager would have let go of.
-    /// </summary>
-    // Keyed on ownership and run with every setting off, for UpdateHold's reason.
-    internal static void ReleaseHoldForSaveState(Level level) {
-        if (keepTimerStopped) level.TimerStopped = false;
-    }
+    /// <summary>The fade-out this timer started, to tell it from any other wipe.</summary>
+    private static ScreenWipe fadeOut;
+    // A view of ClockHold, named as the expectation files have always read it.
+    private static bool keepTimerStopped => ClockHold.IsHeldBy(ClockHold.Holder.SaveAndQuit);
 
-    /// <summary>
-    ///     Disarms the timer, releasing the chapter clock first if this manager is what is holding
-    ///     it stopped.
-    /// </summary>
-    // As well as UpdateHold, not instead of it: this releases at the moment of the reset, and on a
-    // level exit there is no next frame for UpdateHold to use. Abandoning the flag outside a Level
-    // is safe — the only way to leave one is to replace it, and the next starts with it false.
+    /// <summary>Disarms the timer and lets go of the chapter clock.</summary>
+    // As well as UpdateHold, not instead of it: on a level exit there is no next frame for
+    // UpdateHold to use, and a hold left standing would stop the next level's clock.
     internal static void Reset() {
-        if (keepTimerStopped && Engine.Scene is Level level) {
-            level.TimerStopped = false;
-        }
-        keepTimerStopped = false;
+        ClockHold.Release(ClockHold.Holder.SaveAndQuit);
         countdown.Reset();
+        fadingOut = false;
+        fadeOut = null;
     }
 
     /// <summary>
@@ -42,37 +34,43 @@ internal static class SaveAndQuitTimer {
         return player != null && !player.TimePaused;
     }
 
+    internal static bool Armed => countdown.Armed;
+
+    private sealed record Saved((bool Armed, int Counter) Countdown, bool Held, bool FadingOut);
+
+    internal static object Snapshot() => new Saved(countdown.State, keepTimerStopped, fadingOut);
+
+    internal static void Restore(object snapshot) {
+        Saved saved = (Saved) snapshot;
+        countdown.State = saved.Countdown;
+        ClockHold.Restore(ClockHold.Holder.SaveAndQuit, saved.Held);
+        fadingOut = saved.FadingOut;
+    }
+
     /// <summary>Arms the split, unless a collectible the player would lose refuses it.</summary>
     internal static bool HandleButtonPressed() => countdown.TryArm();
 
-    /// <summary>
-    ///     Maintains the chapter-clock hold, and releases it once vanilla would have restarted the
-    ///     clock on its own.
-    /// </summary>
-    // ⚠️ Called from outside every settings gate, because TimerStopped is vanilla's flag and not the
-    // mod's. While this holds it, the mod is the only thing that will ever put it back — a button
-    // switched off mid-hold would freeze the chapter clock, Session.Time and SaveData.AddTime for
-    // the rest of the Level. Only the split-only path arms it; re-entry replaces the Level instead.
+    /// <summary>Releases the chapter-clock hold once vanilla would have restarted the clock.</summary>
+    // ⚠️ Called from outside every settings gate: only this releases the hold, and a button switched
+    // off mid-hold would otherwise freeze the chapter clock, Session.Time and SaveData.AddTime for the
+    // rest of the Level. Only the split-only path takes it; re-entry replaces the Level instead.
     internal static void UpdateHold(Level level) {
-        if (!keepTimerStopped) return;
-
-        level.TimerStopped = true;
-        if (ClockWouldRestart(level)) {
-            keepTimerStopped = false;
-            level.TimerStopped = false;
-        }
+        if (keepTimerStopped && ClockWouldRestart(level)) ClockHold.Release(ClockHold.Holder.SaveAndQuit);
     }
 
     internal static void Update(Level level) {
+        if (fadingOut) KeepFadeOutInStep(level);
+
         if (!countdown.Tick()) return;
 
+        fadingOut = false;
+        Logger.Info(nameof(SomeSplitButtonsModule), $"SaveAndQuit split in {level.Session.Level} on frame {Engine.FrameCounter}");
         SkipCutsceneRoomTimer.Split();
         if (SomeSplitButtonsModule.Settings.SaveAndQuitAndReenter) {
             Reenter(level);
         }
         else {
-            level.TimerStopped = true;
-            keepTimerStopped = true;
+            ClockHold.Take(ClockHold.Holder.SaveAndQuit);
         }
     }
 
@@ -107,16 +105,38 @@ internal static class SaveAndQuitTimer {
         Audio.BusStopAll(Buses.GAMEPLAY, immediate: true);
         // No OnComplete: this class owns the frame the scene changes on. See Reenter.
         level.DoScreenWipe(wipeIn: false);
+        fadeOut = level.Wipe;
+        fadingOut = true;
+    }
+
+    /// <summary>Sets the fade-out to where the countdown is, and puts it back if it is gone.</summary>
+    // Derived from the countdown rather than left to run on its own, because three things move it
+    // off vanilla's pace: the nine unpauseTimer frames after the press, on which Level.Update updates
+    // no wipe; SpeedrunTool's freeze after a save, which updates the wipe while the countdown waits,
+    // so the fade finishes and removes itself early; and a load, which replaces it with
+    // SpeedrunTool's own wipe-in. Called only on frames the level ran, when SpeedrunTool is done
+    // with any wipe of its own. Another wipe — a death's — is left alone.
+    private static void KeepFadeOutInStep(Level level) {
+        if (level.Wipe == null) {
+            level.DoScreenWipe(wipeIn: false);
+            fadeOut = level.Wipe;
+        }
+        if (fadeOut == null || level.Wipe != fadeOut) return;
+        // ScreenWipe.Update's own step, once per counted frame: the wipe is black one update before
+        // the split, as vanilla's is one before its OnComplete.
+        fadeOut.Percent = Math.Min(1f, countdown.State.Counter * Engine.RawDeltaTime / fadeOut.Duration);
     }
 
     /// <summary>
     ///     Re-enters the room the way a chapter resumed after a Save and Quit does: through
-    ///     <c>LevelLoader</c>, which rebuilds the level and respawns at <c>Session.RespawnPoint</c>.
+    ///     <c>LevelEnter.Go(session, fromSaveData: true)</c>, which raises Everest's Level.Enter and
+    ///     then rebuilds the level, respawning at <c>Session.RespawnPoint</c>.
     /// </summary>
     // Must stay on the same frame as the split above, and after it: RoomTimerManager reads the
     // Level it is told about, and this scene is gone by the next frame. No hold needed — a Level
-    // built by LevelLoader starts with TimerStarted false.
+    // built by LevelLoader starts with TimerStarted false. fromSaveData keeps LevelEnter's postcards
+    // and remix card away, as for a real resume.
     private static void Reenter(Level level) {
-        Engine.Scene = new LevelLoader(level.Session);
+        LevelEnter.Go(level.Session, fromSaveData: true);
     }
 }

@@ -1,14 +1,31 @@
 using Celeste.Mod.SomeSplitButtons.Integration;
 using Celeste.Mod.SomeSplitButtons.Splits;
+using Monocle;
 
 
 namespace Celeste.Mod.SomeSplitButtons.SkipCutsceneSplit;
 
 internal static class SkipCutsceneTimer {
+    // Vanilla's area IDs, hard-coded the way Level.UpdateTime hard-codes the Epilogue's.
+    private const int PROLOGUE_AREA_ID = 0;
+    internal const int EPILOGUE_AREA_ID = 8;
+
     private static readonly SplitCountdown countdown = new(() => FadeoutFrames);
     private static bool inPrologue = false;
     private static bool hidden = false; // Hide the button after the first press
     internal static bool Hidden => hidden;
+    internal static bool Armed => countdown.Armed;
+
+    private sealed record Saved((bool Armed, int Counter) Countdown, bool Hidden, object RoomTimer);
+
+    internal static object Snapshot() => new Saved(countdown.State, hidden, SkipCutsceneRoomTimer.Snapshot());
+
+    internal static void Restore(object snapshot) {
+        Saved saved = (Saved) snapshot;
+        countdown.State = saved.Countdown;
+        hidden = saved.Hidden;
+        SkipCutsceneRoomTimer.Restore(saved.RoomTimer);
+    }
 
     // Arm, not TryArm: this split stays in the level, so there is no collectible for it to lose and
     // nothing for a collect check to refuse.
@@ -31,8 +48,10 @@ internal static class SkipCutsceneTimer {
         SkipCutsceneRoomTimer.Reset();
     }
 
-    internal static void PrologueCheck(int chapterIndex) {
-        inPrologue = chapterIndex == -1; // Prologue chapter index is -1
+    // By area, not by `ChapterIndex == -1`: every interlude has that index, the Epilogue and modded
+    // maps marked Interlude included, and the 232 frames were measured on the Prologue alone.
+    internal static void PrologueCheck(AreaKey area) {
+        inPrologue = area.ID == PROLOGUE_AREA_ID;
     }
 
     /// <summary>How long this split will wait, for the chapter it was last refreshed for.</summary>
@@ -46,7 +65,13 @@ internal static class SkipCutsceneTimer {
     internal static void Update(Level level) {
         if (!countdown.Tick()) return;
 
+        // Chapters 1 to 7 split on the next frame, when SpeedrunTool sees the completion.
+        Logger.Info(nameof(SomeSplitButtonsModule), $"SkipCutscene split in {level.Session.Level} on frame {Engine.FrameCounter}");
         SkipCutsceneRoomTimer.Release();
-        level.Completed = true;
+        // Chapters 1 to 7 are already complete here — their ending registers it in OnBegin — and
+        // SpeedrunTool splits on the next frame by itself. The Prologue registers only at the very
+        // end, so SpeedrunTool alone is told now. Writing level.Completed instead makes the real
+        // RegisterAreaComplete return early: no completion in the save, no Level.Complete event.
+        if (!level.Completed) SkipCutsceneRoomTimer.SplitAsCompleted();
     }
 }

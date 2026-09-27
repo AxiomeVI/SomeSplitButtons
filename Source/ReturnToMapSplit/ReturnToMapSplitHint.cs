@@ -1,4 +1,6 @@
+using System;
 using Celeste.Mod.SomeSplitButtons.Splits;
+using Celeste.Mod.SomeSplitButtons.UI;
 using Celeste.Mod.SomeSplitButtons.Utils;
 using Microsoft.Xna.Framework;
 using Monocle;
@@ -15,11 +17,22 @@ internal class ReturnToMapSplitHint : ReturnMapHint {
         string.Format(PluralDialog.Get(DialogIds.RTMButtonDesc, SplitTimings.WIPE_FADEOUT_FRAMES),
                       SplitTimings.WIPE_FADEOUT_FRAMES);
 
+    private readonly float textScale;
     private readonly float textWidth;
 
+    // Vanilla's 0.75, or less when a translation would push the line and the picture beside it past
+    // FittedDescription.MaxLineWidth. Fitted against the wider of the two pictures, so one scale
+    // serves both layouts.
     internal ReturnToMapSplitHint() {
-        textWidth = ActiveFont.Measure(text).X * 0.75f;
+        float picture = Math.Max(MTN.Checkpoints["polaroid"].Width * 0.25f, GFX.Gui["checkpoint"].Width * 0.75f);
+        float room = FittedDescription.MaxLineWidth - picture - 64f;
+        float measured = ActiveFont.Measure(text).X;
+        textScale = Math.Min(0.75f, room / measured);
+        textWidth = measured * textScale;
     }
+
+    /// <summary>The scale the caption is drawn at. Read by the test probe.</summary>
+    internal float TextScale => textScale;
 
     public override void Render() {
         MTexture icon = GFX.Gui["checkpoint"];
@@ -30,7 +43,7 @@ internal class ReturnToMapSplitHint : ReturnMapHint {
             Vector2 at = new((1920f - textWidth - polaroidWidth - 64f) / 2f, 730f);
             float previewScale = 720f / checkpoint.ClipRect.Width;
 
-            ActiveFont.DrawOutline(text, at + new Vector2(textWidth / 2f, 0f), new Vector2(0.5f, 0.5f), Vector2.One * 0.75f, Color.LightGray, 2f, Color.Black);
+            ActiveFont.DrawOutline(text, at + new Vector2(textWidth / 2f, 0f), new Vector2(0.5f, 0.5f), Vector2.One * textScale, Color.LightGray, 2f, Color.Black);
             at.X += textWidth + 64f;
             polaroid.DrawCentered(at + new Vector2(polaroidWidth / 2f, 0f), Color.White, 0.25f, 0.1f);
             checkpoint.DrawCentered(at + new Vector2(polaroidWidth / 2f, 0f), Color.White, 0.25f * previewScale, 0.1f);
@@ -40,7 +53,7 @@ internal class ReturnToMapSplitHint : ReturnMapHint {
             float iconWidth = icon.Width * 0.75f;
             Vector2 at = new((1920f - textWidth - iconWidth - 64f) / 2f, 730f);
 
-            ActiveFont.DrawOutline(text, at + new Vector2(textWidth / 2f, 0f), new Vector2(0.5f, 0.5f), Vector2.One * 0.75f, Color.LightGray, 2f, Color.Black);
+            ActiveFont.DrawOutline(text, at + new Vector2(textWidth / 2f, 0f), new Vector2(0.5f, 0.5f), Vector2.One * textScale, Color.LightGray, 2f, Color.Black);
             at.X += textWidth + 64f;
             icon.DrawCentered(at + new Vector2(iconWidth * 0.5f, 0f), Color.White, 0.75f);
         }

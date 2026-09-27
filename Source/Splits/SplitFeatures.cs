@@ -72,6 +72,14 @@ internal sealed class SplitFeature {
     internal required Func<int> DescriptionFrames { get; init; }
 
     /// <summary>
+    ///     Whether a SpeedrunTool end point makes its room timer ignore this split. The description
+    ///     then says so instead.
+    /// </summary>
+    // SpeedrunTool records a split with an end point set only at the end point or on a completed
+    // level. Skip Cutscene's split completes the level, so it registers anyway.
+    internal bool IgnoredAtEndPoint { get; init; }
+
+    /// <summary>
     ///     What pressing the button does. Returns the terminal interop stage, or null when the
     ///     feature emits its own — Return to Map's confirmation prompt owns the outcome from the
     ///     moment it opens.
@@ -82,20 +90,24 @@ internal sealed class SplitFeature {
     internal required Action Reset { get; init; }
     internal required Action<Level> Update { get; init; }
 
-    /// <summary>
-    ///     Maintains and releases whatever vanilla state this feature holds between frames. Runs
-    ///     every frame regardless of any setting. Null for features that hold none.
-    /// </summary>
-    // The asymmetry with Update is the point: Update stops when the button is switched off, but a
-    // borrowed vanilla flag dropped half-held leaves a state only this code knows how to undo.
-    internal Action<Level> UpdateHold { get; init; }
+    /// <summary>Whether a press is counting down to its split.</summary>
+    // Update runs while this is true whatever the setting says: a press already accepted completes,
+    // and switching the button off only hides it.
+    internal required Func<bool> Armed { get; init; }
+
+    /// <summary>Everything the feature is doing, for a save state to carry.</summary>
+    internal required Func<object> Snapshot { get; init; }
+
+    /// <summary>Puts back what <see cref="Snapshot"/> recorded.</summary>
+    internal required Action<object> Restore { get; init; }
 
     /// <summary>
-    ///     Releases whatever vanilla state this feature holds, on the frame SpeedrunTool is about to
-    ///     clone the level. Runs regardless of any setting, for <see cref="UpdateHold"/>'s reason.
-    ///     Null for features that hold none.
+    ///     Releases this feature's chapter-clock hold when its time comes. Runs every frame
+    ///     regardless of any setting. Null for features that hold none.
     /// </summary>
-    internal Action<Level> BeforeSaveState { get; init; }
+    // The asymmetry with Update is the point: Update stops once the button is off and nothing is
+    // armed, but a hold nobody releases stops the clock for the rest of the Level.
+    internal Action<Level> UpdateHold { get; init; }
 
     /// <summary>
     ///     Recomputes whatever this feature derives from the chapter it is in. Null for the features
@@ -104,14 +116,16 @@ internal sealed class SplitFeature {
     internal Action<Level> OnLevelKnown { get; init; }
 
     /// <summary>
-    ///     Turns the button on or off: writes the setting, disarms the timer, and refreshes what the
-    ///     feature derives from the chapter it is in.
+    ///     Turns the button on or off: writes the setting and refreshes what the feature derives from
+    ///     the chapter it is in.
     /// </summary>
     // Deliberately does not save settings: Everest writes them when the mod menu closes, and the
     // hotkey path saves for itself because nothing closes on its behalf.
+    //
+    // ⚠️ No Reset. A split already pressed must still land (see Armed), and Skip Cutscene's Reset
+    // re-arms the freeze a fired split released. Holds are let go by UpdateHold, above the gates.
     internal void Toggle(bool enabled) {
         SetEnabled(enabled);
-        Reset();
         // Outside a level there is no chapter to test; the next Level_OnLoadingThread does it.
         if (enabled && Engine.Scene is Level level) OnLevelKnown?.Invoke(level);
     }
@@ -131,6 +145,12 @@ internal static class SplitFeatures {
         SetEnabled = value => SomeSplitButtonsModule.Settings.ShowSaveAndQuitSplitButton = value,
         Reset = SaveAndQuitTimer.Reset,
         Update = SaveAndQuitTimer.Update,
+        Armed = () => SaveAndQuitTimer.Armed,
+        Snapshot = SaveAndQuitTimer.Snapshot,
+        Restore = SaveAndQuitTimer.Restore,
+        // Not offered again until the split lands: a real Save and Quit cannot be pressed twice,
+        // and a second press would restart the countdown.
+        Available = _ => !SaveAndQuitTimer.Armed,
         ButtonLabelId = DialogIds.SaveAndQuitSplitButtonId,
         InteropAction = SplitActions.SaveAndQuit,
         AnchorDialogId = DialogIds.VanillaPauseSaveQuitId,
@@ -142,12 +162,11 @@ internal static class SplitFeatures {
             ? DialogIds.SQButtonReenterDesc
             : DialogIds.SQButtonDesc,
         DescriptionFrames = () => SplitTimings.WIPE_FADEOUT_FRAMES,
+        IgnoredAtEndPoint = true,
         Press = (level, _) =>
             SaveAndQuitTimer.Press(level) ? SplitStages.Confirmed : SplitStages.Refused,
-        // The only feature that borrows a vanilla flag: level.TimerStopped, held frame by frame
-        // between the split and the moment the clock would restart on its own.
+        // Holds the chapter clock (ClockHold) from the split until it would restart on its own.
         UpdateHold = SaveAndQuitTimer.UpdateHold,
-        BeforeSaveState = SaveAndQuitTimer.ReleaseHoldForSaveState,
     };
 
     internal static readonly SplitFeature SkipCutscene = new() {
@@ -158,7 +177,10 @@ internal static class SplitFeatures {
         SetEnabled = value => SomeSplitButtonsModule.Settings.ShowSkipCutsceneSplitButton = value,
         Reset = SkipCutsceneTimer.Reset,
         Update = SkipCutsceneTimer.Update,
-        OnLevelKnown = level => SkipCutsceneTimer.PrologueCheck(level.Session.Area.ChapterIndex),
+        Armed = () => SkipCutsceneTimer.Armed,
+        Snapshot = SkipCutsceneTimer.Snapshot,
+        Restore = SkipCutsceneTimer.Restore,
+        OnLevelKnown = level => SkipCutsceneTimer.PrologueCheck(level.Session.Area),
         ButtonLabelId = DialogIds.SkipCutsceneSplitButtonId,
         InteropAction = SplitActions.SkipCutscene,
         AnchorDialogId = DialogIds.VanillaPauseSkipCutsceneId,
@@ -166,7 +188,11 @@ internal static class SplitFeatures {
         // Both need InCutscene, so the vanilla button is always there when this one is: its absence
         // is a conflict with another mod and always worth saying.
         WarnsWhenAnchorMissingInMinimal = true,
-        Available = level => level.endingChapterAfterCutscene && !SkipCutsceneTimer.Hidden,
+        // Not in the Epilogue: Level.UpdateTime returns at once when `Session.Area.ID == 8`, so no
+        // time runs there and there is nothing to split — although its ending sets the flag too.
+        Available = level => level.endingChapterAfterCutscene
+                             && level.Session.Area.ID != SkipCutsceneTimer.EPILOGUE_AREA_ID
+                             && !SkipCutsceneTimer.Hidden,
         DescriptionId = () => SkipCutsceneTimer.InPrologue
             ? DialogIds.SCSPrologueButtonDesc
             : DialogIds.SCSButtonDesc,
@@ -184,6 +210,11 @@ internal static class SplitFeatures {
         SetEnabled = value => SomeSplitButtonsModule.Settings.ShowReturnToMapSplitButton = value,
         Reset = ReturnToMapTimer.Reset,
         Update = ReturnToMapTimer.Update,
+        Armed = () => ReturnToMapTimer.Armed,
+        Snapshot = ReturnToMapTimer.Snapshot,
+        Restore = ReturnToMapTimer.Restore,
+        // For Save and Quit's reason.
+        Available = _ => !ReturnToMapTimer.Armed,
         ButtonLabelId = DialogIds.ReturnToMapSplitButtonId,
         InteropAction = SplitActions.ReturnToMap,
         AnchorDialogId = DialogIds.VanillaPauseReturnId,
@@ -192,14 +223,14 @@ internal static class SplitFeatures {
         Slot = SplitFeature.LAST,
         DescriptionId = () => DialogIds.RTMButtonDesc,
         DescriptionFrames = () => SplitTimings.WIPE_FADEOUT_FRAMES,
+        IgnoredAtEndPoint = true,
         Press = (level, pauseMenu) => {
             ReturnToMapTimer.Press(level, pauseMenu);
             return null;
         },
-        // Borrows level.TimerStopped between the split and the checkpoint load, for the same reason
-        // Save and Quit does and with the same outside-the-gates rule.
+        // Holds the chapter clock while the checkpoint picker is open, for the same reason Save and
+        // Quit does and with the same outside-the-gates rule.
         UpdateHold = ReturnToMapReentry.UpdateHold,
-        BeforeSaveState = ReturnToMapReentry.ReleaseHoldForSaveState,
     };
 
     /// <summary>
@@ -225,11 +256,16 @@ internal static class SplitFeatures {
         foreach (SplitFeature feature in All) feature.Reset();
     }
 
-    /// <summary>
-    ///     Releases every borrowed vanilla flag, enabled or not, before SpeedrunTool clones a level.
-    /// </summary>
-    internal static void BeforeSaveStateAll(Level level) {
-        foreach (SplitFeature feature in All) feature.BeforeSaveState?.Invoke(level);
+    /// <summary>What every feature is doing, in <see cref="All"/>'s order.</summary>
+    internal static object[] SnapshotAll() {
+        object[] snapshots = new object[All.Length];
+        for (int i = 0; i < All.Length; i++) snapshots[i] = All[i].Snapshot();
+        return snapshots;
+    }
+
+    /// <summary>Puts every feature back as <see cref="SnapshotAll"/> found it.</summary>
+    internal static void RestoreAll(object[] snapshots) {
+        for (int i = 0; i < All.Length; i++) All[i].Restore(snapshots[i]);
     }
 
     /// <summary>Tells every feature which chapter it is now in.</summary>

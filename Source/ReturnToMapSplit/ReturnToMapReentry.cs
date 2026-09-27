@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Celeste.Mod.SomeSplitButtons.Splits;
 using Monocle;
 
 namespace Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
@@ -8,15 +9,15 @@ namespace Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 ///     is held, the picker opens, and picking reloads the level at the chosen checkpoint.
 /// </summary>
 internal static class ReturnToMapReentry {
-    private static bool holding;
+    // A view of ClockHold, named as the expectation files have always read it.
+    private static bool holding => ClockHold.IsHeldBy(ClockHold.Holder.ReturnToMap);
 
     /// <summary>Whether this manager currently holds the clock. Read by the test probe.</summary>
     internal static bool Holding => holding;
 
     /// <summary>Holds the clock, pauses the level and opens the picker.</summary>
     internal static void Begin(Level level, List<(string Key, string Label)> rows) {
-        holding = true;
-        level.TimerStopped = true;
+        ClockHold.Take(ClockHold.Holder.ReturnToMap);
         level.Paused = true;
 
         ReturnToMapCheckpointMenu menu = new(rows, Load, Cancel);
@@ -26,13 +27,9 @@ internal static class ReturnToMapReentry {
         level.OnEndOfFrame += () => level.Entities.UpdateLists();
     }
 
-    /// <summary>
-    ///     Maintains the hold frame by frame, so nothing else can clear it while the picker is open.
-    /// </summary>
-    // ⚠️ Called from outside every settings gate, because TimerStopped is vanilla's flag and not the
-    // mod's. ssb_set_show writes a Show… setting directly, bypassing SplitFeature.Toggle and the
-    // Reset() it calls — so a feature switched off mid-hold is put back here instead. Left unhandled,
-    // it would freeze the chapter clock, Session.Time and SaveData.AddTime for the rest of the Level.
+    /// <summary>Lets the picker and its hold go once the feature behind them is switched off.</summary>
+    // ⚠️ Called from outside every settings gate: a hold nobody releases freezes the chapter clock,
+    // Session.Time and SaveData.AddTime for the rest of the Level.
     internal static void UpdateHold(Level level) {
         if (!holding) return;
 
@@ -40,18 +37,7 @@ internal static class ReturnToMapReentry {
             || !SomeSplitButtonsModule.Settings.ShowReturnToMapSplitButton
             || !SomeSplitButtonsModule.Settings.ReturnToMapCheckpointMenu) {
             Reset();
-            return;
         }
-
-        level.TimerStopped = true;
-    }
-
-    /// <summary>Releases the clock just before SpeedrunTool clones the level.</summary>
-    // Keyed on ownership and run with every setting off, for UpdateHold's reason. The manager's own
-    // flag is deliberately left set, so UpdateHold re-asserts on the live level the same frame —
-    // the shape SaveAndQuitTimer.ReleaseHoldForSaveState already uses.
-    internal static void ReleaseHoldForSaveState(Level level) {
-        if (holding) level.TimerStopped = false;
     }
 
     /// <summary>Tears the picker down and releases the clock.</summary>
@@ -60,13 +46,12 @@ internal static class ReturnToMapReentry {
     // moment, and the guard is what says so out loud.
     internal static void Reset() {
         if (holding && Engine.Scene is Level level) {
-            level.TimerStopped = false;
             foreach (ReturnToMapCheckpointMenu menu in level.Entities.FindAll<ReturnToMapCheckpointMenu>()) {
                 menu.RemoveSelf();
             }
             level.Paused = false;
         }
-        holding = false;
+        ClockHold.Release(ClockHold.Holder.ReturnToMap);
     }
 
     /// <summary>Builds the session for the chosen checkpoint and reloads the level into it.</summary>
@@ -77,7 +62,7 @@ internal static class ReturnToMapReentry {
         Session next = BuildSession(outgoing, checkpointKey);
 
         CloseMenu(level);
-        holding = false;
+        ClockHold.Release(ClockHold.Holder.ReturnToMap);
 
         // A one-shot reset, not a sustained modification: LoadLevel does not put TimeRate back, so
         // splitting during a seeker or Oshiro slowdown would start the new level at reduced speed.
@@ -97,7 +82,9 @@ internal static class ReturnToMapReentry {
         // Level_OnUpdate calls from here, and a command runs between updates, off that count.
         ArrivalSplitSwallow.Arm();
 
-        Engine.Scene = new LevelLoader(next);
+        // The way a checkpoint picked from the chapter panel is entered, raising Everest's
+        // Level.Enter. A checkpoint session is not StartedFromBeginning, so no postcard shows.
+        LevelEnter.Go(next, fromSaveData: false);
     }
 
     /// <summary>
@@ -123,10 +110,13 @@ internal static class ReturnToMapReentry {
     // ⚠️ Not Reset() — Reset never sets unpauseTimer, so a cancel through it lets the Back press
     // (bound to Dash by default) bleed into a dash the next frame. CloseMenu is the exit path that
     // already guards this, same as ReturnToMapSplitConfirmMenu.LeaveThePause.
+    //
+    // Nothing when nothing is held: the picker also reaches here from its own removal, after a
+    // Reset or a Load already closed it, and a second CloseMenu plays the unpause sound again.
     private static void Cancel() {
-        holding = false;
+        if (!holding) return;
+        ClockHold.Release(ClockHold.Holder.ReturnToMap);
         if (Engine.Scene is not Level level) return;
-        level.TimerStopped = false;
         CloseMenu(level);
     }
 

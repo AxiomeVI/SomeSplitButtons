@@ -33,6 +33,9 @@ SSB_SCS_PROLOGUE_BUTTON_DESC=                     Unpauses, then splits the Spee
 SSB_SQ_BUTTON_DESC=                               Unpauses, then splits the SpeedrunTool room timer after {0} frames
 SSB_SQ_REENTER_BUTTON_DESC=                       Unpauses, splits the SpeedrunTool room timer after {0} frames, then reloads the room
 SSB_RTM_BUTTON_DESC=                              Unpauses, then splits the SpeedrunTool room timer after {0} frames
+# Shown instead of the Save and Quit and Return to Map descriptions while a SpeedrunTool end point
+# is set: its room timer then records nothing for these two splits.
+SSB_END_POINT_IGNORES_SPLIT=                      SpeedrunTool end point set: this split will not register
 SSB_RTM_SPLIT_MENU_HEADER=                        RETURN TO MAP SPLIT?
 SSB_RTM_CHECKPOINT_MENU_HEADER=                   LOAD WHICH CHECKPOINT?
 

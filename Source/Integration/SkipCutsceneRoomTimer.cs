@@ -1,6 +1,7 @@
 using System;
 using Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
-using Celeste.Mod.SpeedrunTool.RoomTimer;
+using Celeste.Mod.SomeSplitButtons.SkipCutsceneSplit;
+using Celeste.Mod.SomeSplitButtons.Splits;
 using Monocle;
 
 namespace Celeste.Mod.SomeSplitButtons.Integration;
@@ -15,11 +16,18 @@ internal static class SkipCutsceneRoomTimer {
     private static bool freezeLevelCompleted = true;
     private static bool endingSplitRecorded = false;
     private static bool splittingOnOurOwnButton = false;
+    private static bool showCompletedToSpeedrunTool = false;
 
     internal static void Reset() {
         freezeLevelCompleted = true;
         endingSplitRecorded = false;
+        showCompletedToSpeedrunTool = false;
     }
+
+    internal static object Snapshot() => (freezeLevelCompleted, endingSplitRecorded, showCompletedToSpeedrunTool);
+
+    internal static void Restore(object snapshot)
+        => (freezeLevelCompleted, endingSplitRecorded, showCompletedToSpeedrunTool) = ((bool, bool, bool)) snapshot;
 
     /// <summary>Splits SpeedrunTool's room timer on behalf of one of this mod's own buttons.</summary>
     // The Save and Quit and Return to Map timers must call this and not RoomTimerManager directly,
@@ -28,7 +36,7 @@ internal static class SkipCutsceneRoomTimer {
     internal static void Split() {
         splittingOnOurOwnButton = true;
         try {
-            RoomTimerManager.UpdateTimerState();
+            SpeedrunToolHooks.UpdateTimerState();
         }
         finally {
             splittingOnOurOwnButton = false;
@@ -36,16 +44,32 @@ internal static class SkipCutsceneRoomTimer {
     }
 
     /// <summary>
-    ///     Called when the split fires: from here on SpeedrunTool sees the real
-    ///     <c>level.Completed</c> again.
+    ///     Called when the split fires: from here on SpeedrunTool is no longer shown an incomplete
+    ///     level.
     /// </summary>
     internal static void Release() => freezeLevelCompleted = false;
 
+    /// <summary>
+    ///     Splits on the Skip Cutscene mark in a level the game has not completed yet, and shows
+    ///     SpeedrunTool a completed level from then on. The game's own flag is never written.
+    /// </summary>
+    // For the rest of the level, not only for this call: RoomTimerData.Timing puts timerState back to
+    // Timing on any frame it reads the level incomplete, which would restart the room timer.
+    internal static void SplitAsCompleted() {
+        showCompletedToSpeedrunTool = true;
+        Split();
+    }
+
+    /// <summary>What SpeedrunTool is shown for <c>level.Completed</c> outside the freeze.</summary>
+    private static bool CompletedAsShown(Level level) => level.Completed || showCompletedToSpeedrunTool;
+
     /// <summary>Whether SpeedrunTool should currently be kept from seeing a completed level.</summary>
+    // The press as well as the setting: a split pressed and then switched off still lands at the
+    // mark, and lifting the freeze early would let SpeedrunTool split on the switch-off frame.
     private static bool ShouldFreezeLevelCompleted(Level level) =>
         level != null &&
-        SomeSplitButtonsModule.Settings.Enabled &&
-        SomeSplitButtonsModule.Settings.ShowSkipCutsceneSplitButton &&
+        ((SomeSplitButtonsModule.Settings.Enabled && SomeSplitButtonsModule.Settings.ShowSkipCutsceneSplitButton)
+         || SkipCutsceneTimer.Armed) &&
         level.endingChapterAfterCutscene &&
         freezeLevelCompleted;
 
@@ -54,15 +78,18 @@ internal static class SkipCutsceneRoomTimer {
     /// </summary>
     // The restore is in a finally because the flag is vanilla's: an exception out of SpeedrunTool
     // would otherwise leave the level permanently marked incomplete, which is worse than the throw.
+    // Also where a ClockHold stops the room timer: Timing accumulates only while the level reads
+    // !TimerStopped, and a hold does not write that flag.
     public static void OnTiming(Action<object, Level> orig, object self, Level level) {
         bool wasCompleted = level.Completed;
-        if (ShouldFreezeLevelCompleted(level)) {
-            level.Completed = false;
-        }
+        bool wasStopped = level.TimerStopped;
+        level.Completed = !ShouldFreezeLevelCompleted(level) && CompletedAsShown(level);
+        level.TimerStopped = wasStopped || ClockHold.Held;
         try {
             orig(self, level);
         } finally {
             level.Completed = wasCompleted;
+            level.TimerStopped = wasStopped;
         }
     }
 
@@ -90,8 +117,19 @@ internal static class SkipCutsceneRoomTimer {
         // a same-frame split of ours must not be eaten by a flag armed for the arrival.
         if (!splittingOnOurOwnButton && ArrivalSplitSwallow.Consume()) return;
 
-        if (!ShouldFreezeLevelCompleted(Engine.Scene as Level)) {
-            orig(endPoint);
+        Level current = Engine.Scene as Level;
+        if (!ShouldFreezeLevelCompleted(current)) {
+            if (current == null) {
+                orig(endPoint);
+                return;
+            }
+            bool completed = current.Completed;
+            current.Completed = CompletedAsShown(current);
+            try {
+                orig(endPoint);
+            } finally {
+                current.Completed = completed;
+            }
             return;
         }
         // The mod's own buttons go through on the ending split's terms rather than being counted
