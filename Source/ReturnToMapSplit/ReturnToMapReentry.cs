@@ -61,8 +61,11 @@ internal static class ReturnToMapReentry {
         Session outgoing = level.Session;
         Session next = BuildSession(outgoing, checkpointKey);
 
+        // ⚠️ The hold stays until the load's Level_OnLoadingThread lets go of it. SpeedrunTool's room
+        // timer runs after this callback on the outgoing level, and released here it added this
+        // frame to the next room. The picker's removal cannot release it early: Choose has finished
+        // the picker, so its Cancel does nothing.
         CloseMenu(level);
-        ClockHold.Release(ClockHold.Holder.ReturnToMap);
 
         // A one-shot reset, not a sustained modification: LoadLevel does not put TimeRate back, so
         // splitting during a seeker or Oshiro slowdown would start the new level at reduced speed.

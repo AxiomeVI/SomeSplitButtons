@@ -47,13 +47,22 @@ internal static class SaveAndQuitTimer {
         fadingOut = saved.FadingOut;
     }
 
-    /// <summary>Arms the split, unless a collectible the player would lose refuses it.</summary>
-    internal static bool HandleButtonPressed() => countdown.TryArm();
+    /// <summary>
+    ///     Arms the split and pauses the level for its wait, unless a collectible the player would
+    ///     lose refuses it.
+    /// </summary>
+    internal static bool HandleButtonPressed() {
+        if (!countdown.TryArm()) return false;
+        // TryArm arms nothing outside a Level.
+        PausedWait.Begin((Level) Engine.Scene);
+        return true;
+    }
 
     /// <summary>Releases the chapter-clock hold once vanilla would have restarted the clock.</summary>
     // ⚠️ Called from outside every settings gate: only this releases the hold, and a button switched
     // off mid-hold would otherwise freeze the chapter clock, Session.Time and SaveData.AddTime for the
-    // rest of the Level. Only the split-only path takes it; re-entry replaces the Level instead.
+    // rest of the Level. Re-entry takes it for the split frame only: the load replaces the Level, and
+    // Reset lets go of it there.
     internal static void UpdateHold(Level level) {
         if (keepTimerStopped && ClockWouldRestart(level)) ClockHold.Release(ClockHold.Holder.SaveAndQuit);
     }
@@ -66,26 +75,33 @@ internal static class SaveAndQuitTimer {
         fadingOut = false;
         Logger.Info(nameof(SomeSplitButtonsModule), $"SaveAndQuit split in {level.Session.Level} on frame {Engine.FrameCounter}");
         SkipCutsceneRoomTimer.Split();
+        // On both paths, and on this frame: SpeedrunTool's room timer runs after this on the same
+        // frame, and would add it to the next room.
+        ClockHold.Take(ClockHold.Holder.SaveAndQuit);
         if (SomeSplitButtonsModule.Settings.SaveAndQuitAndReenter) {
             Reenter(level);
         }
         else {
-            ClockHold.Take(ClockHold.Holder.SaveAndQuit);
+            PausedWait.End(level);
         }
     }
 
     /// <summary>
-    ///     What the pause-menu button does: leave the pause, arm the split, and start the fade-out.
-    ///     False when the split was refused.
+    ///     What the pause-menu button does: arm the split, close the menu with the level still
+    ///     paused, and start the fade-out. False when the split was refused.
     /// </summary>
-    internal static bool Press(Level level) {
-        bool armed = HandleButtonPressed();
-        // Unpause even when refused: what the refusal counts down only advances while the game
-        // runs, so staying paused would stop the wait the message asks the player to wait out.
-        level.Unpause();
-        // Never fade out unarmed: nothing would ever end the wipe. See HandleButtonPressed.
-        if (armed && SomeSplitButtonsModule.Settings.SaveAndQuitAndReenter) BeginFadeOut(level);
-        return armed;
+    // A refusal unpauses: what it counts down only advances while the game runs, so staying paused
+    // would stop the wait the message asks the player to wait out. It never fades out either,
+    // since nothing would ever end the wipe (see HandleButtonPressed).
+    internal static bool Press(Level level, TextMenu pauseMenu) {
+        if (!HandleButtonPressed()) {
+            level.Unpause();
+            return false;
+        }
+        // Not level.Unpause(): the level stays paused through the wait (PausedWait).
+        pauseMenu?.RemoveSelf();
+        if (SomeSplitButtonsModule.Settings.SaveAndQuitAndReenter) BeginFadeOut(level);
+        return true;
     }
 
     /// <summary>
@@ -110,11 +126,10 @@ internal static class SaveAndQuitTimer {
     }
 
     /// <summary>Sets the fade-out to where the countdown is, and puts it back if it is gone.</summary>
-    // Derived from the countdown rather than left to run on its own, because three things move it
-    // off vanilla's pace: the nine unpauseTimer frames after the press, on which Level.Update updates
-    // no wipe; SpeedrunTool's freeze after a save, which updates the wipe while the countdown waits,
-    // so the fade finishes and removes itself early; and a load, which replaces it with
-    // SpeedrunTool's own wipe-in. Called only on frames the level ran, when SpeedrunTool is done
+    // Derived from the countdown rather than left to run on its own, because two things move it
+    // off vanilla's pace: SpeedrunTool's freeze after a save, which updates the wipe while the
+    // countdown waits, so the fade finishes and removes itself early; and a load, which replaces it
+    // with SpeedrunTool's own wipe-in. Called only on frames the level ran, when SpeedrunTool is done
     // with any wipe of its own. Another wipe — a death's — is left alone.
     private static void KeepFadeOutInStep(Level level) {
         if (level.Wipe == null) {
@@ -133,9 +148,10 @@ internal static class SaveAndQuitTimer {
     ///     then rebuilds the level, respawning at <c>Session.RespawnPoint</c>.
     /// </summary>
     // Must stay on the same frame as the split above, and after it: RoomTimerManager reads the
-    // Level it is told about, and this scene is gone by the next frame. No hold needed — a Level
-    // built by LevelLoader starts with TimerStarted false. fromSaveData keeps LevelEnter's postcards
-    // and remix card away, as for a real resume.
+    // Level it is told about, and this scene is gone by the next frame. The hold taken with the
+    // split covers the rest of this frame, and the load's Level_OnLoadingThread lets go of it; the
+    // Level LevelLoader builds starts with TimerStarted false. fromSaveData keeps LevelEnter's
+    // postcards and remix card away, as for a real resume.
     private static void Reenter(Level level) {
         LevelEnter.Go(level.Session, fromSaveData: true);
     }

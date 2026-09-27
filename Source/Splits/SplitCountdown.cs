@@ -59,8 +59,8 @@ internal sealed class SplitCountdown(Func<int> frames) {
     // than reaches it: press on N, split on N + frames. Both the call site and the comparison are
     // measured — moving either shifts every split by a frame.
     //
-    // It does not stop for a pause: Level.Update runs while paused and this is called after orig, so
-    // re-pausing inside the wait keeps it going. A button that promises 31 frames promises 31.
+    // It does not stop for a pause: Level.Update's body runs while paused, and the wait is one
+    // (PausedWait). A button that promises 31 frames promises 31.
     internal bool Tick() {
         if (!armed) return false;
 

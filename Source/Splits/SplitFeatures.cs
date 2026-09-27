@@ -64,8 +64,8 @@ internal sealed class SplitFeature {
     internal Func<Level, bool> Available { get; init; }
 
     /// <summary>Dialog id of the description that eases in under the button.</summary>
-    // Deferred: two of the three pick between two entries by a setting or by the chapter, and that
-    // choice belongs to the moment the menu is built.
+    // Deferred: each picks between two entries by a setting or by the chapter, and that choice
+    // belongs to the moment the menu is built.
     internal required Func<string> DescriptionId { get; init; }
 
     /// <summary>The frame count that description quotes.</summary>
@@ -163,8 +163,8 @@ internal static class SplitFeatures {
             : DialogIds.SQButtonDesc,
         DescriptionFrames = () => SplitTimings.WIPE_FADEOUT_FRAMES,
         IgnoredAtEndPoint = true,
-        Press = (level, _) =>
-            SaveAndQuitTimer.Press(level) ? SplitStages.Confirmed : SplitStages.Refused,
+        Press = (level, menu) =>
+            SaveAndQuitTimer.Press(level, menu) ? SplitStages.Confirmed : SplitStages.Refused,
         // Holds the chapter clock (ClockHold) from the split until it would restart on its own.
         UpdateHold = SaveAndQuitTimer.UpdateHold,
     };
@@ -221,7 +221,9 @@ internal static class SplitFeatures {
         // Reached by holding Down rather than by counting, so the requirement is the end of the menu
         // and not a distance from vanilla Return to Map — which is merely what usually sits there.
         Slot = SplitFeature.LAST,
-        DescriptionId = () => DialogIds.RTMButtonDesc,
+        DescriptionId = () => SomeSplitButtonsModule.Settings.ReturnToMapCheckpointMenu
+            ? DialogIds.RTMPickerButtonDesc
+            : DialogIds.RTMButtonDesc,
         DescriptionFrames = () => SplitTimings.WIPE_FADEOUT_FRAMES,
         IgnoredAtEndPoint = true,
         Press = (level, pauseMenu) => {

@@ -22,8 +22,16 @@ internal static class ReturnToMapTimer {
 
     internal static void Restore(object snapshot) => countdown.State = ((bool, int)) snapshot;
 
-    /// <summary>Arms the split, unless a collectible the player would lose refuses it.</summary>
-    internal static bool HandleButtonPressed() => countdown.TryArm();
+    /// <summary>
+    ///     Arms the split and pauses the level for its wait, unless a collectible the player would
+    ///     lose refuses it.
+    /// </summary>
+    internal static bool HandleButtonPressed() {
+        if (!countdown.TryArm()) return false;
+        // TryArm arms nothing outside a Level.
+        PausedWait.Begin((Level) Engine.Scene);
+        return true;
+    }
 
     /// <summary>
     ///     What the pause-menu button does: open the confirmation prompt over the pause menu.
@@ -47,16 +55,18 @@ internal static class ReturnToMapTimer {
 
         Logger.Info(nameof(SomeSplitButtonsModule), $"ReturnToMap split in {level.Session.Level} on frame {Engine.FrameCounter}");
         SkipCutsceneRoomTimer.Split();
-        if (!SomeSplitButtonsModule.Settings.ReturnToMapCheckpointMenu) return;
 
-        // The collect protection ran at the press, which is where vanilla leaves the level; a
-        // refused press never reaches here. The 31 frames since stand in for the fade-out, so
-        // anything picked up in them is not a real collect and the load may discard it.
+        // Nothing to pick when the save has reached no checkpoint here, so the player carries on,
+        // clock running.
+        List<(string Key, string Label)> rows = SomeSplitButtonsModule.Settings.ReturnToMapCheckpointMenu
+            ? CheckpointList.ForArea(level.Session.Area)
+            : null;
+        if (rows == null || rows.Count == 0) {
+            PausedWait.End(level);
+            return;
+        }
 
-        // Nothing to pick when the save has reached no checkpoint here, so leave the clock running.
-        List<(string Key, string Label)> rows = CheckpointList.ForArea(level.Session.Area);
-        if (rows.Count == 0) return;
-
+        // The picker is a pause too, so the wait's pause runs straight into it.
         ReturnToMapReentry.Begin(level, rows);
     }
 }
