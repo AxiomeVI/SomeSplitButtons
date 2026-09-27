@@ -120,6 +120,7 @@ public class SomeSplitButtonsModule : EverestModule {
     // level loads — a hotkey toggle no longer resets — so keep it that way: a reset added to a path
     // that runs during a load would race this one.
     public static void Level_OnLoadingThread(Level level) {
+        CheckpointArrival.OnLoadingThread();
         SplitFeatures.ResetAll();
         SplitFeatures.RefreshAll(level);
     }
@@ -198,11 +199,6 @@ public class SomeSplitButtonsModule : EverestModule {
         // Above the gate for a related reason: the heart protection is the one refusal a player
         // cannot switch off, so what it counts on must not be counted by something they can.
         HeartCheck.Update(self);
-
-        // Also above the gate: a flag armed and then the mod disabled must still clear. SpeedrunTool's
-        // timing runs inside orig, so a clear placed after it and before the feature loop still sees
-        // the frame the split just landed on.
-        ArrivalSplitSwallow.TickGraceBudget();
 
         // An armed feature runs whatever the settings say, the master one included: a press already
         // accepted completes.

@@ -8,7 +8,7 @@ namespace Celeste.Mod.SomeSplitButtons.Splits;
 /// </summary>
 // A hold stops the clock without touching TimerStopped. Level.UpdateTime — the only reader of that
 // flag in the game — is skipped while any hold stands, and SpeedrunTool's room timer, the other
-// reader, is shown the flag set (SkipCutsceneRoomTimer.OnTiming). The flag itself is the game's
+// reader, is given no time to add (SkipCutsceneRoomTimer.OnTiming). The flag itself is the game's
 // alone: it sets it on its own, for a completing heart or a Farewell cutscene, and a hold that wrote
 // it could not tell that stop from its own when letting go.
 internal static class ClockHold {
