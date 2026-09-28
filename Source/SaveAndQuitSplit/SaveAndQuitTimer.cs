@@ -1,5 +1,6 @@
 using System;
 using Celeste.Mod.SomeSplitButtons.Integration;
+using Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 using Celeste.Mod.SomeSplitButtons.Splits;
 using Celeste.Mod.SomeSplitButtons.Utils;
 using Monocle;
@@ -152,7 +153,12 @@ internal static class SaveAndQuitTimer {
     // split covers the rest of this frame, and the load's Level_OnLoadingThread lets go of it; the
     // Level LevelLoader builds starts with TimerStarted false. fromSaveData keeps LevelEnter's
     // postcards and remix card away, as for a real resume.
+    //
+    // Through LoadChain, as a pick from the list is: a save state kept from another chapter or side by
+    // an earlier pick would otherwise be cleared by SpeedrunTool on this scene switch, its room timer
+    // with it.
     private static void Reenter(Level level) {
+        LoadChain.Start(level.Session);
         LevelEnter.Go(level.Session, fromSaveData: true);
     }
 }
