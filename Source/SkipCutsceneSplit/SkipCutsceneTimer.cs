@@ -84,6 +84,12 @@ internal static class SkipCutsceneTimer {
                      area.GetLevelSet() == "Celeste", hasBSide: false)) {
             rows.Add((Destinations.Key(id, mode), Destinations.Label(id, mode)));
         }
-        if (rows.Count > 0) Reentry.Begin(level, rows, Reentry.SkipCutscene);
+        // Only where the list can run: the wait is unpaused, so by the split frame the player may have
+        // re-opened the pause menu, started vanilla's skip, or the ending's own wipe may be running —
+        // SkippingCutscene's branch in Level.Update runs before the paused one, and Wipe.Update runs
+        // while paused. Otherwise the split stands on its own, as without the setting.
+        if (rows.Count > 0 && !level.Paused && !level.SkippingCutscene && level.Wipe == null) {
+            Reentry.Begin(level, rows, Reentry.SkipCutscene);
+        }
     }
 }
