@@ -1,3 +1,5 @@
+using Celeste.Mod.SomeSplitButtons.Splits;
+using Celeste.Mod.SomeSplitButtons.Integration;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Monocle;
@@ -62,7 +64,12 @@ internal static class DestinationWindow {
         HeartGem self, Level level, string poemID) {
         orig(self, level, poemID);
         AreaKey area = level.Session.Area;
-        if (area.Mode != AreaMode.Normal || area.ID == Destinations.Core) trigger = WindowTrigger.Heart;
+        if (area.Mode != AreaMode.Normal || area.ID == Destinations.Core) {
+            trigger = WindowTrigger.Heart;
+            // Before RegisterAreaComplete, which the routine calls next: SpeedrunTool must not be told the
+            // chapter ended while a pick from Return to Map's list may still carry the run on.
+            if (Reentry.ReturnToMap.Alive()) SkipCutsceneRoomTimer.HideHeartEnd();
+        }
     }
 
     private static void Level_OnTransitionTo(Level level, LevelData next, Vector2 direction) => Close();

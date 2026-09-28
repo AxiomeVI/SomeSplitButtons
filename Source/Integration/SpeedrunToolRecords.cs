@@ -107,6 +107,30 @@ internal static class SpeedrunToolRecords {
         if (Enum.TryParse(state.FieldType, "Timing", out object timing)) state.SetValue(data, timing);
     }
 
+    /// <summary>Takes one room back from each room timer, as a split recorded as an ordinary room is revealed as the end.</summary>
+    // The keys too: SpeedrunTool recomputes them only after it calls UpdateTimerState on a frame, so the
+    // split that follows would otherwise write under the next room's key.
+    internal static void UndoAdvance(Level level) {
+        foreach (object data in RoomTimers()) {
+            FieldInfo room = data.GetType().GetField("roomNumber", AnyInstance);
+            if (room?.GetValue(data) is not int number || number <= 1) continue;
+            room.SetValue(data, number - 1);
+            data.GetType().GetMethod("UpdateTimeKeys", AnyInstance, null, new[] {typeof(Level)}, null)
+                ?.Invoke(data, new object[] {level});
+        }
+    }
+
+    /// <summary>Whether the current room timer holds no time since its last record.</summary>
+    internal static bool NoTimeSinceLastRecord() {
+        object current = typeof(RoomTimerManager)
+            .GetField("CurrentRoomTimerData", BindingFlags.NonPublic | BindingFlags.Static)?.GetValue(null);
+        if (current == null || Read(current, "ThisRunTimes") is not IDictionary thisRun
+            || Read(current, "thisRunPrevRoomTimeKey") is not string previousKey || !thisRun.Contains(previousKey)) {
+            return false;
+        }
+        return Equals(Read(current, "Time"), thisRun[previousKey]);
+    }
+
     private static IEnumerable<object> RoomTimers() {
         foreach (string name in new[] {"CurrentRoomTimerData", "NextRoomTimerData"}) {
             object data = typeof(RoomTimerManager)

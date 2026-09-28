@@ -16,24 +16,71 @@ internal static class SkipCutsceneRoomTimer {
     private static bool endingSplitRecorded = false;
     private static bool splittingOnOurOwnButton = false;
     private static bool showCompletedToSpeedrunTool = false;
+    private static HiddenEnd hiddenEnd = HiddenEnd.None;
+
+    /// <summary>Why SpeedrunTool is not being told the chapter ended, if it is not.</summary>
+    // A list that may carry the run on is open, or may still open. Told, SpeedrunTool ends the run: short of
+    // NumberOfRooms it writes the end under key NumberOfRooms, shows the comparison, and a pick would carry on
+    // a run it has already finished.
+    internal enum HiddenEnd { None, Ending, Heart }
 
     internal static void Reset() {
         SpeedrunToolRecords.Forget();
         freezeLevelCompleted = true;
         endingSplitRecorded = false;
         showCompletedToSpeedrunTool = false;
+        hiddenEnd = HiddenEnd.None;
     }
 
-    internal static object Snapshot() => (freezeLevelCompleted, endingSplitRecorded, showCompletedToSpeedrunTool);
+    internal static object Snapshot() => (freezeLevelCompleted, endingSplitRecorded, showCompletedToSpeedrunTool, hiddenEnd);
 
     internal static void Restore(object snapshot)
-        => (freezeLevelCompleted, endingSplitRecorded, showCompletedToSpeedrunTool) = ((bool, bool, bool)) snapshot;
+        => (freezeLevelCompleted, endingSplitRecorded, showCompletedToSpeedrunTool, hiddenEnd)
+            = ((bool, bool, bool, HiddenEnd)) snapshot;
+
+    /// <summary>
+    ///     Splits the Skip Cutscene mark as an ordinary room and keeps the chapter end from SpeedrunTool
+    ///     while the list is open.
+    /// </summary>
+    // Through the freeze's own-button path, which hides the completion and advances the room. The freeze
+    // stays: Release is what would show SpeedrunTool the completion.
+    internal static void SplitMarkAsRoom() {
+        hiddenEnd = HiddenEnd.Ending;
+        Split();
+    }
+
+    /// <summary>
+    ///     Tells SpeedrunTool the chapter ended at the mark after all, as the list closes without a pick.
+    /// </summary>
+    // The mark's room advance is undone first, so SpeedrunTool records the same key again, with the same
+    // time since the list held the clock, as the run's end: no room of no length.
+    internal static void RevealMark(Level level) {
+        if (hiddenEnd != HiddenEnd.Ending) return;
+        hiddenEnd = HiddenEnd.None;
+        SpeedrunToolRecords.UndoAdvance(level);
+        Release();
+        if (!level.Completed) SplitAsCompleted();
+    }
+
+    /// <summary>Keeps a heart's chapter end from SpeedrunTool, from its bank.</summary>
+    internal static void HideHeartEnd() => hiddenEnd = HiddenEnd.Heart;
+
+    /// <summary>Tells SpeedrunTool a heart ended the chapter, once the player leaves or the list is off.</summary>
+    // A wipe out is every normal way of leaving: the poem's confirm, a real Return to Map, a split's fade.
+    internal static void UpdateHiddenHeart(Level level) {
+        if (hiddenEnd == HiddenEnd.Heart && (level.Wipe != null || !Reentry.ReturnToMap.Alive())) {
+            hiddenEnd = HiddenEnd.None;
+        }
+    }
 
     /// <summary>Splits SpeedrunTool's room timer on behalf of one of this mod's own buttons.</summary>
     // The Save and Quit and Return to Map timers must call this and not RoomTimerManager directly,
     // or the freeze below swallows their split inside an ending cutscene. The finally is what makes
     // the flag safe: a throw out of SpeedrunTool would leave every later split going through.
     internal static void Split() {
+        // After a heart split, the Return to Map split finds no time since: the heart stopped the clock.
+        // A room of no length is not a room.
+        if (hiddenEnd == HiddenEnd.Heart && SpeedrunToolRecords.NoTimeSinceLastRecord()) return;
         splittingOnOurOwnButton = true;
         try {
             SpeedrunToolHooks.UpdateTimerState();
@@ -61,7 +108,8 @@ internal static class SkipCutsceneRoomTimer {
     }
 
     /// <summary>What SpeedrunTool is shown for <c>level.Completed</c> outside the freeze.</summary>
-    private static bool CompletedAsShown(Level level) => level.Completed || showCompletedToSpeedrunTool;
+    private static bool CompletedAsShown(Level level) =>
+        hiddenEnd == HiddenEnd.None && (level.Completed || showCompletedToSpeedrunTool);
 
     /// <summary>Whether SpeedrunTool should currently be kept from seeing a completed level.</summary>
     // The press as well as the setting: a split pressed and then switched off still lands at the
@@ -83,7 +131,7 @@ internal static class SkipCutsceneRoomTimer {
     // SpeebrunConsistencyTracker recorded a one-frame room on every frame of the ending. Before the
     // ending's split is recorded, the manager must see the completion, or that split never happens.
     public static void OnManagerTiming(Action<Level> orig, Level level) {
-        if (!(endingSplitRecorded && ShouldFreezeLevelCompleted(level))) {
+        if (!(endingSplitRecorded && ShouldFreezeLevelCompleted(level)) && hiddenEnd == HiddenEnd.None) {
             orig(level);
             return;
         }

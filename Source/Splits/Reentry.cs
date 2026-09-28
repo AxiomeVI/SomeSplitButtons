@@ -14,10 +14,14 @@ internal sealed class ReentryOpener {
     internal ClockHold.Holder Holder { get; }
     internal Func<bool> Alive { get; }
     internal string TitleId { get; }
-    internal ReentryOpener(ClockHold.Holder holder, Func<bool> alive, string titleId) {
+    /// <summary>Called when the list closes without a pick: Cancel, or its setting switched off.</summary>
+    internal Action<Level> Abandoned { get; }
+
+    internal ReentryOpener(ClockHold.Holder holder, Func<bool> alive, string titleId, Action<Level> abandoned = null) {
         Holder = holder;
         Alive = alive;
         TitleId = titleId;
+        Abandoned = abandoned;
     }
 }
 
@@ -34,7 +38,7 @@ internal static class Reentry {
 
     internal static readonly ReentryOpener SkipCutscene = new(ClockHold.Holder.SkipCutscene,
         () => Settings.Enabled && Settings.ShowSkipCutsceneSplitButton && Settings.SkipCutsceneLoadMenu,
-        DialogIds.ChapterMenuHeaderId);
+        DialogIds.ChapterMenuHeaderId, SkipCutsceneRoomTimer.RevealMark);
 
     // Null while no list is open. One list at a time.
     private static ReentryOpener opener;
@@ -74,7 +78,10 @@ internal static class Reentry {
     internal static void UpdateHold(Level level) {
         // Read once: a loader-thread Reset can null the field between two reads.
         ReentryOpener current = opener;
-        if (current != null && ClockHold.IsHeldBy(current.Holder) && !current.Alive()) Reset(current);
+        if (current != null && ClockHold.IsHeldBy(current.Holder) && !current.Alive()) {
+            current.Abandoned?.Invoke(level);
+            Reset(current);
+        }
     }
 
     /// <summary>Tears the list down and releases the clock, if <paramref name="who"/> opened it.</summary>
@@ -175,8 +182,10 @@ internal static class Reentry {
     // Reset or a Load already closed it, and a second CloseMenu plays the unpause sound again.
     private static void Cancel() {
         if (!holding) return;
-        ClockHold.Release(opener.Holder);
+        ReentryOpener closing = opener;
+        ClockHold.Release(closing.Holder);
         opener = null;
+        if (Engine.Scene is Level scene) closing.Abandoned?.Invoke(scene);
         if (Engine.Scene is not Level level) return;
         CloseMenu(level);
     }

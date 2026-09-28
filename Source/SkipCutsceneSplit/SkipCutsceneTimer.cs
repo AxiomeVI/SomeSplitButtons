@@ -78,25 +78,29 @@ internal static class SkipCutsceneTimer {
     internal static void Update(Level level) {
         if (!countdown.Tick()) return;
 
-        // Chapters 1 to 7 split on the next frame, when SpeedrunTool sees the completion.
         Logger.Info(nameof(SomeSplitButtonsModule), $"SkipCutscene split in {level.Session.Level} on frame {Engine.FrameCounter}");
+
+        // Alive, not the list's setting alone: the hotkey turns the button off without disarming the
+        // split, which still fires, and a list opened then would be torn down again the next frame.
+        List<(string Key, string Label)> rows = Reentry.SkipCutscene.Alive() ? ListRows(level.Session.Area) : new();
+        // Only where the list can run: the wait is unpaused, so by the split frame the player may have
+        // re-opened the pause menu, started vanilla's skip, or the ending's own wipe may be running —
+        // SkippingCutscene's branch in Level.Update runs before the paused one, and Wipe.Update runs
+        // while paused. Otherwise the split stands on its own, as without the setting.
+        if (rows.Count > 0 && !level.Paused && !level.SkippingCutscene && level.Wipe == null) {
+            // The run may go on: an ordinary room, the chapter end kept from SpeedrunTool until the list
+            // closes without a pick.
+            SkipCutsceneRoomTimer.SplitMarkAsRoom();
+            Reentry.Begin(level, rows, Reentry.SkipCutscene);
+            return;
+        }
+
+        // Chapters 1 to 7 split on the next frame, when SpeedrunTool sees the completion.
         SkipCutsceneRoomTimer.Release();
         // Chapters 1 to 7 are already complete here — their ending registers it in OnBegin — and
         // SpeedrunTool splits on the next frame by itself. The Prologue registers only at the very
         // end, so SpeedrunTool alone is told now. Writing level.Completed instead makes the real
         // RegisterAreaComplete return early: no completion in the save, no Level.Complete event.
         if (!level.Completed) SkipCutsceneRoomTimer.SplitAsCompleted();
-
-        // Alive, not the list's setting alone: the hotkey turns the button off without disarming the
-        // split, which still fires, and a list opened then would be torn down again the next frame.
-        if (!Reentry.SkipCutscene.Alive()) return;
-        List<(string Key, string Label)> rows = ListRows(level.Session.Area);
-        // Only where the list can run: the wait is unpaused, so by the split frame the player may have
-        // re-opened the pause menu, started vanilla's skip, or the ending's own wipe may be running —
-        // SkippingCutscene's branch in Level.Update runs before the paused one, and Wipe.Update runs
-        // while paused. Otherwise the split stands on its own, as without the setting.
-        if (rows.Count > 0 && !level.Paused && !level.SkippingCutscene && level.Wipe == null) {
-            Reentry.Begin(level, rows, Reentry.SkipCutscene);
-        }
     }
 }

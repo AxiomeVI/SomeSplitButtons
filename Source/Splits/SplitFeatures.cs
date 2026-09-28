@@ -1,5 +1,6 @@
 using System;
 using Celeste.Mod.CelesteHotkeys;
+using Celeste.Mod.SomeSplitButtons.Integration;
 using Celeste.Mod.SomeSplitButtons.Interop;
 using Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 using Celeste.Mod.SomeSplitButtons.SaveAndQuitSplit;
@@ -238,8 +239,12 @@ internal static class SplitFeatures {
             return null;
         },
         // Holds the chapter clock while the checkpoint picker is open, for the same reason Save and
-        // Quit does and with the same outside-the-gates rule.
-        UpdateHold = Reentry.UpdateHold,
+        // Quit does and with the same outside-the-gates rule. A heart's hidden chapter end is let go
+        // from the same place, since it follows the list's settings too.
+        UpdateHold = level => {
+            Reentry.UpdateHold(level);
+            SkipCutsceneRoomTimer.UpdateHiddenHeart(level);
+        },
     };
 
     /// <summary>
