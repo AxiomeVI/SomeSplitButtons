@@ -2,8 +2,8 @@ using System.Collections.Generic;
 
 namespace Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 
-/// <summary>What opened the destination window.</summary>
-internal enum WindowTrigger { None, Cassette, Heart }
+/// <summary>What opened the destination window, or, for Ending, the split that opens the list directly.</summary>
+internal enum WindowTrigger { None, Cassette, Heart, Ending }
 
 /// <summary>
 ///     Which areas the Return to Map list offers after a collect, and the label and row key of each.
@@ -20,7 +20,7 @@ internal static class Destinations {
 
     /// <summary>The chapter after <paramref name="id"/>, skipping the Epilogue; null after Farewell.</summary>
     internal static int? NextChapter(int id) => id switch {
-        >= 1 and <= 6 => id + 1,
+        >= 0 and <= 6 => id + 1,
         7 => Core,
         Core => Farewell,
         _ => null,
@@ -50,6 +50,11 @@ internal static class Destinations {
             case WindowTrigger.Heart when vanilla && id == Core:
                 areas.Add((Farewell, AreaMode.Normal));
                 areas.Add((Core, AreaMode.BSide));
+                break;
+            // IDs 0 to 7 by name: NextChapter(9) is Farewell, which no ending leads to.
+            case WindowTrigger.Ending when vanilla && mode == AreaMode.Normal && id >= 0 && id <= 7:
+                areas.Add((NextChapter(id).Value, AreaMode.Normal));
+                if (id != 0) areas.Add((id, AreaMode.BSide));
                 break;
         }
         return areas;
