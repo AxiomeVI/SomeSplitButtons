@@ -18,6 +18,7 @@ internal static class SkipCutsceneRoomTimer {
     private static bool showCompletedToSpeedrunTool = false;
 
     internal static void Reset() {
+        SpeedrunToolRecords.Forget();
         freezeLevelCompleted = true;
         endingSplitRecorded = false;
         showCompletedToSpeedrunTool = false;
@@ -135,13 +136,13 @@ internal static class SkipCutsceneRoomTimer {
         Level current = Engine.Scene as Level;
         if (!ShouldFreezeLevelCompleted(current)) {
             if (current == null) {
-                orig(endPoint);
+                SpeedrunToolRecords.Around(() => orig(endPoint));
                 return;
             }
             bool completed = current.Completed;
             current.Completed = CompletedAsShown(current);
             try {
-                orig(endPoint);
+                SpeedrunToolRecords.Around(() => orig(endPoint));
             } finally {
                 current.Completed = completed;
             }
@@ -159,7 +160,7 @@ internal static class SkipCutsceneRoomTimer {
         bool wasCompleted = level.Completed;
         level.Completed = false;
         try {
-            orig(endPoint);
+            SpeedrunToolRecords.Around(() => orig(endPoint));
         } finally {
             level.Completed = wasCompleted;
         }

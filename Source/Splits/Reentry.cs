@@ -1,26 +1,23 @@
 using System;
 using System.Collections.Generic;
+using Celeste.Mod.SomeSplitButtons.Integration;
 using Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 using Monocle;
 
 namespace Celeste.Mod.SomeSplitButtons.Splits;
 
 /// <summary>
-///     Who opened the list: the clock holder it takes, the settings that keep it alive, its title,
-///     and whether a pick hides SpeedrunTool's arrival split.
+///     Who opened the list: the clock holder it takes, the settings that keep it alive, and its title.
 /// </summary>
 // A class, not a record: openers are compared by identity, and a record's == compares values.
 internal sealed class ReentryOpener {
     internal ClockHold.Holder Holder { get; }
     internal Func<bool> Alive { get; }
     internal string TitleId { get; }
-    internal bool SwallowArrival { get; }
-
-    internal ReentryOpener(ClockHold.Holder holder, Func<bool> alive, string titleId, bool swallowArrival) {
+    internal ReentryOpener(ClockHold.Holder holder, Func<bool> alive, string titleId) {
         Holder = holder;
         Alive = alive;
         TitleId = titleId;
-        SwallowArrival = swallowArrival;
     }
 }
 
@@ -33,14 +30,11 @@ internal static class Reentry {
 
     internal static readonly ReentryOpener ReturnToMap = new(ClockHold.Holder.ReturnToMap,
         () => Settings.Enabled && Settings.ShowReturnToMapSplitButton && Settings.ReturnToMapCheckpointMenu,
-        DialogIds.CheckpointMenuHeaderId, swallowArrival: true);
+        DialogIds.CheckpointMenuHeaderId);
 
-    // SwallowArrival false: the split at the mark ran on a level SpeedrunTool saw completed, which
-    // records without advancing roomNumber, so its arrival split is the one that advances it — as in a
-    // run, where the next chapter's first update sees a room change.
     internal static readonly ReentryOpener SkipCutscene = new(ClockHold.Holder.SkipCutscene,
         () => Settings.Enabled && Settings.ShowSkipCutsceneSplitButton && Settings.SkipCutsceneLoadMenu,
-        DialogIds.ChapterMenuHeaderId, swallowArrival: false);
+        DialogIds.ChapterMenuHeaderId);
 
     // Null while no list is open. One list at a time.
     private static ReentryOpener opener;
@@ -139,7 +133,12 @@ internal static class Reentry {
         Audio.SetMusic(null);
         Audio.BusStopAll(Buses.GAMEPLAY, immediate: true);
 
-        if (opener.SwallowArrival) CheckpointArrival.Expect();
+        // The pick carries the run on: SpeedrunTool's end-of-run record, written if the level was shown
+        // completed, is taken back. Its arrival split is then let through only where the last record is a
+        // segment of its own, as a chapter's end recorded on a completed level is, which splits without
+        // advancing the room. Otherwise the split already advanced it, or the record is a repeat the next
+        // room may overwrite, and the arrival would add a room of no length.
+        if (!SpeedrunToolRecords.KeepRunGoing()) CheckpointArrival.Expect();
         LoadChain.Start(next);
 
         // The way the chapter panel enters, raising Everest's Level.Enter: a checkpoint session is not
