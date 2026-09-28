@@ -41,6 +41,7 @@ internal static class Reentry {
         opener = who;
         ClockHold.Take(who.Holder);
         level.Paused = true;
+        StartPause(level);
 
         ReturnToMapCheckpointMenu menu = new(rows, Load, Cancel, who.TitleId);
         level.Add(menu);
@@ -48,6 +49,12 @@ internal static class Reentry {
         // following frame. Same nudge ReturnToMapTimer.Press gives the confirm prompt.
         level.OnEndOfFrame += () => level.Entities.UpdateLists();
         return true;
+    }
+
+    // Vanilla's pause effects, private on Level (the publicizer reaches them). Only when none run: the
+    // Return to Map list opens after its confirmation prompt, and StartPauseEffects plays a sound.
+    private static void StartPause(Level level) {
+        if (Level.PauseSnapshot == null) level.StartPauseEffects();
     }
 
     /// <summary>Lets the list and its hold go once the feature that opened them is switched off.</summary>
@@ -67,6 +74,7 @@ internal static class Reentry {
                 menu.RemoveSelf();
             }
             level.Paused = false;
+            level.EndPauseEffects();
         }
         ClockHold.Release(who.Holder);
         opener = null;
@@ -164,6 +172,7 @@ internal static class Reentry {
         }
         level.PauseMainMenuOpen = false;
         level.Paused = false;
+        level.EndPauseEffects();
         Audio.Play(SFX.ui_game_unpause);
         level.unpauseTimer = 0.15f;
     }
