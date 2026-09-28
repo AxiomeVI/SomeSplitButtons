@@ -18,6 +18,8 @@ SSB_SQ_REENTER_OPTIONS=                           Then Reload the Room
 SSB_SQ_REENTER_OPTIONS_DESC=                      Vanilla S&Q reload: room state resets, Core mode included
 SSB_RTM_CHECKPOINT_MENU=                          Then Load a Checkpoint
 SSB_RTM_CHECKPOINT_MENU_DESC=                     Opens a checkpoint list and loads into it; after a cassette or a chapter's last heart, the next sides too
+SSB_SCS_LOAD_MENU=                                Then Load the Next Chapter
+SSB_SCS_LOAD_MENU_DESC=                           Opens a list of the next chapter and this chapter's B-side, and loads into it
 SSB_BERRY_COLLECT_PROTECTION=                     Berry Collect Protection
 SSB_BERRY_COLLECT_PROTECTION_DESC=                Refuse to split while a carried red berry would be lost
 SSB_KEYBIND_CONFIG=                               Hotkeys
@@ -30,6 +32,8 @@ SSB_RETURN_TO_MAP_SPLIT_BUTTON=                   Return to Map Split
 # number out: they come from the code, and a copy here would go stale without anything noticing.
 SSB_SCS_BUTTON_DESC=                              Unpauses, then splits the SpeedrunTool room timer after {0} frames
 SSB_SCS_PROLOGUE_BUTTON_DESC=                     Unpauses, then splits the SpeedrunTool room timer after {0} frames (~{1}s)
+SSB_SCS_LIST_BUTTON_DESC=                         Unpauses, splits the SpeedrunTool room timer after {0} frames, then opens the chapter list
+SSB_SCS_PROLOGUE_LIST_BUTTON_DESC=                Unpauses, splits the SpeedrunTool room timer after {0} frames (~{1}s), then opens the chapter list
 SSB_SQ_BUTTON_DESC=                               Splits the SpeedrunTool room timer after {0} frames, then unpauses
 SSB_SQ_REENTER_BUTTON_DESC=                       Splits the SpeedrunTool room timer after {0} frames, then reloads the room
 SSB_RTM_BUTTON_DESC=                              Splits the SpeedrunTool room timer after {0} frames, then unpauses
@@ -39,6 +43,7 @@ SSB_RTM_PICKER_BUTTON_DESC=                       Splits the SpeedrunTool room t
 SSB_END_POINT_IGNORES_SPLIT=                      SpeedrunTool end point set: this split will not register
 SSB_RTM_SPLIT_MENU_HEADER=                        RETURN TO MAP SPLIT?
 SSB_RTM_CHECKPOINT_MENU_HEADER=                   LOAD WHICH CHECKPOINT?
+SSB_SCS_CHAPTER_MENU_HEADER=                      LOAD WHICH CHAPTER?
 
 # ============================== Messages ======================================
 # {0} is a frame count at normal speed: every carried red berry summed, since they bank one at a

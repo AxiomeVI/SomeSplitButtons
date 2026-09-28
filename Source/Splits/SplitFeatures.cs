@@ -193,14 +193,16 @@ internal static class SplitFeatures {
         Available = level => level.endingChapterAfterCutscene
                              && level.Session.Area.ID != SkipCutsceneTimer.EPILOGUE_AREA_ID
                              && !SkipCutsceneTimer.Hidden,
-        DescriptionId = () => SkipCutsceneTimer.InPrologue
-            ? DialogIds.SCSPrologueButtonDesc
-            : DialogIds.SCSButtonDesc,
+        DescriptionId = () => SomeSplitButtonsModule.Settings.SkipCutsceneLoadMenu
+            ? SkipCutsceneTimer.InPrologue ? DialogIds.SCSPrologueListButtonDesc : DialogIds.SCSListButtonDesc
+            : SkipCutsceneTimer.InPrologue ? DialogIds.SCSPrologueButtonDesc : DialogIds.SCSButtonDesc,
         DescriptionFrames = () => SkipCutsceneTimer.FadeoutFrames,
         Press = (level, _) => {
             SkipCutsceneTimer.Press(level);
             return SplitStages.Confirmed;
         },
+        // Holds the chapter clock while its list is open, with Return to Map's outside-the-gates rule.
+        UpdateHold = Reentry.UpdateHold,
     };
 
     internal static readonly SplitFeature ReturnToMap = new() {

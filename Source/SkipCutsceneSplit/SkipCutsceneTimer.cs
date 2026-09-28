@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using Celeste.Mod.SomeSplitButtons.Integration;
+using Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 using Celeste.Mod.SomeSplitButtons.Splits;
 using Monocle;
 
@@ -43,6 +45,7 @@ internal static class SkipCutsceneTimer {
     }
 
     internal static void Reset() {
+        Reentry.Reset(Reentry.SkipCutscene);
         hidden = false;
         countdown.Reset();
         SkipCutsceneRoomTimer.Reset();
@@ -73,5 +76,14 @@ internal static class SkipCutsceneTimer {
         // end, so SpeedrunTool alone is told now. Writing level.Completed instead makes the real
         // RegisterAreaComplete return early: no completion in the save, no Level.Complete event.
         if (!level.Completed) SkipCutsceneRoomTimer.SplitAsCompleted();
+
+        if (!SomeSplitButtonsModule.Settings.SkipCutsceneLoadMenu) return;
+        AreaKey area = level.Session.Area;
+        List<(string Key, string Label)> rows = new();
+        foreach ((int id, AreaMode mode) in Destinations.For(WindowTrigger.Ending, area.ID, area.Mode,
+                     area.GetLevelSet() == "Celeste", hasBSide: false)) {
+            rows.Add((Destinations.Key(id, mode), Destinations.Label(id, mode)));
+        }
+        if (rows.Count > 0) Reentry.Begin(level, rows, Reentry.SkipCutscene);
     }
 }

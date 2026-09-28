@@ -22,6 +22,12 @@ internal static class ModMenuOptions {
         // One indented group per feature that has a follow-up row, open while that feature is on.
         // Built before the loop because each is slotted in directly behind its own feature's row.
         Dictionary<SplitFeature, RecursiveNakedSubMenu> companions = new() {
+            [SplitFeatures.SkipCutscene] = MakeCompanion(
+                menu, SplitFeatures.SkipCutscene,
+                DialogIds.SkipCutsceneLoadMenuId,
+                DialogIds.SkipCutsceneLoadMenuDescId,
+                settings.SkipCutsceneLoadMenu,
+                value => settings.SkipCutsceneLoadMenu = value),
             [SplitFeatures.SaveAndQuit] = MakeCompanion(
                 menu, SplitFeatures.SaveAndQuit,
                 DialogIds.SaveAndQuitAndReenterId,
