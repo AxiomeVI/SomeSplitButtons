@@ -83,6 +83,7 @@ public class SomeSplitButtonsModule : EverestModule {
 
         SpeedrunToolHooks.Install();
         SceneSwitchClear.Install();
+        LoadChain.Load();
         DestinationWindow.Load();
     }
 
@@ -111,6 +112,7 @@ public class SomeSplitButtonsModule : EverestModule {
         SplitFeatures.ResetAll();
         Everest.Events.Level.OnExit -= Level_OnLevelExit;
         SpeedrunToolHooks.Uninstall();
+        LoadChain.Unload();
         SceneSwitchClear.Uninstall();
         DestinationWindow.Unload();
     }

@@ -5,59 +5,49 @@ namespace Celeste.Mod.SomeSplitButtons.Integration;
 
 /// <summary>
 ///     Keeps SpeedrunTool's save states, and with them its room timer, across the checkpoint list's
-///     load into the B-side.
+///     load into another chapter or side.
 /// </summary>
 // SpeedrunTool clears every state saved in another chapter or side when a scene begins, and a clear
-// resets its room timer (RoomTimerManager.ClearPbTimes). The B-side load changes side, so it would
-// cost the player the A-side state and the timer the list exists to carry. The setting behind it,
+// resets its room timer (RoomTimerManager.ClearPbTimes). Every destination changes chapter or side, so
+// it would cost the player their state and the timer the list exists to carry. The setting behind it,
 // AutoClearStateOnSceneSwitch, is held off for that one load and put back afterwards.
 //
-// Its check runs after orig(Scene.Begin), for the LevelLoader and again for the Level, so the value
-// goes back on the B-side level's first update, after both.
-//
-// ⚠️ Never written to disk: nothing saves settings between here and that first update. Level.Unpause
-// does, and neither LevelEnter nor LevelLoader can be paused.
+// ⚠️ Never written to disk while held: LoadChain puts it back on the destination level's first update,
+// or as soon as the scene leaves the load, before the next scene begins. The Core vignette can be paused
+// and quit, so "nothing can save settings on the way" does not hold on its own.
 //
 // Hidden from SpeedrunTool's menu and absent from older releases, so it is found by reflection. A
 // miss leaves SpeedrunTool's clear in place.
 internal static class SceneSwitchClear {
     private static PropertyInfo setting;
-    private static Session target;
+    private static bool suspended;
     private static bool playerValue;
 
-    // Hook: Level.OnBeforeUpdate puts the setting back on the target level's first update.
     internal static void Install() {
         setting = typeof(SpeedrunToolSettings).GetProperty("AutoClearStateOnSceneSwitch",
             BindingFlags.Public | BindingFlags.Instance);
         if (setting?.PropertyType != typeof(bool) || !setting.CanWrite) {
             setting = null;
             Logger.Warn(nameof(SomeSplitButtonsModule),
-                "SpeedrunTool AutoClearStateOnSceneSwitch not found — loading the B-side from the checkpoint list will clear SpeedrunTool's save state and room timer.");
+                "SpeedrunTool AutoClearStateOnSceneSwitch not found — loading another chapter or side from the checkpoint list will clear SpeedrunTool's save state and room timer.");
         }
-        Everest.Events.Level.OnBeforeUpdate += Level_OnBeforeUpdate;
     }
 
     internal static void Uninstall() {
-        Everest.Events.Level.OnBeforeUpdate -= Level_OnBeforeUpdate;
         Resume();
     }
 
-    /// <summary>Holds the clear off until the level built from <paramref name="next"/> updates.</summary>
-    internal static void Suspend(Session next) {
-        if (setting == null || target != null || SpeedrunToolSettings.Instance is not { } settings) return;
+    /// <summary>Holds the clear off. <see cref="ReturnToMapSplit.LoadChain"/> decides when it comes back.</summary>
+    internal static void Suspend() {
+        if (setting == null || suspended || SpeedrunToolSettings.Instance is not { } settings) return;
         playerValue = (bool) setting.GetValue(settings);
         setting.SetValue(settings, false);
-        target = next;
+        suspended = true;
     }
 
-    private static void Resume() {
-        if (target == null) return;
-        target = null;
+    internal static void Resume() {
+        if (!suspended) return;
+        suspended = false;
         if (SpeedrunToolSettings.Instance is { } settings) setting.SetValue(settings, playerValue);
-    }
-
-    // The outgoing level still updates after the pick, so the session tells the two apart.
-    private static void Level_OnBeforeUpdate(Level level) {
-        if (level.Session == target) Resume();
     }
 }

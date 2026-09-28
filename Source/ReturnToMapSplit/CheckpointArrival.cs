@@ -21,6 +21,9 @@ internal static class CheckpointArrival {
     /// <summary>Marks the next level load as the checkpoint the picker chose.</summary>
     internal static void Expect() => expected = true;
 
+    /// <summary>Forgets an expected load that will not come, as when the player quits on the way.</summary>
+    internal static void Cancel() => expected = false;
+
     /// <summary>Forgets SpeedrunTool's last room if the load is the expected one. Runs on the loader's thread.</summary>
     // During the load and not at Expect: the outgoing level still updates once after the picker's
     // callback, and SpeedrunTool would record its room again.
