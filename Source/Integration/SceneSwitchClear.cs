@@ -8,9 +8,10 @@ namespace Celeste.Mod.SomeSplitButtons.Integration;
 ///     load into another chapter or side.
 /// </summary>
 // SpeedrunTool clears every state saved in another chapter or side when a scene begins, and a clear
-// resets its room timer (RoomTimerManager.ClearPbTimes). Every destination changes chapter or side, so
-// it would cost the player their state and the timer the list exists to carry. The setting behind it,
-// AutoClearStateOnSceneSwitch, is held off for that one load and put back afterwards.
+// resets its room timer (RoomTimerManager.ClearPbTimes). Every destination changes chapter or side, and
+// a checkpoint picked after one still loads away from the kept state's area, so either would cost the
+// player their state and the timer the list exists to carry. The setting behind it,
+// AutoClearStateOnSceneSwitch, is held off for every pick's load and put back afterwards.
 //
 // ⚠️ Never written to disk while held: LoadChain puts it back on the destination level's first update,
 // or as soon as the scene leaves the load, before the next scene begins. The Core vignette can be paused

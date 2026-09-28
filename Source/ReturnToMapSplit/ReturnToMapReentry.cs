@@ -90,7 +90,7 @@ internal static class ReturnToMapReentry {
         Audio.BusStopAll(Buses.GAMEPLAY, immediate: true);
 
         CheckpointArrival.Expect();
-        LoadChain.Start(next, crossArea: next.Area != outgoing.Area);
+        LoadChain.Start(next);
 
         // The way the chapter panel enters, raising Everest's Level.Enter: a checkpoint session is not
         // StartedFromBeginning, so nothing shows before it; a destination's is, so its postcard, title

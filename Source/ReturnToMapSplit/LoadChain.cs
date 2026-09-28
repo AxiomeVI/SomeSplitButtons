@@ -29,9 +29,11 @@ internal static class LoadChain {
     }
 
     /// <summary>Starts following a load into <paramref name="next"/>.</summary>
-    internal static void Start(Session next, bool crossArea) {
+    // Every pick, not only one into another area: a state kept from an earlier chapter is still from
+    // another area when the player then picks a checkpoint of this one.
+    internal static void Start(Session next) {
         target = next;
-        if (crossArea) SceneSwitchClear.Suspend();
+        SceneSwitchClear.Suspend();
     }
 
     private static bool InChain(Scene scene) => scene switch {
