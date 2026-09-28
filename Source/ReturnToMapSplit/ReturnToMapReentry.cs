@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Celeste.Mod.SomeSplitButtons.Integration;
 using Celeste.Mod.SomeSplitButtons.Splits;
 using Monocle;
 
@@ -87,6 +88,7 @@ internal static class ReturnToMapReentry {
         Audio.BusStopAll(Buses.GAMEPLAY, immediate: true);
 
         CheckpointArrival.Expect();
+        if (checkpointKey == CassetteWindow.BSideKey) SceneSwitchClear.Suspend(next);
 
         // The way a checkpoint picked from the chapter panel is entered, raising Everest's
         // Level.Enter. A checkpoint session is not StartedFromBeginning, so no postcard shows. The

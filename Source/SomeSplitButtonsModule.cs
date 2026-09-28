@@ -82,6 +82,7 @@ public class SomeSplitButtonsModule : EverestModule {
         On.Monocle.Engine.Update += Engine_OnUpdate;
 
         SpeedrunToolHooks.Install();
+        SceneSwitchClear.Install();
         CassetteWindow.Load();
     }
 
@@ -110,6 +111,7 @@ public class SomeSplitButtonsModule : EverestModule {
         SplitFeatures.ResetAll();
         Everest.Events.Level.OnExit -= Level_OnLevelExit;
         SpeedrunToolHooks.Uninstall();
+        SceneSwitchClear.Uninstall();
         CassetteWindow.Unload();
     }
 
