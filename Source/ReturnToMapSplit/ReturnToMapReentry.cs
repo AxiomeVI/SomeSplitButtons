@@ -60,11 +60,11 @@ internal static class ReturnToMapReentry {
         if (Engine.Scene is not Level level) return;
 
         Session outgoing = level.Session;
-        // The B-side carries nothing: it is another chapter, and SaveData.RegisterCompletion writes a
-        // StartedFromBeginning session's Time as that chapter's best. SpeedrunTool's room timer
-        // carries the chain on its own.
-        Session next = checkpointKey == CassetteWindow.BSideKey
-            ? new Session(new AreaKey(outgoing.Area.ID, AreaMode.BSide))
+        // A destination carries nothing but the C-side postcard's flag: it is another area, and
+        // SaveData.RegisterCompletion writes a StartedFromBeginning session's Time as that area's best.
+        // SpeedrunTool's room timer carries the chain on its own.
+        Session next = Destinations.TryParseKey(checkpointKey, out int id, out AreaMode mode)
+            ? new Session(new AreaKey(id, mode)) { UnlockedCSide = outgoing.UnlockedCSide }
             : BuildSession(outgoing, checkpointKey);
 
         // ⚠️ The hold stays until the load's Level_OnLoadingThread lets go of it. SpeedrunTool's room
@@ -88,11 +88,11 @@ internal static class ReturnToMapReentry {
         Audio.BusStopAll(Buses.GAMEPLAY, immediate: true);
 
         CheckpointArrival.Expect();
-        if (checkpointKey == CassetteWindow.BSideKey) SceneSwitchClear.Suspend(next);
+        if (next.Area != outgoing.Area) SceneSwitchClear.Suspend(next);
 
-        // The way a checkpoint picked from the chapter panel is entered, raising Everest's
-        // Level.Enter. A checkpoint session is not StartedFromBeginning, so no postcard shows. The
-        // B-side's is, so its title card shows, as it does after a real Return to Map.
+        // The way the chapter panel enters, raising Everest's Level.Enter: a checkpoint session is not
+        // StartedFromBeginning, so nothing shows before it; a destination's is, so its postcard, title
+        // card or vignette shows, as after a real Return to Map.
         LevelEnter.Go(next, fromSaveData: false);
     }
 

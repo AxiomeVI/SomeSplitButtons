@@ -12,19 +12,19 @@ internal static class ReturnToMapTimer {
     internal static void Reset() {
         ReturnToMapReentry.Reset();
         countdown.Reset();
-        CassetteWindow.Disarm();
+        DestinationWindow.Close();
     }
 
     internal static bool Armed => countdown.Armed;
 
-    // The countdown and the cassette window, not the hold. The hold stands while the picker — a
+    // The countdown and the destination window, not the hold. The hold stands while the list — a
     // pause — is open, and a player cannot take a save state while paused.
-    internal static object Snapshot() => (countdown.State, CassetteWindow.Armed);
+    internal static object Snapshot() => (countdown.State, DestinationWindow.Trigger);
 
     internal static void Restore(object snapshot) {
-        ((bool, int) countdownState, bool cassetteArmed) = (((bool, int), bool)) snapshot;
+        ((bool, int) countdownState, WindowTrigger window) = (((bool, int), WindowTrigger)) snapshot;
         countdown.State = countdownState;
-        CassetteWindow.Restore(cassetteArmed);
+        DestinationWindow.Restore(window);
     }
 
     /// <summary>
@@ -64,10 +64,10 @@ internal static class ReturnToMapTimer {
         List<(string Key, string Label)> rows = null;
         if (SomeSplitButtonsModule.Settings.ReturnToMapCheckpointMenu) {
             rows = CheckpointList.ForArea(level.Session.Area);
-            if (CassetteWindow.Row(level.Session) is { } bSide) rows.Add(bSide);
+            rows.AddRange(DestinationWindow.Rows(level.Session));
         }
-        // Nothing to pick when the save has reached no checkpoint here and no cassette was just
-        // taken, so the player carries on, clock running.
+        // Nothing to pick in a chapter without checkpoints when no collect opened the window, so the
+        // player carries on, clock running.
         if (rows == null || rows.Count == 0) {
             PausedWait.End(level);
             return;

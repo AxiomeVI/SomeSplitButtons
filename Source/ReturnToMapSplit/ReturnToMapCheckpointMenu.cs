@@ -15,6 +15,9 @@ internal class ReturnToMapCheckpointMenu : TextMenu {
     /// <summary>The row count of the most recently built picker, for the fixtures.</summary>
     internal static int lastRowCount;
 
+    /// <summary>The destination labels of the most recently built list, comma-separated, for the fixtures.</summary>
+    internal static string lastDestinationLabels;
+
     private bool finished;
     private readonly Action<string> onChosen;
     private readonly Action onCancelled;
@@ -43,6 +46,11 @@ internal class ReturnToMapCheckpointMenu : TextMenu {
 
         // Header is not a row the player counts; the checkpoints and Cancel are.
         lastRowCount = rows.Count + 1;
+        List<string> destinations = new();
+        foreach ((string key, string label) in rows) {
+            if (Destinations.IsKey(key)) destinations.Add(label);
+        }
+        lastDestinationLabels = destinations.Count == 0 ? "none" : string.Join(",", destinations);
 
         OnCancel = OnESC = OnPause = Cancel;
     }
