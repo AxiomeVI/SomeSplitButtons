@@ -27,6 +27,7 @@ namespace Celeste.Mod.SomeSplitButtons.Integration;
 // MissingMethodException inside Level.Update at the moment of a split.
 internal static class SpeedrunToolHooks {
     private static Hook timingHook;
+    private static Hook managerTimingHook;
     private static Hook updateTimerStateHook;
     private static Action<bool> updateTimerState;
     private static Action<string, string> showPopup;
@@ -95,6 +96,12 @@ internal static class SpeedrunToolHooks {
                     null, new[] {typeof(Level)}, null),
             nameof(SkipCutsceneRoomTimer.OnTiming),
             "SpeedrunTool RoomTimerData.Timing not found — the room timer will stop at chapter completion instead of at the Skip Cutscene mark.");
+        managerTimingHook = TryHook(
+            () => typeof(RoomTimerManager).GetMethod("Timing",
+                BindingFlags.NonPublic | BindingFlags.Static,
+                null, new[] {typeof(Level)}, null),
+            nameof(SkipCutsceneRoomTimer.OnManagerTiming),
+            "SpeedrunTool RoomTimerManager.Timing not found — during an ending, a mod watching SpeedrunTool's splits may see one every frame.");
     }
 
     /// <summary>Installs one detour, or logs <paramref name="warning"/> and returns null.</summary>
@@ -131,6 +138,8 @@ internal static class SpeedrunToolHooks {
     internal static void Uninstall() {
         timingHook?.Dispose();
         timingHook = null;
+        managerTimingHook?.Dispose();
+        managerTimingHook = null;
         updateTimerStateHook?.Dispose();
         updateTimerStateHook = null;
         updateTimerState = null;

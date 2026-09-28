@@ -73,6 +73,29 @@ internal static class SkipCutsceneRoomTimer {
         freezeLevelCompleted;
 
     /// <summary>
+    ///     Keeps SpeedrunTool's manager from calling UpdateTimerState on every frame of the freeze once
+    ///     the ending's split is recorded.
+    /// </summary>
+    // The manager reads the real level.Completed, true through the whole ending, and calls every frame.
+    // Swallowing those calls in OnUpdateTimerState is not enough: a mod detouring UpdateTimerState from
+    // outside this one still sees each, with a frame more on a timer the freeze keeps running, and
+    // SpeebrunConsistencyTracker recorded a one-frame room on every frame of the ending. Before the
+    // ending's split is recorded, the manager must see the completion, or that split never happens.
+    public static void OnManagerTiming(Action<Level> orig, Level level) {
+        if (!(endingSplitRecorded && ShouldFreezeLevelCompleted(level))) {
+            orig(level);
+            return;
+        }
+        bool wasCompleted = level.Completed;
+        level.Completed = false;
+        try {
+            orig(level);
+        } finally {
+            level.Completed = wasCompleted;
+        }
+    }
+
+    /// <summary>
     ///     Keeps SpeedrunTool's room timer running through the ending, then puts the flag back.
     /// </summary>
     // The restore is in a finally because the flag is vanilla's: an exception out of SpeedrunTool
