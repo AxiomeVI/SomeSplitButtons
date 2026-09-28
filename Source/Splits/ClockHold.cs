@@ -3,8 +3,8 @@ using System;
 namespace Celeste.Mod.SomeSplitButtons.Splits;
 
 /// <summary>
-///     The one owner of the chapter-clock holds: Save and Quit's after its split, Return to Map's
-///     while the checkpoint picker is open.
+///     The one owner of the chapter-clock holds: Save and Quit's after its split, and Return to Map's
+///     or Skip Cutscene's while the list either opened is open.
 /// </summary>
 // A hold stops the clock without touching TimerStopped. Level.UpdateTime — the only reader of that
 // flag in the game — is skipped while any hold stands, and SpeedrunTool's room timer, the other

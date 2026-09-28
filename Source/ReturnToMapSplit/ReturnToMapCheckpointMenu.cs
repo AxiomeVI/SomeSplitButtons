@@ -6,7 +6,8 @@ using Monocle;
 namespace Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 
 /// <summary>
-///     The checkpoint picker that opens after the Return to Map split, when the setting is on.
+///     The list that opens after the Return to Map split or the Skip Cutscene split, when its setting is
+///     on, titled by whichever opened it.
 /// </summary>
 // TextMenu's own constructor sets Tag = Tags.PauseUpdate | Tags.HUD, and Level.Update's
 // FrozenOrPaused branch runs those entities with MInput.Disabled = false — which is what lets this

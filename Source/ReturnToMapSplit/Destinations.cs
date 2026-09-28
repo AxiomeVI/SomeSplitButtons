@@ -6,7 +6,8 @@ namespace Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 internal enum WindowTrigger { None, Cassette, Heart, Ending }
 
 /// <summary>
-///     Which areas the Return to Map list offers after a collect, and the label and row key of each.
+///     Which areas the list offers after a collect or a chapter's ending, and the label and row key of
+///     each.
 /// </summary>
 // Pure, so it runs off-engine. Game IDs, not runners' numbers: ID 8 is the Epilogue, an interlude with
 // no sides, Core is ID 9 and Farewell ID 10, A-side only.

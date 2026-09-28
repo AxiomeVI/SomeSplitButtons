@@ -73,7 +73,8 @@ internal static class ReturnToMapTimer {
             return;
         }
 
-        // The picker is a pause too, so the wait's pause runs straight into it.
+        // The picker is a pause too, so the wait's pause runs straight into it. A refusal needs nothing:
+        // it means another list is open, and that list owns the pause and ends it when it closes.
         Reentry.Begin(level, rows, Reentry.ReturnToMap);
     }
 }

@@ -9,7 +9,20 @@ namespace Celeste.Mod.SomeSplitButtons.Splits;
 ///     Who opened the list: the clock holder it takes, the settings that keep it alive, its title,
 ///     and whether a pick hides SpeedrunTool's arrival split.
 /// </summary>
-internal sealed record ReentryOpener(ClockHold.Holder Holder, Func<bool> Alive, string TitleId, bool SwallowArrival);
+// A class, not a record: openers are compared by identity, and a record's == compares values.
+internal sealed class ReentryOpener {
+    internal ClockHold.Holder Holder { get; }
+    internal Func<bool> Alive { get; }
+    internal string TitleId { get; }
+    internal bool SwallowArrival { get; }
+
+    internal ReentryOpener(ClockHold.Holder holder, Func<bool> alive, string titleId, bool swallowArrival) {
+        Holder = holder;
+        Alive = alive;
+        TitleId = titleId;
+        SwallowArrival = swallowArrival;
+    }
+}
 
 /// <summary>
 ///     The list both the Return to Map and the Skip Cutscene splits open, and the load behind it: the
@@ -20,14 +33,14 @@ internal static class Reentry {
 
     internal static readonly ReentryOpener ReturnToMap = new(ClockHold.Holder.ReturnToMap,
         () => Settings.Enabled && Settings.ShowReturnToMapSplitButton && Settings.ReturnToMapCheckpointMenu,
-        DialogIds.CheckpointMenuHeaderId, SwallowArrival: true);
+        DialogIds.CheckpointMenuHeaderId, swallowArrival: true);
 
     // SwallowArrival false: the split at the mark ran on a level SpeedrunTool saw completed, which
     // records without advancing roomNumber, so its arrival split is the one that advances it — as in a
     // run, where the next chapter's first update sees a room change.
     internal static readonly ReentryOpener SkipCutscene = new(ClockHold.Holder.SkipCutscene,
         () => Settings.Enabled && Settings.ShowSkipCutsceneSplitButton && Settings.SkipCutsceneLoadMenu,
-        DialogIds.ChapterMenuHeaderId, SwallowArrival: false);
+        DialogIds.ChapterMenuHeaderId, swallowArrival: false);
 
     // Null while no list is open. One list at a time.
     private static ReentryOpener opener;
@@ -65,11 +78,14 @@ internal static class Reentry {
     // Session.Time and SaveData.AddTime for the rest of the Level. ClockHold is static, so a hold left
     // standing also outlives a load.
     internal static void UpdateHold(Level level) {
-        if (holding && !opener.Alive()) Reset(opener);
+        // Read once: a loader-thread Reset can null the field between two reads.
+        ReentryOpener current = opener;
+        if (current != null && ClockHold.IsHeldBy(current.Holder) && !current.Alive()) Reset(current);
     }
 
     /// <summary>Tears the list down and releases the clock, if <paramref name="who"/> opened it.</summary>
-    // ⚠️ Reachable from Level_OnLoadingThread, on the loader's background thread: no Level to touch.
+    // ⚠️ Reachable from Level_OnLoadingThread, on the loader's background thread. A LevelLoader built
+    // while a Level is still the scene (`console load`) runs it with that Level current.
     internal static void Reset(ReentryOpener who) {
         if (opener != who) return;
         if (holding && Engine.Scene is Level level) {
@@ -83,7 +99,7 @@ internal static class Reentry {
         opener = null;
     }
 
-    /// <summary>Builds the session for the chosen checkpoint and reloads the level into it.</summary>
+    /// <summary>Builds the session for the chosen row, a checkpoint or a destination, and loads it.</summary>
     private static void Load(string checkpointKey) {
         if (Engine.Scene is not Level level) return;
 
