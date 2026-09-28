@@ -188,10 +188,12 @@ internal static class SplitFeatures {
         // Both need InCutscene, so the vanilla button is always there when this one is: its absence
         // is a conflict with another mod and always worth saying.
         WarnsWhenAnchorMissingInMinimal = true,
-        // Not in the Epilogue: Level.UpdateTime returns at once when `Session.Area.ID == 8`, so no
-        // time runs there and there is nothing to split — although its ending sets the flag too.
+        // Only where time runs, so a split has something to mark: not in the Epilogue, where
+        // Level.UpdateTime returns at once on `Session.Area.ID == 8`, and not where TimerStopped is set,
+        // which UpdateTime also returns on. Of the vanilla endings, only Farewell's (CS10_Ending) sets it.
         Available = level => level.endingChapterAfterCutscene
                              && level.Session.Area.ID != SkipCutsceneTimer.EPILOGUE_AREA_ID
+                             && !level.TimerStopped
                              && !SkipCutsceneTimer.Hidden,
         DescriptionId = () => SomeSplitButtonsModule.Settings.SkipCutsceneLoadMenu
             ? SkipCutsceneTimer.InPrologue ? DialogIds.SCSPrologueListButtonDesc : DialogIds.SCSListButtonDesc

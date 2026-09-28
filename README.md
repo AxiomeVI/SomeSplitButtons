@@ -27,10 +27,12 @@ nothing can move, die or be picked up in those frames. Skip Cutscene unpauses, a
 on.
 
 - **Skip Cutscene Split** only appears during an end-of-chapter cutscene, and disappears after one
-  use until the level is reloaded. It does not appear in the Epilogue, where no time runs. It splits
-  SpeedrunTool's room timer only: the chapter still completes when the game completes it, so in the
-  Prologue the game's chapter time ends a few seconds after the button's mark. SpeedrunTool's room
-  timer, and the time it hands LiveSplit, stop at the mark.
+  use until the level is reloaded. It does not appear in the Epilogue or in Farewell's ending, where
+  no time runs. It splits SpeedrunTool's room timer only: the chapter still completes when the game
+  completes it, so in the Prologue the game's chapter time ends a few seconds after the button's mark.
+  SpeedrunTool's room timer, and the time it hands LiveSplit, stop at the mark. With **Then Load the
+  Next Chapter** on, the split then opens a list of the next chapter and this chapter's B-side, and
+  loads the one you pick.
 - **Save and Quit Split** reloads the room afterwards by default, exactly as the game does when a
   chapter is resumed after a real Save and Quit. Turn *Then Reload the Room* off to split without
   reloading; the chapter clock is then held stopped until you have control again,
