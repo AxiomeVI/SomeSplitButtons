@@ -87,6 +87,7 @@ internal static class SpeedrunToolRecords {
             for (int i = 0; i < Tables.Length; i++) {
                 if (Read(data, Tables[i]) is IDictionary table) Restore(before[i], table);
             }
+            ResumeTiming(data);
         }
         pending.Clear();
 
@@ -95,6 +96,15 @@ internal static class SpeedrunToolRecords {
         return current != null && Read(current, "ThisRunTimes") is IDictionary thisRun
                                && LastRecordIsASegment(thisRun, Read(current, "thisRunTimeKey") as string,
                                    Read(current, "thisRunPrevRoomTimeKey") as string);
+    }
+
+    // The run goes on, so the timer is no longer Completed. While it is, its display shows the end-of-run
+    // record, just taken back: 0 through the destination's intro. Timing adds nothing before the new
+    // level's clock starts.
+    private static void ResumeTiming(object data) {
+        FieldInfo state = data.GetType().GetField("timerState", AnyInstance);
+        if (state == null || state.GetValue(data)?.ToString() != "Completed") return;
+        if (Enum.TryParse(state.FieldType, "Timing", out object timing)) state.SetValue(data, timing);
     }
 
     private static IEnumerable<object> RoomTimers() {
