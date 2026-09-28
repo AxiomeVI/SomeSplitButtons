@@ -72,6 +72,9 @@ internal static class ReturnToMapReentry {
         // the picker, so its Cancel does nothing.
         CloseMenu(level);
 
+        // Vanilla's Return to Map runs these; a heart's collect sound stops through one.
+        foreach (LevelEndingHook hook in level.Tracker.GetComponents<LevelEndingHook>()) hook.OnEnd?.Invoke();
+
         // A one-shot reset, not a sustained modification: LoadLevel does not put TimeRate back, so
         // splitting during a seeker or Oshiro slowdown would start the new level at reduced speed.
         // Vanilla's own Return to Map confirm does the same before leaving.
