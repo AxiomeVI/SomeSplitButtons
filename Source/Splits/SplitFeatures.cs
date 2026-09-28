@@ -195,7 +195,10 @@ internal static class SplitFeatures {
                              && level.Session.Area.ID != SkipCutsceneTimer.EPILOGUE_AREA_ID
                              && !level.TimerStopped
                              && !SkipCutsceneTimer.Hidden,
+        // The list's wording only where a list can open: none does on a modded map.
         DescriptionId = () => SomeSplitButtonsModule.Settings.SkipCutsceneLoadMenu
+                              && Engine.Scene is Level level
+                              && SkipCutsceneTimer.ListRows(level.Session.Area).Count > 0
             ? SkipCutsceneTimer.InPrologue ? DialogIds.SCSPrologueListButtonDesc : DialogIds.SCSListButtonDesc
             : SkipCutsceneTimer.InPrologue ? DialogIds.SCSPrologueButtonDesc : DialogIds.SCSButtonDesc,
         DescriptionFrames = () => SkipCutsceneTimer.FadeoutFrames,

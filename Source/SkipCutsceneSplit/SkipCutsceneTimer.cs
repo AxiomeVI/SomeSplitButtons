@@ -65,6 +65,16 @@ internal static class SkipCutsceneTimer {
 
     internal static bool InPrologue => inPrologue;
 
+    /// <summary>The destinations the list offers after this area's ending; empty where it does not open.</summary>
+    internal static List<(string Key, string Label)> ListRows(AreaKey area) {
+        List<(string Key, string Label)> rows = new();
+        foreach ((int id, AreaMode mode) in Destinations.For(WindowTrigger.Ending, area.ID, area.Mode,
+                     area.GetLevelSet() == "Celeste", hasBSide: false)) {
+            rows.Add((Destinations.Key(id, mode), Destinations.Label(id, mode)));
+        }
+        return rows;
+    }
+
     internal static void Update(Level level) {
         if (!countdown.Tick()) return;
 
@@ -77,13 +87,10 @@ internal static class SkipCutsceneTimer {
         // RegisterAreaComplete return early: no completion in the save, no Level.Complete event.
         if (!level.Completed) SkipCutsceneRoomTimer.SplitAsCompleted();
 
-        if (!SomeSplitButtonsModule.Settings.SkipCutsceneLoadMenu) return;
-        AreaKey area = level.Session.Area;
-        List<(string Key, string Label)> rows = new();
-        foreach ((int id, AreaMode mode) in Destinations.For(WindowTrigger.Ending, area.ID, area.Mode,
-                     area.GetLevelSet() == "Celeste", hasBSide: false)) {
-            rows.Add((Destinations.Key(id, mode), Destinations.Label(id, mode)));
-        }
+        // Alive, not the list's setting alone: the hotkey turns the button off without disarming the
+        // split, which still fires, and a list opened then would be torn down again the next frame.
+        if (!Reentry.SkipCutscene.Alive()) return;
+        List<(string Key, string Label)> rows = ListRows(level.Session.Area);
         // Only where the list can run: the wait is unpaused, so by the split frame the player may have
         // re-opened the pause menu, started vanilla's skip, or the ending's own wipe may be running —
         // SkippingCutscene's branch in Level.Update runs before the paused one, and Wipe.Update runs
