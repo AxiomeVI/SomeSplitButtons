@@ -106,7 +106,7 @@ internal static class ReturnToMapReentry {
     // cassettes come back as ghosts (SaveData already has them), keys return to their spot and
     // opened doors close, because all of that is read from the session, not the save.
     private static Session BuildSession(Session outgoing, string checkpointKey) {
-        return new Session(outgoing.Area, CheckpointList.StripAreaPrefix(checkpointKey)) {
+        return new Session(outgoing.Area, checkpointKey) {
             Time = outgoing.Time,
             Deaths = outgoing.Deaths,
             Dashes = outgoing.Dashes,
