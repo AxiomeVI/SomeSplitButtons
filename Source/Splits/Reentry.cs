@@ -22,9 +22,12 @@ internal static class Reentry {
         () => Settings.Enabled && Settings.ShowReturnToMapSplitButton && Settings.ReturnToMapCheckpointMenu,
         DialogIds.CheckpointMenuHeaderId, SwallowArrival: true);
 
+    // SwallowArrival false: the split at the mark ran on a level SpeedrunTool saw completed, which
+    // records without advancing roomNumber, so its arrival split is the one that advances it — as in a
+    // run, where the next chapter's first update sees a room change.
     internal static readonly ReentryOpener SkipCutscene = new(ClockHold.Holder.SkipCutscene,
         () => Settings.Enabled && Settings.ShowSkipCutsceneSplitButton && Settings.SkipCutsceneLoadMenu,
-        DialogIds.ChapterMenuHeaderId, SwallowArrival: true);
+        DialogIds.ChapterMenuHeaderId, SwallowArrival: false);
 
     // Null while no list is open. One list at a time.
     private static ReentryOpener opener;
@@ -97,6 +100,11 @@ internal static class Reentry {
         // frame to the next room. The list's removal cannot release it early: Choose has finished
         // the list, so its Cancel does nothing.
         CloseMenu(level);
+
+        // The Prologue registers its completion at the very end of its ending, which the pick leaves
+        // before; chapters 1 to 7 already did as theirs began. Keyed on the ID, not on Completed, which
+        // is false wherever a split fires outside an ending.
+        if (opener == SkipCutscene && level.Session.Area.ID == 0) level.RegisterAreaComplete();
 
         // Vanilla's Return to Map runs these; a heart's collect sound stops through one.
         foreach (LevelEndingHook hook in level.Tracker.GetComponents<LevelEndingHook>()) hook.OnEnd?.Invoke();
