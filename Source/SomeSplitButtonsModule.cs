@@ -82,6 +82,7 @@ public class SomeSplitButtonsModule : EverestModule {
         On.Monocle.Engine.Update += Engine_OnUpdate;
 
         SpeedrunToolHooks.Install();
+        CassetteWindow.Load();
     }
 
     /// <summary>Moves the pause-menu handler to the end of the event's invocation list.</summary>
@@ -109,6 +110,7 @@ public class SomeSplitButtonsModule : EverestModule {
         SplitFeatures.ResetAll();
         Everest.Events.Level.OnExit -= Level_OnLevelExit;
         SpeedrunToolHooks.Uninstall();
+        CassetteWindow.Unload();
     }
 
     /// <summary>Disarms every split timer on level load, whether or not its feature is enabled.</summary>

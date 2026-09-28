@@ -59,7 +59,12 @@ internal static class ReturnToMapReentry {
         if (Engine.Scene is not Level level) return;
 
         Session outgoing = level.Session;
-        Session next = BuildSession(outgoing, checkpointKey);
+        // The B-side carries nothing: it is another chapter, and SaveData.RegisterCompletion writes a
+        // StartedFromBeginning session's Time as that chapter's best. SpeedrunTool's room timer
+        // carries the chain on its own.
+        Session next = checkpointKey == CassetteWindow.BSideKey
+            ? new Session(new AreaKey(outgoing.Area.ID, AreaMode.BSide))
+            : BuildSession(outgoing, checkpointKey);
 
         // ⚠️ The hold stays until the load's Level_OnLoadingThread lets go of it. SpeedrunTool's room
         // timer runs after this callback on the outgoing level, and released here it added this
@@ -84,7 +89,8 @@ internal static class ReturnToMapReentry {
         CheckpointArrival.Expect();
 
         // The way a checkpoint picked from the chapter panel is entered, raising Everest's
-        // Level.Enter. A checkpoint session is not StartedFromBeginning, so no postcard shows.
+        // Level.Enter. A checkpoint session is not StartedFromBeginning, so no postcard shows. The
+        // B-side's is, so its title card shows, as it does after a real Return to Map.
         LevelEnter.Go(next, fromSaveData: false);
     }
 

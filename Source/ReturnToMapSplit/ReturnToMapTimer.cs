@@ -12,15 +12,20 @@ internal static class ReturnToMapTimer {
     internal static void Reset() {
         ReturnToMapReentry.Reset();
         countdown.Reset();
+        CassetteWindow.Disarm();
     }
 
     internal static bool Armed => countdown.Armed;
 
-    // The countdown only. Its hold stands while the picker — a pause — is open, and a player cannot
-    // take a save state while paused.
-    internal static object Snapshot() => countdown.State;
+    // The countdown and the cassette window, not the hold. The hold stands while the picker — a
+    // pause — is open, and a player cannot take a save state while paused.
+    internal static object Snapshot() => (countdown.State, CassetteWindow.Armed);
 
-    internal static void Restore(object snapshot) => countdown.State = ((bool, int)) snapshot;
+    internal static void Restore(object snapshot) {
+        ((bool, int) countdownState, bool cassetteArmed) = (((bool, int), bool)) snapshot;
+        countdown.State = countdownState;
+        CassetteWindow.Restore(cassetteArmed);
+    }
 
     /// <summary>
     ///     Arms the split and pauses the level for its wait, unless a collectible the player would
@@ -56,11 +61,13 @@ internal static class ReturnToMapTimer {
         Logger.Info(nameof(SomeSplitButtonsModule), $"ReturnToMap split in {level.Session.Level} on frame {Engine.FrameCounter}");
         SkipCutsceneRoomTimer.Split();
 
-        // Nothing to pick when the save has reached no checkpoint here, so the player carries on,
-        // clock running.
-        List<(string Key, string Label)> rows = SomeSplitButtonsModule.Settings.ReturnToMapCheckpointMenu
-            ? CheckpointList.ForArea(level.Session.Area)
-            : null;
+        List<(string Key, string Label)> rows = null;
+        if (SomeSplitButtonsModule.Settings.ReturnToMapCheckpointMenu) {
+            rows = CheckpointList.ForArea(level.Session.Area);
+            if (CassetteWindow.Row(level.Session) is { } bSide) rows.Add(bSide);
+        }
+        // Nothing to pick when the save has reached no checkpoint here and no cassette was just
+        // taken, so the player carries on, clock running.
         if (rows == null || rows.Count == 0) {
             PausedWait.End(level);
             return;
