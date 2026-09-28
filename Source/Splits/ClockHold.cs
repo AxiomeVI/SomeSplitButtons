@@ -17,6 +17,7 @@ internal static class ClockHold {
         None = 0,
         SaveAndQuit = 1,
         ReturnToMap = 2,
+        SkipCutscene = 4,
     }
 
     private static Holder holders = Holder.None;

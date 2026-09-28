@@ -23,14 +23,14 @@ internal class ReturnToMapCheckpointMenu : TextMenu {
     private readonly Action onCancelled;
 
     internal ReturnToMapCheckpointMenu(List<(string Key, string Label)> rows, Action<string> onChosen,
-        Action onCancelled) {
+        Action onCancelled, string titleId) {
         this.onChosen = onChosen;
         this.onCancelled = onCancelled;
 
         AutoScroll = false;
         Position = new Vector2(Engine.Width / 2f, Engine.Height / 2f - 100f);
 
-        Add(new Header(Dialog.Clean(DialogIds.CheckpointMenuHeaderId)));
+        Add(new Header(Dialog.Clean(titleId)));
 
         // No start-of-chapter row: a player who wants the start restarts the chapter instead.
         foreach ((string key, string label) in rows) {

@@ -1,57 +1,75 @@
+using System;
 using System.Collections.Generic;
-using Celeste.Mod.SomeSplitButtons.Splits;
+using Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 using Monocle;
 
-namespace Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
+namespace Celeste.Mod.SomeSplitButtons.Splits;
 
 /// <summary>
-///     What happens after the Return to Map split when the checkpoint picker is enabled: the clock
-///     is held, the picker opens, and picking reloads the level at the chosen checkpoint.
+///     Who opened the list: the clock holder it takes, the settings that keep it alive, its title,
+///     and whether a pick hides SpeedrunTool's arrival split.
 /// </summary>
-internal static class ReturnToMapReentry {
-    // A view of ClockHold, named as the expectation files have always read it.
-    private static bool holding => ClockHold.IsHeldBy(ClockHold.Holder.ReturnToMap);
+internal sealed record ReentryOpener(ClockHold.Holder Holder, Func<bool> Alive, string TitleId, bool SwallowArrival);
 
-    /// <summary>Whether this manager currently holds the clock. Read by the test probe.</summary>
+/// <summary>
+///     The list both the Return to Map and the Skip Cutscene splits open, and the load behind it: the
+///     clock is held, the list opens, and a pick reloads the level or loads a destination.
+/// </summary>
+internal static class Reentry {
+    private static SomeSplitButtonsModuleSettings Settings => SomeSplitButtonsModule.Settings;
+
+    internal static readonly ReentryOpener ReturnToMap = new(ClockHold.Holder.ReturnToMap,
+        () => Settings.Enabled && Settings.ShowReturnToMapSplitButton && Settings.ReturnToMapCheckpointMenu,
+        DialogIds.CheckpointMenuHeaderId, SwallowArrival: true);
+
+    internal static readonly ReentryOpener SkipCutscene = new(ClockHold.Holder.SkipCutscene,
+        () => Settings.Enabled && Settings.ShowSkipCutsceneSplitButton && Settings.SkipCutsceneLoadMenu,
+        DialogIds.ChapterMenuHeaderId, SwallowArrival: true);
+
+    // Null while no list is open. One list at a time.
+    private static ReentryOpener opener;
+
+    // A view of ClockHold, named as the expectation files have always read it.
+    private static bool holding => opener != null && ClockHold.IsHeldBy(opener.Holder);
+
+    /// <summary>Whether the open list holds the clock. Read by the test probe.</summary>
     internal static bool Holding => holding;
 
-    /// <summary>Holds the clock, pauses the level and opens the picker.</summary>
-    internal static void Begin(Level level, List<(string Key, string Label)> rows) {
-        ClockHold.Take(ClockHold.Holder.ReturnToMap);
+    /// <summary>Holds the clock, pauses the level and opens the list, unless one is already open.</summary>
+    internal static bool Begin(Level level, List<(string Key, string Label)> rows, ReentryOpener who) {
+        if (opener != null) return false;
+        opener = who;
+        ClockHold.Take(who.Holder);
         level.Paused = true;
 
-        ReturnToMapCheckpointMenu menu = new(rows, Load, Cancel);
+        ReturnToMapCheckpointMenu menu = new(rows, Load, Cancel, who.TitleId);
         level.Add(menu);
-        // The picker is added from the mod's post-orig hook, so without this it first updates on the
+        // The list is added from the mod's post-orig hook, so without this it first updates on the
         // following frame. Same nudge ReturnToMapTimer.Press gives the confirm prompt.
         level.OnEndOfFrame += () => level.Entities.UpdateLists();
+        return true;
     }
 
-    /// <summary>Lets the picker and its hold go once the feature behind them is switched off.</summary>
+    /// <summary>Lets the list and its hold go once the feature that opened them is switched off.</summary>
     // ⚠️ Called from outside every settings gate: a hold nobody releases freezes the chapter clock,
-    // Session.Time and SaveData.AddTime for the rest of the Level.
+    // Session.Time and SaveData.AddTime for the rest of the Level. ClockHold is static, so a hold left
+    // standing also outlives a load.
     internal static void UpdateHold(Level level) {
-        if (!holding) return;
-
-        if (!SomeSplitButtonsModule.Settings.Enabled
-            || !SomeSplitButtonsModule.Settings.ShowReturnToMapSplitButton
-            || !SomeSplitButtonsModule.Settings.ReturnToMapCheckpointMenu) {
-            Reset();
-        }
+        if (holding && !opener.Alive()) Reset(opener);
     }
 
-    /// <summary>Tears the picker down and releases the clock.</summary>
-    // ⚠️ Reachable from Level_OnLoadingThread, which runs on the loader's background thread. Guard
-    // on the scene being a Level rather than relying on it: there is no Level to touch at that
-    // moment, and the guard is what says so out loud.
-    internal static void Reset() {
+    /// <summary>Tears the list down and releases the clock, if <paramref name="who"/> opened it.</summary>
+    // ⚠️ Reachable from Level_OnLoadingThread, on the loader's background thread: no Level to touch.
+    internal static void Reset(ReentryOpener who) {
+        if (opener != who) return;
         if (holding && Engine.Scene is Level level) {
             foreach (ReturnToMapCheckpointMenu menu in level.Entities.FindAll<ReturnToMapCheckpointMenu>()) {
                 menu.RemoveSelf();
             }
             level.Paused = false;
         }
-        ClockHold.Release(ClockHold.Holder.ReturnToMap);
+        ClockHold.Release(who.Holder);
+        opener = null;
     }
 
     /// <summary>Builds the session for the chosen checkpoint and reloads the level into it.</summary>
@@ -68,8 +86,8 @@ internal static class ReturnToMapReentry {
 
         // ⚠️ The hold stays until the load's Level_OnLoadingThread lets go of it. SpeedrunTool's room
         // timer runs after this callback on the outgoing level, and released here it added this
-        // frame to the next room. The picker's removal cannot release it early: Choose has finished
-        // the picker, so its Cancel does nothing.
+        // frame to the next room. The list's removal cannot release it early: Choose has finished
+        // the list, so its Cancel does nothing.
         CloseMenu(level);
 
         // Vanilla's Return to Map runs these; a heart's collect sound stops through one.
@@ -89,7 +107,7 @@ internal static class ReturnToMapReentry {
         Audio.SetMusic(null);
         Audio.BusStopAll(Buses.GAMEPLAY, immediate: true);
 
-        CheckpointArrival.Expect();
+        if (opener.SwallowArrival) CheckpointArrival.Expect();
         LoadChain.Start(next);
 
         // The way the chapter panel enters, raising Everest's Level.Enter: a checkpoint session is not
@@ -126,7 +144,8 @@ internal static class ReturnToMapReentry {
     // Reset or a Load already closed it, and a second CloseMenu plays the unpause sound again.
     private static void Cancel() {
         if (!holding) return;
-        ClockHold.Release(ClockHold.Holder.ReturnToMap);
+        ClockHold.Release(opener.Holder);
+        opener = null;
         if (Engine.Scene is not Level level) return;
         CloseMenu(level);
     }

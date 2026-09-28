@@ -10,7 +10,7 @@ internal static class ReturnToMapTimer {
     private static readonly SplitCountdown countdown = new(() => SplitTimings.WIPE_FADEOUT_FRAMES);
 
     internal static void Reset() {
-        ReturnToMapReentry.Reset();
+        Reentry.Reset(Reentry.ReturnToMap);
         countdown.Reset();
         DestinationWindow.Close();
     }
@@ -74,6 +74,6 @@ internal static class ReturnToMapTimer {
         }
 
         // The picker is a pause too, so the wait's pause runs straight into it.
-        ReturnToMapReentry.Begin(level, rows);
+        Reentry.Begin(level, rows, Reentry.ReturnToMap);
     }
 }

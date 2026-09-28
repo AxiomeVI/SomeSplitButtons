@@ -25,6 +25,11 @@ internal static class DialogIds {
     internal const string ReturnToMapCheckpointMenuId = "SSB_RTM_CHECKPOINT_MENU";
     internal const string ReturnToMapCheckpointMenuDescId = "SSB_RTM_CHECKPOINT_MENU_DESC";
     internal const string CheckpointMenuHeaderId = "SSB_RTM_CHECKPOINT_MENU_HEADER";
+    internal const string SkipCutsceneLoadMenuId = "SSB_SCS_LOAD_MENU";
+    internal const string SkipCutsceneLoadMenuDescId = "SSB_SCS_LOAD_MENU_DESC";
+    internal const string SCSListButtonDesc = "SSB_SCS_LIST_BUTTON_DESC";
+    internal const string SCSPrologueListButtonDesc = "SSB_SCS_PROLOGUE_LIST_BUTTON_DESC";
+    internal const string ChapterMenuHeaderId = "SSB_SCS_CHAPTER_MENU_HEADER";
     internal const string BerryCollectProtectionId = "SSB_BERRY_COLLECT_PROTECTION";
     internal const string BerryCollectProtectionDescId = "SSB_BERRY_COLLECT_PROTECTION_DESC";
     internal const string BerryBlocksSplitId = "SSB_BERRY_BLOCKS_SPLIT";

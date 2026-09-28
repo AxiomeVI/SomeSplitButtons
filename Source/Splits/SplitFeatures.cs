@@ -232,7 +232,7 @@ internal static class SplitFeatures {
         },
         // Holds the chapter clock while the checkpoint picker is open, for the same reason Save and
         // Quit does and with the same outside-the-gates rule.
-        UpdateHold = ReturnToMapReentry.UpdateHold,
+        UpdateHold = Reentry.UpdateHold,
     };
 
     /// <summary>
