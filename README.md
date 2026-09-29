@@ -79,8 +79,7 @@ Leaving a chapter while a collectible is still being saved loses it. Save and Qu
 refuse to split in that window, and say how many frames are left.
 
 - Crystal hearts are always protected.
-- Red berries are protected unless **Berry Collect Protection** is off. Golden berries are
-  ignored.
+- Red berries are protected unless **Berry Collect Protection** is off.
 - With Then Load a Checkpoint on, the check happens at the press only. The game stays paused until
   the list opens.
 
