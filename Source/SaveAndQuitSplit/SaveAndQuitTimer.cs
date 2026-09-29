@@ -157,7 +157,12 @@ internal static class SaveAndQuitTimer {
     // Through LoadChain, as a pick from the list is: a save state kept from another chapter or side by
     // an earlier pick would otherwise be cleared by SpeedrunTool on this scene switch, its room timer
     // with it.
+    //
+    // JustStarted is [XmlIgnore], so a resume from the save file always has it back true. In a chapter
+    // begun from its start and still in its first room, LevelLoader then plays the chapter's own intro
+    // rather than the respawn.
     private static void Reenter(Level level) {
+        level.Session.JustStarted = true;
         LoadChain.Start(level.Session);
         LevelEnter.Go(level.Session, fromSaveData: true);
     }
