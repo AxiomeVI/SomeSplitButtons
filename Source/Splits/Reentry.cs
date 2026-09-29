@@ -171,6 +171,10 @@ internal static class Reentry {
             // Only drives the C-side postcard, which vanilla shows on the way back to the overworld.
             // The re-entry never goes there, so dropping this would lose the postcard for good.
             UnlockedCSide = outgoing.UnlockedCSide,
+            // The constructor sets FirstLevel, so without this Level.Reload reads the checkpoint room
+            // as a chapter's untouched first room: a death there would zero the Time and Deaths
+            // carried above and restart the game's timer. Its only reader in the game is that check.
+            HitCheckpoint = true,
         };
     }
 
