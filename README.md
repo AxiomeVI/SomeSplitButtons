@@ -28,8 +28,8 @@ cutscene plays on.
 Shown during end-of-chapter cutscenes, once per level load. Not shown in the Epilogue or in
 Farewell's ending, where the timer doesn't run.
 
-Only the room timer splits. The chapter still completes when the game completes it, so in the
-Prologue the chapter time ends a few seconds after the split.
+The room timer keeps running into the cutscene until the split, the way file time does in a run.
+The chapter still completes when the cutscene ends, as usual.
 
 **Then Load the Next Chapter** opens a list after the split with the next chapter and this chapter's
 B-side. Picking one loads it from the start. Picking from the Prologue marks the Prologue complete.
@@ -37,8 +37,8 @@ B-side. Picking one loads it from the start. Picking from the Prologue marks the
 ### Save and Quit Split
 
 Reloads the room afterwards, as the game does when you resume after a real Save and Quit. Turn off
-**Then Reload the Room** to split without reloading. Either way, the chapter clock and the room timer
-stay stopped until you have control again.
+**Then Reload the Room** to split without reloading. Either way, the room timer stays stopped until
+you have control again.
 
 ### Return to Map Split
 
@@ -54,13 +54,13 @@ speedrun way (`5b`, `8a` for Core, `Farewell`). Chapter rows only appear in the 
 except the B-side row after a cassette, which works in modded maps too.
 
 A checkpoint loads the way a real Return to Map would leave it: collected berries, hearts and
-cassettes come back as ghosts, keys return and doors close. The chapter clock, deaths and dashes
-carry over. Cancel resumes where you stood, with the split kept.
+cassettes come back as ghosts, keys return and doors close. Deaths and dashes carry over. Cancel
+resumes where you stood, with the split kept.
 
 ### Loading from a list
 
 - The game pauses, sound included, while a list is open.
-- The chapter clock and the room timer stay stopped from the split until you have control again.
+- The room timer stays stopped from the split until you have control again.
 - SpeedrunTool's save state and room timer survive the load, even into another chapter.
 - A chapter row starts the chapter fresh, B-side title card included.
 - While a list could still carry the run on, SpeedrunTool doesn't treat the chapter as finished, so
