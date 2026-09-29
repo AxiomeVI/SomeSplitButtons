@@ -50,12 +50,8 @@ Asks for confirmation first, like vanilla. **Then Load a Checkpoint** opens a li
   side of the next chapter.
 
 The cassette and heart rows stay until you change rooms, and survive a death. Rows are named the
-speedrun way (`5b`, `8a` for Core, `Farewell`). Chapter rows only appear in the game's own chapters,
-except the B-side row after a cassette, which works in modded maps too.
-
-A checkpoint loads the way a real Return to Map would leave it: collected berries, hearts and
-cassettes come back as ghosts, keys return and doors close. Deaths and dashes carry over. Cancel
-resumes where you stood, with the split kept.
+speedrun way (`5b`, `8a` for Core, `Farewell`). Cancel resumes where you stood, with the split
+kept.
 
 ### Loading from a list
 
@@ -83,9 +79,8 @@ Leaving a chapter while a collectible is still being saved loses it. Save and Qu
 refuse to split in that window, and say how many frames are left.
 
 - Crystal hearts are always protected.
-- Red berries are protected unless **Berry Collect Protection** is off. Only vanilla red berries count:
-  golden berries are ignored, and modded collectibles that aren't a `Strawberry` (CollabUtils silver
-  and speed berries, for example) aren't seen.
+- Red berries are protected unless **Berry Collect Protection** is off. Golden berries are
+  ignored.
 - With Then Load a Checkpoint on, the check happens at the press only. The game stays paused until
   the list opens.
 
