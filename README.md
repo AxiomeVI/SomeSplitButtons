@@ -37,8 +37,8 @@ B-side. Picking one loads it from the start. Picking from the Prologue marks the
 ### Save and Quit Split
 
 Reloads the room afterwards, as the game does when you resume after a real Save and Quit. Turn off
-**Then Reload the Room** to split without reloading. The chapter clock then stays stopped until you
-have control again.
+**Then Reload the Room** to split without reloading. Either way, the chapter clock and the room timer
+stay stopped until you have control again.
 
 ### Return to Map Split
 
@@ -60,7 +60,7 @@ carry over. Cancel resumes where you stood, with the split kept.
 ### Loading from a list
 
 - The game pauses, sound included, while a list is open.
-- The chapter clock stays stopped from the split until you have control again.
+- The chapter clock and the room timer stay stopped from the split until you have control again.
 - SpeedrunTool's save state and room timer survive the load, even into another chapter.
 - A chapter row starts the chapter fresh, B-side title card included.
 - While a list could still carry the run on, SpeedrunTool doesn't treat the chapter as finished, so
