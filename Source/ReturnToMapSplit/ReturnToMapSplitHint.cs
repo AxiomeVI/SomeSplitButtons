@@ -19,6 +19,7 @@ internal class ReturnToMapSplitHint : ReturnMapHint {
 
     private readonly float textScale;
     private readonly float textWidth;
+    private readonly float fittedWidth;
 
     // Vanilla's 0.75, or less when a translation would push the line and the picture beside it past
     // FittedDescription.MaxLineWidth. Fitted against the wider of the two pictures, so one scale
@@ -29,10 +30,11 @@ internal class ReturnToMapSplitHint : ReturnMapHint {
         float measured = ActiveFont.Measure(text).X;
         textScale = Math.Min(0.75f, room / measured);
         textWidth = measured * textScale;
+        fittedWidth = textWidth + 64f + picture;
     }
 
-    /// <summary>The scale the caption is drawn at. Read by the test probe.</summary>
-    internal float TextScale => textScale;
+    /// <summary>The width fitted against FittedDescription.MaxLineWidth. Read by the test probe.</summary>
+    internal float FittedWidth => fittedWidth;
 
     public override void Render() {
         MTexture icon = GFX.Gui["checkpoint"];
