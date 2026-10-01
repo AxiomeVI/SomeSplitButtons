@@ -74,11 +74,9 @@ internal static class ModMenuOptions {
 
         TextMenu.OnOff enabled = new(Dialog.Clean(DialogIds.EnabledId), settings.Enabled);
         enabled.Change(value => {
-            settings.Enabled = value;
+            SomeSplitButtonsModule.SetEnabled(value);
             section.Expanded = value;
             hotkeys.Visible = value;
-            SplitFeatures.ResetAll();
-            if (value && Engine.Scene is Level level) SplitFeatures.RefreshAll(level);
         });
 
         // A recursive submenu must not be the menu's first item. Everest's section header is.

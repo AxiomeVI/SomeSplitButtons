@@ -227,6 +227,13 @@ public class SomeSplitButtonsModule : EverestModule {
         }
     }
 
+    /// <summary>Switches the whole mod on or off: what its Mod Options row does.</summary>
+    // ⚠️ No ResetAll, for SplitFeature.Toggle's reason: a Skip Cutscene press, whose wait runs
+    // unpaused, must still land, Save and Quit's hold must last the cutscene it was taken in, and the
+    // destination window and the freeze's state belong to the level, not to the setting. Holds and
+    // lists are let go by UpdateHold, above the gates. No refresh either: every load does it.
+    internal static void SetEnabled(bool enabled) => Settings.Enabled = enabled;
+
     /// <summary>Settings a hotkey changed that have not been written to disk yet.</summary>
     private static bool settingsUnsaved;
 
