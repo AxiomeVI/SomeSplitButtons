@@ -71,7 +71,7 @@ kept.
   pause menu says so.
 - While Skip Cutscene Split is enabled, the room timer keeps running through every chapter ending,
   including ones you watch or skip normally. Turn the button off to get SpeedrunTool's usual
-  end-of-chapter behaviour back.
+  end-of-chapter behaviour back. A change made during an ending applies from the next one.
 
 ## Collect protection
 

@@ -17,6 +17,10 @@ internal static class SkipCutsceneRoomTimer {
     private static bool splittingOnOurOwnButton = false;
     private static bool showCompletedToSpeedrunTool = false;
     private static HiddenEnd hiddenEnd = HiddenEnd.None;
+    // Null until an ending is seen. Taken from the settings on its first frame and kept for the rest
+    // of it: switched off mid-ending, the freeze would lift and SpeedrunTool record the run's end at
+    // the switch, after a cutscene its timer had been running through.
+    private static bool? endingFrozen;
 
     /// <summary>Why SpeedrunTool is not being told the chapter ended, if it is not.</summary>
     // A list that may carry the run on is open, or may still open. Told, SpeedrunTool ends the run: short of
@@ -30,13 +34,15 @@ internal static class SkipCutsceneRoomTimer {
         endingSplitRecorded = false;
         showCompletedToSpeedrunTool = false;
         hiddenEnd = HiddenEnd.None;
+        endingFrozen = null;
     }
 
-    internal static object Snapshot() => (freezeLevelCompleted, endingSplitRecorded, showCompletedToSpeedrunTool, hiddenEnd);
+    internal static object Snapshot()
+        => (freezeLevelCompleted, endingSplitRecorded, showCompletedToSpeedrunTool, hiddenEnd, endingFrozen);
 
     internal static void Restore(object snapshot)
-        => (freezeLevelCompleted, endingSplitRecorded, showCompletedToSpeedrunTool, hiddenEnd)
-            = ((bool, bool, bool, HiddenEnd)) snapshot;
+        => (freezeLevelCompleted, endingSplitRecorded, showCompletedToSpeedrunTool, hiddenEnd, endingFrozen)
+            = ((bool, bool, bool, HiddenEnd, bool?)) snapshot;
 
     /// <summary>
     ///     Splits the Skip Cutscene mark as an ordinary room and keeps the chapter end from SpeedrunTool
@@ -112,14 +118,13 @@ internal static class SkipCutsceneRoomTimer {
         hiddenEnd == HiddenEnd.None && (level.Completed || showCompletedToSpeedrunTool);
 
     /// <summary>Whether SpeedrunTool should currently be kept from seeing a completed level.</summary>
-    // The press as well as the setting: a split pressed and then switched off still lands at the
+    // The press as well as the settings: a split pressed and then switched off still lands at the
     // mark, and lifting the freeze early would let SpeedrunTool split on the switch-off frame.
-    private static bool ShouldFreezeLevelCompleted(Level level) =>
-        level != null &&
-        ((SomeSplitButtonsModule.Settings.Enabled && SomeSplitButtonsModule.Settings.ShowSkipCutsceneSplitButton)
-         || SkipCutsceneTimer.Armed) &&
-        level.endingChapterAfterCutscene &&
-        freezeLevelCompleted;
+    private static bool ShouldFreezeLevelCompleted(Level level) {
+        if (level == null || !level.endingChapterAfterCutscene || !freezeLevelCompleted) return false;
+        endingFrozen ??= SomeSplitButtonsModule.Settings.Enabled && SomeSplitButtonsModule.Settings.ShowSkipCutsceneSplitButton;
+        return endingFrozen.Value || SkipCutsceneTimer.Armed;
+    }
 
     /// <summary>
     ///     Keeps SpeedrunTool's manager from calling UpdateTimerState on every frame of the freeze once
