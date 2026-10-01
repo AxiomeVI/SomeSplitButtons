@@ -220,10 +220,15 @@ public class SomeSplitButtonsModule : EverestModule {
         // switched back on must not read as a fresh press.
         Hotkeys.Set.Update(Settings.Enabled);
         SaveSettingsOutsideGameplay();
-        if (!Settings.Enabled) return;
+        HandleHotkeys(feature => Hotkeys.Set.Pressed(feature.Keybind));
+    }
 
+    /// <summary>Toggles each split button whose hotkey was pressed, unless the mod is off.</summary>
+    // The test helper comes in here with its own idea of a press, so it meets the same gate.
+    internal static void HandleHotkeys(Func<SplitFeature, bool> pressed) {
+        if (!Settings.Enabled) return;
         foreach (SplitFeature feature in SplitFeatures.All) {
-            if (Hotkeys.Set.Pressed(feature.Keybind)) ToggleFromHotkey(feature);
+            if (pressed(feature)) ToggleFromHotkey(feature);
         }
     }
 
