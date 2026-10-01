@@ -61,8 +61,10 @@ internal static class ReturnToMapTimer {
         Logger.Info(nameof(SomeSplitButtonsModule), $"ReturnToMap split in {level.Session.Level} on frame {Engine.FrameCounter}");
         SkipCutsceneRoomTimer.Split();
 
+        // Alive, not the list's setting alone, for SkipCutsceneTimer.Update's reason: the hotkey answers
+        // during the paused wait, and a list opened for a button switched off is torn down next frame.
         List<(string Key, string Label)> rows = null;
-        if (SomeSplitButtonsModule.Settings.ReturnToMapCheckpointMenu) {
+        if (Reentry.ReturnToMap.Alive()) {
             rows = CheckpointList.ForArea(level.Session.Area);
             rows.AddRange(DestinationWindow.Rows(level.Session));
         }
