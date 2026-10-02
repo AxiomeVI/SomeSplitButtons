@@ -10,21 +10,9 @@ namespace Celeste.Mod.SomeSplitButtons.Integration;
 ///     The SpeedrunTool methods this mod detours and calls, and the field it clears, resolved by
 ///     reflection so a rename on its side costs a warning instead of a crash.
 /// </summary>
-// Gathered here so that every way this mod can break when SpeedrunTool changes lives in one
-// directory, and so that Load() reads as a list of what the mod installs rather than as the
-// mechanics of installing it.
-//
-// Reflection rather than an `On.` hook because neither method is vanilla, and MonoMod can only
-// generate those for the game's own assembly. The cost is that a rename compiles fine and fails at
-// runtime, which is what the warnings exist to make legible — without them the Skip Cutscene split
-// simply stops splitting, and that reads as a bug here rather than a version mismatch.
-//
-// Everything degrades to a warning, including the three faults that used to throw out of Load() and
-// make Everest refuse the whole mod: a changed signature, a new overload making GetMethod
-// ambiguous, and a renamed handler on this side. Hence the explicit parameter types and nameof.
-//
-// The calls too, not only the detours: a direct call compiles against SpeedrunTool and throws
-// MissingMethodException inside Level.Update at the moment of a split.
+// Reflection, not `On.` hooks: MonoMod generates those for the game's assembly only. Every lookup,
+// bind and detour degrades to a warning, since a throw in Load() makes Everest refuse the mod, and a
+// direct call compiled against SpeedrunTool throws MissingMethodException mid-split.
 internal static class SpeedrunToolHooks {
     private static Hook timingHook;
     private static Hook managerTimingHook;
@@ -85,9 +73,7 @@ internal static class SpeedrunToolHooks {
                 "SpeedrunTool RoomTimerManager.previousRoom not found — a checkpoint picked after the Return to Map split will split the room timer again on arrival.");
         }
 
-        // RoomTimerData is internal to SpeedrunTool, so it has to come from the assembly by name
-        // rather than from a typeof. A missing *type* carries the same warning as a missing method,
-        // because to a player they are the same fault.
+        // RoomTimerData is internal to SpeedrunTool, so it comes from the assembly by name.
         timingHook = TryHook(
             () => typeof(RoomTimerManager).Assembly
                 .GetType("Celeste.Mod.SpeedrunTool.RoomTimer.RoomTimerData")
@@ -104,29 +90,22 @@ internal static class SpeedrunToolHooks {
             "SpeedrunTool RoomTimerManager.Timing not found — during an ending, a mod watching SpeedrunTool's splits may see one every frame.");
     }
 
-    /// <summary>Installs one detour, or logs <paramref name="warning"/> and returns null.</summary>
-    // The target is a delegate rather than a MethodInfo so a throw from the *lookup* lands in the
-    // same catch as a throw from `new Hook`. Neither may take the mod down with it.
-    private static Hook TryHook(Func<MethodInfo> target, string handlerName, string warning) {
-        try {
-            MethodInfo from = target();
-            MethodInfo to = typeof(SkipCutsceneRoomTimer)
-                .GetMethod(handlerName, BindingFlags.Public | BindingFlags.Static);
-            if (from != null && to != null) return new Hook(from, to);
-            Logger.Warn(nameof(SomeSplitButtonsModule), warning);
-        }
-        catch (Exception e) {
-            Logger.Warn(nameof(SomeSplitButtonsModule), $"{warning} ({e.GetType().Name}: {e.Message})");
-        }
-        return null;
-    }
+    /// <summary>Installs one detour onto a handler in SkipCutsceneRoomTimer, or warns and returns null.</summary>
+    private static Hook TryHook(Func<MethodInfo> target, string handlerName, string warning) => Try(() => {
+        MethodInfo from = target();
+        MethodInfo to = typeof(SkipCutsceneRoomTimer).GetMethod(handlerName, BindingFlags.Public | BindingFlags.Static);
+        return from != null && to != null ? new Hook(from, to) : null;
+    }, warning);
 
-    /// <summary>Binds a delegate to one method, or logs <paramref name="warning"/> and returns null.</summary>
-    // CreateDelegate throws on a changed signature, which lands in the same catch as the lookup.
-    private static T TryBind<T>(Func<MethodInfo> target, string warning) where T : Delegate {
+    /// <summary>Binds a delegate to one method, or warns and returns null.</summary>
+    private static T TryBind<T>(Func<MethodInfo> target, string warning) where T : Delegate
+        => Try(() => target()?.CreateDelegate<T>(), warning);
+
+    // The lookup runs inside the try, so a throw from it (an ambiguous overload, a changed signature
+    // in CreateDelegate) lands in the same catch as one from `new Hook`.
+    private static T Try<T>(Func<T> make, string warning) where T : class {
         try {
-            MethodInfo method = target();
-            if (method != null) return method.CreateDelegate<T>();
+            if (make() is T made) return made;
             Logger.Warn(nameof(SomeSplitButtonsModule), warning);
         }
         catch (Exception e) {
