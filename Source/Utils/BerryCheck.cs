@@ -48,6 +48,7 @@ internal static class BerryCheck {
     /// How many frames the carried red berries still need, or null when nothing is carried. This is
     /// the headline figure: measured at normal speed, so it stays comparable between attempts.
     /// </summary>
+    // ⚠️ Read by name by the Berry fixtures, as is CurrentSlowdownFrames.
     internal static int? CurrentRemainingFrames => RemainingFrames(Engine.Scene as Level, NormalDeltaTime);
 
     /// <summary>
@@ -58,19 +59,19 @@ internal static class BerryCheck {
         Slowed ? RemainingFrames(Engine.Scene as Level, Engine.DeltaTime) : null;
 
     /// <summary>
-    /// Why the caller must not split, or null when nothing blocks it. The text says how many frames
-    /// are still missing before the carried berries are secured.
-    /// </summary>
-    // Returns the message rather than showing it, so this stays a predicate. Callers must still say
-    // something: a refusal is otherwise invisible, since the button does nothing and the split
-    // silently does not happen.
-    /// <summary>
     ///     The frames the carried berries still need, or null when none blocks a split — including
     ///     whenever the protection is off.
     /// </summary>
     internal static int? ProtectedRemainingFrames()
         => SomeSplitButtonsModule.Settings.BerryCollectProtection ? CurrentRemainingFrames : null;
 
+    /// <summary>
+    /// Why the caller must not split, or null when nothing blocks it. The text says how many frames
+    /// are still missing before the carried berries are secured.
+    /// </summary>
+    // Returns the message rather than showing it, so this stays a predicate. Callers must still say
+    // something: a refusal is otherwise invisible, since the button does nothing and the split
+    // silently does not happen.
     internal static string? BlockedMessage() {
         // Read here and not at the call sites, so every button that asks gets the same answer,
         // including one added later.

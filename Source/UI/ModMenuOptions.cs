@@ -4,7 +4,6 @@ using Celeste.Mod.CelesteHotkeys;
 using Celeste.Mod.SomeSplitButtons.MenuTools;
 using Celeste.Mod.SomeSplitButtons.Splits;
 using Microsoft.Xna.Framework;
-using Monocle;
 
 namespace Celeste.Mod.SomeSplitButtons.UI;
 
@@ -90,7 +89,7 @@ internal static class ModMenuOptions {
                                                        string descriptionId, bool value, Action<bool> setter) {
         RecursiveNakedSubMenu group = new(initiallyExpanded: feature.Enabled(), itemIndent: CompanionIndent);
         TextMenu.OnOff row = new(Dialog.Clean(labelId), value);
-        row.Change(v => setter(v));
+        row.Change(setter);
         AddWithDescription(group, row, descriptionId, menu);
         return group;
     }

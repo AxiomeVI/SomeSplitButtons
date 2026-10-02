@@ -6,15 +6,9 @@ namespace Celeste.Mod.SomeSplitButtons.Utils;
 /// <summary>
 ///     The form of a counted dialog entry that fits the count, in the language that will show it.
 /// </summary>
-// Everest has no plural support: an entry is one string whatever number fills it, and the refusals
-// can say "1 more frames". So an entry that takes a count comes in forms, told apart by a suffix:
-//
-//   SSB_HEART_BLOCKS_SPLIT        the general form, and the one every language must have
-//   SSB_HEART_BLOCKS_SPLIT_ONE    English 1; French and Portuguese 0 and 1; Russian 1, 21, 31...
-//   SSB_HEART_BLOCKS_SPLIT_FEW    Russian 2-4, 22-24... Nothing else uses it.
-//
-// A missing suffixed form falls back to the general one, so a language with a single form (Chinese,
-// Japanese, Korean) adds nothing, and an old translation keeps working as it did.
+// Everest has no plural support, so a counted entry comes in forms told apart by a suffix (_ONE,
+// _FEW; Dialog/English.txt's header lists which counts take which). A missing form falls back to the
+// general one.
 //
 // ⚠️ Rule and entries come from the same file. Everest falls back to English one id at a time, so
 // a language that has not translated an entry shows English's text, and must get English's rule

@@ -43,8 +43,8 @@ internal static class DialogIds {
     internal const string VanillaReturnContinueId = "MENU_RETURN_CONTINUE";
     internal const string VanillaReturnCancelId = "MENU_RETURN_CANCEL";
 
-    // The vanilla pause-menu buttons each split button is gated on. Their presence says this menu is
-    // one where the split belongs; it no longer says anything about where the split button goes.
+    // The vanilla pause-menu buttons each split button is gated on: their presence says this menu is
+    // one where the split belongs.
     internal const string VanillaPauseSkipCutsceneId = "menu_pause_skip_cutscene";
     internal const string VanillaPauseSaveQuitId = "menu_pause_savequit";
     internal const string VanillaPauseReturnId = "menu_pause_return";
