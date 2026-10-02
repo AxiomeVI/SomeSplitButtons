@@ -33,11 +33,9 @@ internal class ReturnToMapCheckpointMenu : TextMenu {
 
         Add(new Header(Dialog.Clean(titleId)));
 
-        // No start-of-chapter row: a player who wants the start restarts the chapter instead.
         foreach ((string key, string label) in rows) {
-            string captured = key;
             Button row = new(label);
-            row.Pressed(() => Choose(captured));
+            row.Pressed(() => Choose(key));
             Add(row);
         }
 

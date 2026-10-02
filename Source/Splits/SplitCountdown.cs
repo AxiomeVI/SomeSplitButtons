@@ -1,7 +1,6 @@
 using System;
 using Celeste.Mod.SomeSplitButtons.Integration;
 using Celeste.Mod.SomeSplitButtons.Utils;
-using Monocle;
 
 namespace Celeste.Mod.SomeSplitButtons.Splits;
 
@@ -38,7 +37,6 @@ internal sealed class SplitCountdown(Func<int> frames) {
     ///     completion of its own and would leave the screen black.
     /// </summary>
     internal bool TryArm() {
-        if (Engine.Scene is not Level) return false;
         if (CollectCheck.BlockedMessage() is string blocked) {
             Logger.Info(nameof(SomeSplitButtonsModule), $"refused: {blocked}");
             SomeSplitButtonsModule.PopupMessage(blocked);

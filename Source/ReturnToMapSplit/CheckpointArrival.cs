@@ -7,9 +7,7 @@ namespace Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 /// </summary>
 // SpeedrunTool splits whenever the room it last timed differs from the level's, and the load changes
 // rooms after the split at the button already ended the room. Forgetting that room during the load
-// raises no split at all. Swallowing the split in this mod's detour of UpdateTimerState is not
-// enough: a mod whose detour of that method runs outside this one's still sees the call, and records
-// a room one frame long.
+// raises no split at all, so even a detour of UpdateTimerState outside this mod's sees none.
 //
 // ⚠️ Nothing in SplitFeatures.ResetAll may reach this. Level_OnLoadingThread calls ResetAll during
 // the load this exists to cover.

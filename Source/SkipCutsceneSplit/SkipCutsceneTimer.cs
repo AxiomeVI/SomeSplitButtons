@@ -4,12 +4,11 @@ using Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 using Celeste.Mod.SomeSplitButtons.Splits;
 using Monocle;
 
-
 namespace Celeste.Mod.SomeSplitButtons.SkipCutsceneSplit;
 
 internal static class SkipCutsceneTimer {
     // Vanilla's area IDs, hard-coded the way Level.UpdateTime hard-codes the Epilogue's.
-    private const int PROLOGUE_AREA_ID = 0;
+    internal const int PROLOGUE_AREA_ID = 0;
     internal const int EPILOGUE_AREA_ID = 8;
 
     private static readonly SplitCountdown countdown = new(() => FadeoutFrames);
@@ -29,18 +28,12 @@ internal static class SkipCutsceneTimer {
         SkipCutsceneRoomTimer.Restore(saved.RoomTimer);
     }
 
-    // Arm, not TryArm: this split stays in the level, so there is no collectible for it to lose and
-    // nothing for a collect check to refuse.
-    internal static void HandleButtonPressed() {
+    /// <summary>What the pause-menu button does: leave the pause and arm the split.</summary>
+    // Arm, not TryArm: this split stays in the level, so there is no collectible to lose and nothing
+    // to refuse. Its interop sequence ends on the press.
+    internal static void Press(Level level) {
         hidden = true;
         countdown.Arm();
-    }
-
-    /// <summary>What the pause-menu button does: leave the pause and arm the split.</summary>
-    // This split never refuses — there is no collectible to lose on a cutscene skip — so it has no
-    // return value and its interop sequence ends on the press.
-    internal static void Press(Level level) {
-        HandleButtonPressed();
         level.Unpause();
     }
 
@@ -95,7 +88,6 @@ internal static class SkipCutsceneTimer {
             return;
         }
 
-        // Chapters 1 to 7 split on the next frame, when SpeedrunTool sees the completion.
         SkipCutsceneRoomTimer.Release();
         // Chapters 1 to 7 are already complete here — their ending registers it in OnBegin — and
         // SpeedrunTool splits on the next frame by itself. The Prologue registers only at the very

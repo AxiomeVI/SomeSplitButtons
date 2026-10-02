@@ -47,7 +47,7 @@ internal class ReturnToMapSplitConfirmMenu : TextMenu {
 
         Button confirmButton = new(Dialog.Clean(DialogIds.VanillaReturnContinueId));
         confirmButton.Pressed(() => {
-            bool armed = ReturnToMapTimer.HandleButtonPressed();
+            bool armed = ReturnToMapTimer.HandleButtonPressed(level);
             Finish(armed ? SplitStages.Confirmed : SplitStages.Refused);
             // Armed, the level stays paused through the wait (PausedWait), as vanilla's prompt
             // leaves it through its wipe. Refused, the player has the refusal to wait out in play.
@@ -65,14 +65,9 @@ internal class ReturnToMapSplitConfirmMenu : TextMenu {
     /// <summary>
     ///     Closes this prompt and the pause menu under it, and hands the level back to the player.
     /// </summary>
-    // ⚠️ Not level.Unpause(), which is the *pause menu's* own exit and wrong for a prompt sitting on
-    // top of it. Unpause hands the first TextMenu in the scene to CloseAndRun(Everest.SaveSettings()),
-    // so the pause menu is removed only once a settings file has been written — measured still in
-    // the scene three frames later. During that window it is an invisible, unfocused TextMenu that a
-    // fresh Level.Pause stacks a second menu on top of.
-    //
-    // Vanilla's own Return to Map prompt hand-rolls these four lines for the same reason, and saves
-    // no settings either: a confirmation prompt changes none.
+    // ⚠️ Not level.Unpause(): it hands the first TextMenu, the pause menu, to
+    // CloseAndRun(Everest.SaveSettings()), which leaves it in the scene for frames, and a fresh
+    // Level.Pause stacks a second menu on it. Vanilla's own prompt hand-rolls these lines too.
     private void LeaveThePause(Level level, TextMenu pauseMenu) {
         CloseTheMenus(level, pauseMenu);
         level.Paused = false;

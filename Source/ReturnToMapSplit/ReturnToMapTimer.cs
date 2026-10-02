@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using Celeste.Mod.SomeSplitButtons.Integration;
 using Celeste.Mod.SomeSplitButtons.Splits;
-using Celeste.Mod.SomeSplitButtons.Utils;
 using Monocle;
 
 namespace Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
@@ -31,10 +30,9 @@ internal static class ReturnToMapTimer {
     ///     Arms the split and pauses the level for its wait, unless a collectible the player would
     ///     lose refuses it.
     /// </summary>
-    internal static bool HandleButtonPressed() {
+    internal static bool HandleButtonPressed(Level level) {
         if (!countdown.TryArm()) return false;
-        // TryArm arms nothing outside a Level.
-        PausedWait.Begin((Level) Engine.Scene);
+        PausedWait.Begin(level);
         return true;
     }
 

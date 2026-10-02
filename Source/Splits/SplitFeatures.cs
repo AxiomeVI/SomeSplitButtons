@@ -135,9 +135,8 @@ internal sealed class SplitFeature {
 /// <summary>
 ///     The set of split buttons. Adding a fourth means adding one entry here and nothing else.
 /// </summary>
-// The point is not brevity: a missing entry here is impossible to write rather than easy to notice.
-// Two separate defects were each one manager missing from a hand-written list, and neither crashed
-// — the symptom is a timer left armed that splits on its own later, invisible until it costs a run.
+// A missing entry here is impossible to write; a manager missing from a hand-written list leaves a
+// timer armed that splits on its own later, and nothing crashes.
 internal static class SplitFeatures {
     internal static readonly SplitFeature SaveAndQuit = new() {
         NameId = DialogIds.EnableSaveAndQuitSplitButtonId,
@@ -207,8 +206,7 @@ internal static class SplitFeatures {
             SkipCutsceneTimer.Press(level);
             return SplitStages.Confirmed;
         },
-        // Holds the chapter clock while its list is open, with Return to Map's outside-the-gates rule.
-        UpdateHold = Reentry.UpdateHold,
+        // Its list's hold is let go by Return to Map's UpdateHold: Reentry has one list for both.
     };
 
     internal static readonly SplitFeature ReturnToMap = new() {
@@ -238,9 +236,8 @@ internal static class SplitFeatures {
             ReturnToMapTimer.Press(level, pauseMenu);
             return null;
         },
-        // Holds the chapter clock while the checkpoint picker is open, for the same reason Save and
-        // Quit does and with the same outside-the-gates rule. A heart's hidden chapter end is let go
-        // from the same place, since it follows the list's settings too.
+        // Lets go of the list's hold, whichever split opened it, and of a heart's hidden chapter end,
+        // which follows the list's settings too.
         UpdateHold = level => {
             Reentry.UpdateHold(level);
             SkipCutsceneRoomTimer.UpdateHiddenHeart(level);

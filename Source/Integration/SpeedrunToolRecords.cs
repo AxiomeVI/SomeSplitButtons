@@ -7,11 +7,7 @@ using Celeste.Mod.SpeedrunTool.RoomTimer;
 namespace Celeste.Mod.SomeSplitButtons.Integration;
 
 /// <summary>What one key held in one of SpeedrunTool's record tables before a write.</summary>
-internal sealed class RecordSnapshot {
-    internal string Key { get; init; }
-    internal bool Present { get; init; }
-    internal object Value { get; init; }
-}
+internal sealed record RecordSnapshot(string Key, bool Present, object Value);
 
 /// <summary>
 ///     Takes back SpeedrunTool's end-of-run record when a pick carries the run on, and says whether
@@ -33,7 +29,7 @@ internal static class SpeedrunToolRecords {
     private static readonly Dictionary<object, RecordSnapshot[]> pending = new();
 
     internal static RecordSnapshot Capture(string key, IDictionary table) =>
-        new() {Key = key, Present = table.Contains(key), Value = table.Contains(key) ? table[key] : null};
+        new(key, table.Contains(key), table.Contains(key) ? table[key] : null);
 
     internal static void Restore(RecordSnapshot snapshot, IDictionary table) {
         if (snapshot.Present) table[snapshot.Key] = snapshot.Value;
@@ -80,7 +76,8 @@ internal static class SpeedrunToolRecords {
 
     /// <summary>
     ///     Takes back any end-of-run record written in this level, and says whether the arrival should
-    ///     advance SpeedrunTool's room.
+    ///     advance SpeedrunTool's room: only where the last record is a segment of its own, as a
+    ///     chapter's end recorded on a completed level is, which splits without advancing it.
     /// </summary>
     internal static bool KeepRunGoing() {
         foreach ((object data, RecordSnapshot[] before) in pending) {
@@ -91,8 +88,7 @@ internal static class SpeedrunToolRecords {
         }
         pending.Clear();
 
-        object current = typeof(RoomTimerManager)
-            .GetField("CurrentRoomTimerData", BindingFlags.NonPublic | BindingFlags.Static)?.GetValue(null);
+        object current = Timer("CurrentRoomTimerData");
         return current != null && Read(current, "ThisRunTimes") is IDictionary thisRun
                                && LastRecordIsASegment(thisRun, Read(current, "thisRunTimeKey") as string,
                                    Read(current, "thisRunPrevRoomTimeKey") as string);
@@ -122,8 +118,7 @@ internal static class SpeedrunToolRecords {
 
     /// <summary>Whether the current room timer holds no time since its last record.</summary>
     internal static bool NoTimeSinceLastRecord() {
-        object current = typeof(RoomTimerManager)
-            .GetField("CurrentRoomTimerData", BindingFlags.NonPublic | BindingFlags.Static)?.GetValue(null);
+        object current = Timer("CurrentRoomTimerData");
         if (current == null || Read(current, "ThisRunTimes") is not IDictionary thisRun
             || Read(current, "thisRunPrevRoomTimeKey") is not string previousKey || !thisRun.Contains(previousKey)) {
             return false;
@@ -133,11 +128,12 @@ internal static class SpeedrunToolRecords {
 
     private static IEnumerable<object> RoomTimers() {
         foreach (string name in new[] {"CurrentRoomTimerData", "NextRoomTimerData"}) {
-            object data = typeof(RoomTimerManager)
-                .GetField(name, BindingFlags.NonPublic | BindingFlags.Static)?.GetValue(null);
-            if (data != null) yield return data;
+            if (Timer(name) is object data) yield return data;
         }
     }
+
+    private static object Timer(string name) =>
+        typeof(RoomTimerManager).GetField(name, BindingFlags.NonPublic | BindingFlags.Static)?.GetValue(null);
 
     private static object Read(object data, string name) =>
         data.GetType().GetField(name, AnyInstance)?.GetValue(data)

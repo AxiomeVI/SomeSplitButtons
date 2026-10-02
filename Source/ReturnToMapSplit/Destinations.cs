@@ -12,7 +12,6 @@ internal enum WindowTrigger { None, Cassette, Heart, Ending }
 // Pure, so it runs off-engine. Game IDs, not runners' numbers: ID 8 is the Epilogue, an interlude with
 // no sides, Core is ID 9 and Farewell ID 10, A-side only.
 internal static class Destinations {
-    internal const int Epilogue = 8;
     internal const int Core = 9;
     internal const int Farewell = 10;
 

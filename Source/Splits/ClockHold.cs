@@ -30,12 +30,6 @@ internal static class ClockHold {
 
     internal static void Release(Holder holder) => holders &= ~holder;
 
-    /// <summary>Puts a hold back as a save state recorded it.</summary>
-    internal static void Restore(Holder holder, bool held) {
-        if (held) Take(holder);
-        else Release(holder);
-    }
-
     // Hook: stop the chapter clock, file time included, the way TimerStopped does — UpdateTime
     // returns before touching either when the flag is set, so skipping it whole is the same stop.
     internal static void Level_OnUpdateTime(On.Celeste.Level.orig_UpdateTime orig, Level self) {

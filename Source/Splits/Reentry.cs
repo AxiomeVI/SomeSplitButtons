@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Celeste.Mod.SomeSplitButtons.Integration;
 using Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
+using Celeste.Mod.SomeSplitButtons.SkipCutsceneSplit;
 using Monocle;
 
 namespace Celeste.Mod.SomeSplitButtons.Splits;
@@ -10,19 +11,12 @@ namespace Celeste.Mod.SomeSplitButtons.Splits;
 ///     Who opened the list: the clock holder it takes, the settings that keep it alive, and its title.
 /// </summary>
 // A class, not a record: openers are compared by identity, and a record's == compares values.
-internal sealed class ReentryOpener {
-    internal ClockHold.Holder Holder { get; }
-    internal Func<bool> Alive { get; }
-    internal string TitleId { get; }
+internal sealed class ReentryOpener(ClockHold.Holder holder, Func<bool> alive, string titleId, Action<Level> abandoned = null) {
+    internal ClockHold.Holder Holder => holder;
+    internal Func<bool> Alive => alive;
+    internal string TitleId => titleId;
     /// <summary>Called when the list closes without a pick: Cancel, or its setting switched off.</summary>
-    internal Action<Level> Abandoned { get; }
-
-    internal ReentryOpener(ClockHold.Holder holder, Func<bool> alive, string titleId, Action<Level> abandoned = null) {
-        Holder = holder;
-        Alive = alive;
-        TitleId = titleId;
-        Abandoned = abandoned;
-    }
+    internal Action<Level> Abandoned => abandoned;
 }
 
 /// <summary>
@@ -43,32 +37,27 @@ internal static class Reentry {
     // Null while no list is open. One list at a time.
     private static ReentryOpener opener;
 
-    // A view of ClockHold, named as the expectation files have always read it.
+    // ⚠️ Read by name by the test fixtures.
     private static bool holding => opener != null && ClockHold.IsHeldBy(opener.Holder);
 
     /// <summary>Whether the open list holds the clock. Read by the test probe.</summary>
     internal static bool Holding => holding;
 
     /// <summary>Holds the clock, pauses the level and opens the list, unless one is already open.</summary>
-    internal static bool Begin(Level level, List<(string Key, string Label)> rows, ReentryOpener who) {
-        if (opener != null) return false;
+    internal static void Begin(Level level, List<(string Key, string Label)> rows, ReentryOpener who) {
+        if (opener != null) return;
         opener = who;
         ClockHold.Take(who.Holder);
         level.Paused = true;
-        StartPause(level);
+        // Vanilla's pause effects, only when none run: the Return to Map list opens after its
+        // confirmation prompt, and StartPauseEffects plays a sound.
+        if (Level.PauseSnapshot == null) level.StartPauseEffects();
 
         ReturnToMapCheckpointMenu menu = new(rows, Load, Cancel, who.TitleId);
         level.Add(menu);
         // The list is added from the mod's post-orig hook, so without this it first updates on the
         // following frame. Same nudge ReturnToMapTimer.Press gives the confirm prompt.
         level.OnEndOfFrame += () => level.Entities.UpdateLists();
-        return true;
-    }
-
-    // Vanilla's pause effects, private on Level (the publicizer reaches them). Only when none run: the
-    // Return to Map list opens after its confirmation prompt, and StartPauseEffects plays a sound.
-    private static void StartPause(Level level) {
-        if (Level.PauseSnapshot == null) level.StartPauseEffects();
     }
 
     /// <summary>Lets the list and its hold go once the feature that opened them is switched off.</summary>
@@ -121,30 +110,13 @@ internal static class Reentry {
         // The Prologue registers its completion at the very end of its ending, which the pick leaves
         // before; chapters 1 to 7 already did as theirs began. Keyed on the ID, not on Completed, which
         // is false wherever a split fires outside an ending.
-        if (opener == SkipCutscene && level.Session.Area.ID == 0) level.RegisterAreaComplete();
+        if (opener == SkipCutscene && level.Session.Area.ID == SkipCutsceneTimer.PROLOGUE_AREA_ID) level.RegisterAreaComplete();
 
         // Vanilla's Return to Map runs these; a heart's collect sound stops through one.
         foreach (LevelEndingHook hook in level.Tracker.GetComponents<LevelEndingHook>()) hook.OnEnd?.Invoke();
+        PausedWait.ResetForExit();
 
-        // A one-shot reset, not a sustained modification: LoadLevel does not put TimeRate back, so
-        // splitting during a seeker or Oshiro slowdown would start the new level at reduced speed.
-        // Vanilla's own Return to Map confirm does the same before leaving.
-#pragma warning disable CS0618
-        Engine.TimeRate = 1f;
-#pragma warning restore CS0618
-
-        // Audio.SetMusic returns early when the requested track is already playing, so without this
-        // the load's Session.Audio.Apply leaves the music running instead of restarting it. A
-        // checkpoint in the same chapter usually carries the same event, so this is the common case
-        // and not the corner.
-        Audio.SetMusic(null);
-        Audio.BusStopAll(Buses.GAMEPLAY, immediate: true);
-
-        // The pick carries the run on: SpeedrunTool's end-of-run record, written if the level was shown
-        // completed, is taken back. Its arrival split is then let through only where the last record is a
-        // segment of its own, as a chapter's end recorded on a completed level is, which splits without
-        // advancing the room. Otherwise the split already advanced it, or the record is a repeat the next
-        // room may overwrite, and the arrival would add a room of no length.
+        // False: the split already advanced the room, and the arrival must not add one of no length.
         if (!SpeedrunToolRecords.KeepRunGoing()) CheckpointArrival.Expect();
         LoadChain.Start(next);
 
@@ -189,8 +161,8 @@ internal static class Reentry {
         ReentryOpener closing = opener;
         ClockHold.Release(closing.Holder);
         opener = null;
-        if (Engine.Scene is Level scene) closing.Abandoned?.Invoke(scene);
         if (Engine.Scene is not Level level) return;
+        closing.Abandoned?.Invoke(level);
         CloseMenu(level);
     }
 
