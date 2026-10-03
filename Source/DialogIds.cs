@@ -53,6 +53,7 @@ internal static class DialogIds {
     // Keybind config UI
     internal const string KeybindConfigId = "SSB_KEYBIND_CONFIG";
     internal const string KeybindComboSubId = "SSB_KEYBIND_COMBO_SUB";
+    internal const string KeybindPageComboId = "SSB_KEYBIND_PAGE_COMBO";
     internal const string KeybindClearSubId = "SSB_KEYBIND_CLEAR_SUB";
     internal const string KeybindTimeoutId = "SSB_KEYBIND_TIMEOUT";
 }

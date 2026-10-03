@@ -69,6 +69,8 @@ SSB_TOGGLE_SKIP_CUTSCENE_KEY=                     Skip Cutscene
 SSB_TOGGLE_SAVE_QUIT_KEY=                         Save and Quit
 SSB_TOGGLE_RETURN_TO_MAP_KEY=                     Return to Map
 SSB_KEYBIND_COMBO_SUB=                            Each key you bind joins the combo (up to 4, all held); bind it again to remove it
+# {0} is the most inputs a combo may hold (4), filled in by the screen.
+SSB_KEYBIND_PAGE_COMBO=                           A hotkey can be a combo of up to {0} inputs, all held together
 SSB_KEYBIND_CLEAR_SUB=                            Turns the button on or off. Journal or Delete clears the row
 # {0} is the seconds left before the overlay gives up and binds nothing.
 SSB_KEYBIND_TIMEOUT=                              Cancelling in {0}s - press Escape to cancel now
