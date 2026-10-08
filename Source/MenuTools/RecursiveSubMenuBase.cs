@@ -1222,7 +1222,10 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
     /// <param name="dir">
     ///     Intended direction of motion, any "backwards" moves where toY and dir disagree will be ignored
     /// </param>
-    /// <param name="allowExit">Whether a submenu with auto-exit is allowed to use it this move</param>
+    /// <param name="allowExit">
+    ///     Whether a submenu with auto-exit is allowed to use it this move. A move that leaves the submenu short of
+    ///     toY goes on in what contains it.
+    /// </param>
     private void MoveToY(float toY, int dir, bool allowExit) {
         float startY  = GetYOffsetOf(Current);
         float travelY = toY - startY;
@@ -1230,22 +1233,56 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
             // Avoid infinite oscillations from multiple submenus trying to get to a point in between them
             return;
         }
-        // Each pass moves the selection one row or changes Focus once, so a move never needs more passes than there
-        // are rows, plus one for the title and one to exit. The bound ends the states with nowhere to go (Selection
-        // of -1 on a body with nothing selectable), where no pass changes anything.
-        for (int passes = CurrentMenu.Count + 2;
-                passes > 0 && Container != null && Math.Abs(GetYOffsetOf(Current) - startY) < Math.Abs(travelY) &&
-                    !MoveWouldWrap(dir, allowExit) && Focus != FocusType.None;
-                --passes) {
-            if (Focus == FocusType.Title) {
-                if (dir > 0 && AutoEnter && CurrentMenu.Count > 0) {
-                    Enter(dir, false);
+        (float ToY, int Dir)? pageMoveBefore = pageMove;
+        if (allowExit) {
+            pageMove = (toY, dir);
+        }
+        try {
+            // Each pass moves the selection one row or changes Focus once, so a move never needs more passes than
+            // there are rows, plus one for the title and one to exit. The bound ends the states with nowhere to go
+            // (Selection of -1 on a body with nothing selectable), where no pass changes anything.
+            for (int passes = CurrentMenu.Count + 2;
+                    passes > 0 && Container != null && Math.Abs(GetYOffsetOf(Current) - startY) < Math.Abs(travelY) &&
+                        !MoveWouldWrap(dir, allowExit) && Focus != FocusType.None;
+                    --passes) {
+                if (Focus == FocusType.Title) {
+                    if (dir > 0 && AutoEnter && CurrentMenu.Count > 0) {
+                        Enter(dir, false);
+                    } else {
+                        Exit(dir, false, false, out _, out _);
+                    }
                 } else {
-                    Exit(dir, false, false, out _, out _);
+                    MoveSelection(dir, allowExit, false, out _);
                 }
-            } else {
-                MoveSelection(dir, allowExit, false, out _);
             }
+            if (allowExit && Focus == FocusType.None && Container != null) {
+                CarryPageOn(toY, dir);
+            }
+        } finally {
+            pageMove = pageMoveBefore;
+        }
+    }
+
+    // Where a page move that may leave its submenu is going, in the frame of GetYOffsetOf, and which way, while it is
+    // made: an auto-enter submenu hovered on the way goes on to there (DefaultOnEnter)
+    private static (float ToY, int Dir)? pageMove;
+
+    // The rest of a page move that left this submenu short of toY, in what got the selection: as far as the paging of
+    // TextMenu.Update goes, and never round the end of the menu. Nothing to do when a submenu hovered on the way took
+    // the focus: it has carried the move on itself.
+    private void CarryPageOn(float toY, int dir) {
+        RecursiveSubMenuBase holder = parent;
+        while (holder != null && holder.Focus == FocusType.None) {
+            holder = holder.parent;
+        }
+        if (holder != null) {
+            if (holder.Focus != FocusType.Child) {
+                holder.MoveToY(toY, dir, true);
+            }
+            return;
+        }
+        while (Container.Focused && Math.Sign(toY - Container.GetYOffsetOf(Container.Current)) == dir &&
+                   MoveMenuSelectionToward(Container, dir)) {
         }
     }
 
@@ -1470,7 +1507,8 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
             receivedHover = true;
             // A hover no press caused has no paging to continue, and the direction its caller gives
             bool paging   = hoverDirection == null &&
-                            (CoreModule.Settings.MenuPageDown.Pressed || CoreModule.Settings.MenuPageUp.Pressed);
+                            (pageMove != null ||
+                             CoreModule.Settings.MenuPageDown.Pressed || CoreModule.Settings.MenuPageUp.Pressed);
             if (AutoEnter && parent == null && !Container.Focused) {
                 // The search of Everest's Mod Options hovers its match while its text box has the focus, and a
                 // handler can move the selection here under a page. Entering now would handle keys meant for those:
@@ -1478,7 +1516,7 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
                 enterWhenFocused = true;
             } else if (AutoEnter) {
                 // A move of the library's own may go against a key that is held
-                int direction = hoverDirection ?? moveDirection ??
+                int direction = hoverDirection ?? moveDirection ?? pageMove?.Dir ??
                                     (Input.MenuDown.Pressed || CoreModule.Settings.MenuPageDown.Pressed
                                          ? 1
                                          : Input.MenuUp.Pressed || CoreModule.Settings.MenuPageUp.Pressed
@@ -1498,7 +1536,11 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
                 // does the conversion
                 float offsetSpaceContainerY = (Engine.Height / 2) + Container.Height * Container.Justify.Y -
                                                   Container.Position.Y;
-                if (paging) {
+                if (paging && pageMove is (float toY, int dir) && !NothingToSelect) {
+                    // A page move that came out of another submenu knows where it is going, and may leave this one
+                    // too. Not one with nothing to select: at the end of the menu, leaving it would go round.
+                    MoveToY(toY, dir, true);
+                } else if (paging) {
                     MoveToY(offsetSpaceContainerY + (CoreModule.Settings.MenuPageDown.Pressed ? 1080f : -1080f),
                             CoreModule.Settings.MenuPageDown.Pressed ? 1 : -1, false);
                 }
