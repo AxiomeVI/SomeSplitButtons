@@ -6,7 +6,8 @@ using Monocle;
 namespace Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 
 /// <summary>
-///     The checkpoint picker that opens after the Return to Map split, when the setting is on.
+///     The list that opens after the Return to Map split or the Skip Cutscene split, when its setting is
+///     on, titled by whichever opened it.
 /// </summary>
 // TextMenu's own constructor sets Tag = Tags.PauseUpdate | Tags.HUD, and Level.Update's
 // FrozenOrPaused branch runs those entities with MInput.Disabled = false — which is what lets this
@@ -15,25 +16,26 @@ internal class ReturnToMapCheckpointMenu : TextMenu {
     /// <summary>The row count of the most recently built picker, for the fixtures.</summary>
     internal static int lastRowCount;
 
+    /// <summary>The destination labels of the most recently built list, comma-separated, for the fixtures.</summary>
+    internal static string lastDestinationLabels;
+
     private bool finished;
     private readonly Action<string> onChosen;
     private readonly Action onCancelled;
 
     internal ReturnToMapCheckpointMenu(List<(string Key, string Label)> rows, Action<string> onChosen,
-        Action onCancelled) {
+        Action onCancelled, string titleId) {
         this.onChosen = onChosen;
         this.onCancelled = onCancelled;
 
         AutoScroll = false;
         Position = new Vector2(Engine.Width / 2f, Engine.Height / 2f - 100f);
 
-        Add(new Header(Dialog.Clean(DialogIds.CheckpointMenuHeaderId)));
+        Add(new Header(Dialog.Clean(titleId)));
 
-        // No start-of-chapter row: a player who wants the start restarts the chapter instead.
         foreach ((string key, string label) in rows) {
-            string captured = key;
             Button row = new(label);
-            row.Pressed(() => Choose(captured));
+            row.Pressed(() => Choose(key));
             Add(row);
         }
 
@@ -43,6 +45,11 @@ internal class ReturnToMapCheckpointMenu : TextMenu {
 
         // Header is not a row the player counts; the checkpoints and Cancel are.
         lastRowCount = rows.Count + 1;
+        List<string> destinations = new();
+        foreach ((string key, string label) in rows) {
+            if (Destinations.IsKey(key)) destinations.Add(label);
+        }
+        lastDestinationLabels = destinations.Count == 0 ? "none" : string.Join(",", destinations);
 
         OnCancel = OnESC = OnPause = Cancel;
     }

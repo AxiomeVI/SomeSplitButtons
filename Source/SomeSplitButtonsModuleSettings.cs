@@ -12,6 +12,9 @@ public class SomeSplitButtonsModuleSettings : EverestModuleSettings {
     // player who enabled the Return to Map button did not ask for that.
     public bool ReturnToMapCheckpointMenu { get; set; } = false;
 
+    // Default off, for ReturnToMapCheckpointMenu's reason: it leaves the level.
+    public bool SkipCutsceneLoadMenu { get; set; } = false;
+
     // Default on: a berry lost to a split is gone for the run, and turning the refusal off is one
     // menu away for a player who wants the split regardless.
     public bool BerryCollectProtection { get; set; } = true;

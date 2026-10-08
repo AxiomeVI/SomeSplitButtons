@@ -9,16 +9,15 @@ namespace Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 
 /// <summary>The vanilla Return to Map hint with its caption replaced.</summary>
 internal class ReturnToMapSplitHint : ReturnMapHint {
-    // Same entry as the pause-menu button's description, and parameterised, so it has to be formatted
-    // here too — Dialog.Clean would leave "{0}" on screen. Once, not per Render: neither the dialog
-    // entry nor the frame count can change while the prompt is open, and this drew a fresh string and
-    // measured it sixty times a second.
+    // Formatted (Dialog.Clean would show "{0}") and measured once: nothing in it changes while the
+    // prompt is open.
     private readonly string text =
         string.Format(PluralDialog.Get(SplitFeatures.ReturnToMap.DescriptionId(), SplitTimings.WIPE_FADEOUT_FRAMES),
                       SplitTimings.WIPE_FADEOUT_FRAMES);
 
     private readonly float textScale;
     private readonly float textWidth;
+    private readonly float fittedWidth;
 
     // Vanilla's 0.75, or less when a translation would push the line and the picture beside it past
     // FittedDescription.MaxLineWidth. Fitted against the wider of the two pictures, so one scale
@@ -29,10 +28,11 @@ internal class ReturnToMapSplitHint : ReturnMapHint {
         float measured = ActiveFont.Measure(text).X;
         textScale = Math.Min(0.75f, room / measured);
         textWidth = measured * textScale;
+        fittedWidth = textWidth + 64f + picture;
     }
 
-    /// <summary>The scale the caption is drawn at. Read by the test probe.</summary>
-    internal float TextScale => textScale;
+    /// <summary>The width fitted against FittedDescription.MaxLineWidth. Read by the test probe.</summary>
+    internal float FittedWidth => fittedWidth;
 
     public override void Render() {
         MTexture icon = GFX.Gui["checkpoint"];

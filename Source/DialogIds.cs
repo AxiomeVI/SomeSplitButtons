@@ -25,6 +25,11 @@ internal static class DialogIds {
     internal const string ReturnToMapCheckpointMenuId = "SSB_RTM_CHECKPOINT_MENU";
     internal const string ReturnToMapCheckpointMenuDescId = "SSB_RTM_CHECKPOINT_MENU_DESC";
     internal const string CheckpointMenuHeaderId = "SSB_RTM_CHECKPOINT_MENU_HEADER";
+    internal const string SkipCutsceneLoadMenuId = "SSB_SCS_LOAD_MENU";
+    internal const string SkipCutsceneLoadMenuDescId = "SSB_SCS_LOAD_MENU_DESC";
+    internal const string SCSListButtonDesc = "SSB_SCS_LIST_BUTTON_DESC";
+    internal const string SCSPrologueListButtonDesc = "SSB_SCS_PROLOGUE_LIST_BUTTON_DESC";
+    internal const string ChapterMenuHeaderId = "SSB_SCS_CHAPTER_MENU_HEADER";
     internal const string BerryCollectProtectionId = "SSB_BERRY_COLLECT_PROTECTION";
     internal const string BerryCollectProtectionDescId = "SSB_BERRY_COLLECT_PROTECTION_DESC";
     internal const string BerryBlocksSplitId = "SSB_BERRY_BLOCKS_SPLIT";
@@ -38,8 +43,8 @@ internal static class DialogIds {
     internal const string VanillaReturnContinueId = "MENU_RETURN_CONTINUE";
     internal const string VanillaReturnCancelId = "MENU_RETURN_CANCEL";
 
-    // The vanilla pause-menu buttons each split button is gated on. Their presence says this menu is
-    // one where the split belongs; it no longer says anything about where the split button goes.
+    // The vanilla pause-menu buttons each split button is gated on: their presence says this menu is
+    // one where the split belongs.
     internal const string VanillaPauseSkipCutsceneId = "menu_pause_skip_cutscene";
     internal const string VanillaPauseSaveQuitId = "menu_pause_savequit";
     internal const string VanillaPauseReturnId = "menu_pause_return";
@@ -48,6 +53,7 @@ internal static class DialogIds {
     // Keybind config UI
     internal const string KeybindConfigId = "SSB_KEYBIND_CONFIG";
     internal const string KeybindComboSubId = "SSB_KEYBIND_COMBO_SUB";
+    internal const string KeybindPageComboId = "SSB_KEYBIND_PAGE_COMBO";
     internal const string KeybindClearSubId = "SSB_KEYBIND_CLEAR_SUB";
     internal const string KeybindTimeoutId = "SSB_KEYBIND_TIMEOUT";
 }

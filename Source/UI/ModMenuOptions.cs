@@ -4,7 +4,6 @@ using Celeste.Mod.CelesteHotkeys;
 using Celeste.Mod.SomeSplitButtons.MenuTools;
 using Celeste.Mod.SomeSplitButtons.Splits;
 using Microsoft.Xna.Framework;
-using Monocle;
 
 namespace Celeste.Mod.SomeSplitButtons.UI;
 
@@ -22,6 +21,12 @@ internal static class ModMenuOptions {
         // One indented group per feature that has a follow-up row, open while that feature is on.
         // Built before the loop because each is slotted in directly behind its own feature's row.
         Dictionary<SplitFeature, RecursiveNakedSubMenu> companions = new() {
+            [SplitFeatures.SkipCutscene] = MakeCompanion(
+                menu, SplitFeatures.SkipCutscene,
+                DialogIds.SkipCutsceneLoadMenuId,
+                DialogIds.SkipCutsceneLoadMenuDescId,
+                settings.SkipCutsceneLoadMenu,
+                value => settings.SkipCutsceneLoadMenu = value),
             [SplitFeatures.SaveAndQuit] = MakeCompanion(
                 menu, SplitFeatures.SaveAndQuit,
                 DialogIds.SaveAndQuitAndReenterId,
@@ -68,11 +73,9 @@ internal static class ModMenuOptions {
 
         TextMenu.OnOff enabled = new(Dialog.Clean(DialogIds.EnabledId), settings.Enabled);
         enabled.Change(value => {
-            settings.Enabled = value;
+            SomeSplitButtonsModule.SetEnabled(value);
             section.Expanded = value;
             hotkeys.Visible = value;
-            SplitFeatures.ResetAll();
-            if (value && Engine.Scene is Level level) SplitFeatures.RefreshAll(level);
         });
 
         // A recursive submenu must not be the menu's first item. Everest's section header is.
@@ -86,7 +89,7 @@ internal static class ModMenuOptions {
                                                        string descriptionId, bool value, Action<bool> setter) {
         RecursiveNakedSubMenu group = new(initiallyExpanded: feature.Enabled(), itemIndent: CompanionIndent);
         TextMenu.OnOff row = new(Dialog.Clean(labelId), value);
-        row.Change(v => setter(v));
+        row.Change(setter);
         AddWithDescription(group, row, descriptionId, menu);
         return group;
     }

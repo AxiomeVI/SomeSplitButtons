@@ -1,7 +1,5 @@
 using System;
 using Celeste.Mod.CelesteHotkeys;
-using Celeste.Mod.SomeSplitButtons.SaveAndQuitSplit;
-using Celeste.Mod.SomeSplitButtons.SkipCutsceneSplit;
 using Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 using Celeste.Mod.SomeSplitButtons.Interop;
 using Celeste.Mod.SomeSplitButtons.Integration;
@@ -10,7 +8,6 @@ using Celeste.Mod.SomeSplitButtons.Splits;
 using Celeste.Mod.SomeSplitButtons.Utils;
 using MonoMod.ModInterop;
 using MonoMod.RuntimeDetour;
-using static Celeste.TextMenuExt;
 using FMOD.Studio;
 using System.Collections.Generic;
 
@@ -30,24 +27,17 @@ public class SomeSplitButtonsModule : EverestModule {
     public SomeSplitButtonsModule() {
         Instance = this;
 #if DEBUG
-        // debug builds use verbose logging
         Logger.SetLogLevel(nameof(SomeSplitButtonsModule), LogLevel.Verbose);
 #else
-        // release builds use info logging to reduce spam in log files
         Logger.SetLogLevel(nameof(SomeSplitButtonsModule), LogLevel.Info);
 #endif
     }
 
     public override void Load() {
         Everest.Events.Level.OnExit += Level_OnLevelExit;
-        // ⚠️ Ordering is load-bearing. This hook must sit *outside* SpeedrunTool's own Level.Update
-        // hook (RoomTimerManager.Timing), so SRT has accumulated the frame by the time the split
-        // timers call UpdateTimerState after orig.
-        //
-        // Said out loud rather than inherited from the everest.yaml dependency making SpeedrunTool
-        // load first — which would rest the requirement on something written for another reason, and
-        // be silently wrong if SRT were hot-reloaded. The id is the mod name Everest gives a detour,
-        // so it must match everest.yaml's Name on both sides.
+        // ⚠️ Must sit outside SpeedrunTool's Level.Update hook (RoomTimerManager.Timing), so SRT has
+        // counted the frame before the split timers call UpdateTimerState after orig. Both ids are
+        // everest.yaml Names; the load order alone breaks on a hot reload of SRT.
         using (new DetourConfigContext(
                    new DetourConfig("SomeSplitButtons").WithBefore("SpeedrunTool")).Use()) {
             On.Celeste.Level.Update += Level_OnUpdate;
@@ -82,6 +72,9 @@ public class SomeSplitButtonsModule : EverestModule {
         On.Monocle.Engine.Update += Engine_OnUpdate;
 
         SpeedrunToolHooks.Install();
+        SceneSwitchClear.Install();
+        LoadChain.Load();
+        DestinationWindow.Load();
     }
 
     /// <summary>Moves the pause-menu handler to the end of the event's invocation list.</summary>
@@ -100,8 +93,6 @@ public class SomeSplitButtonsModule : EverestModule {
         On.Celeste.Level.UpdateTime -= ClockHold.Level_OnUpdateTime;
         Everest.Events.LevelLoader.OnLoadingThread -= Level_OnLoadingThread;
         Everest.Events.Level.OnCreatePauseMenuButtons -= Level_OnCreatePauseMenuButtons;
-        // Null whenever the registration above was skipped or refused; Unregister is null in exactly
-        // the same case, since both come from the same import.
         if (saveLoadInstance != null) {
             SaveLoadIntegration.Unregister?.Invoke(saveLoadInstance);
             saveLoadInstance = null;
@@ -109,6 +100,9 @@ public class SomeSplitButtonsModule : EverestModule {
         SplitFeatures.ResetAll();
         Everest.Events.Level.OnExit -= Level_OnLevelExit;
         SpeedrunToolHooks.Uninstall();
+        LoadChain.Unload();
+        SceneSwitchClear.Resume();
+        DestinationWindow.Unload();
     }
 
     /// <summary>Disarms every split timer on level load, whether or not its feature is enabled.</summary>
@@ -117,8 +111,7 @@ public class SomeSplitButtonsModule : EverestModule {
     // and would disarm a split mid-chapter, OnEnter misses a `console load`.
     //
     // It writes statics the main thread also writes. Nothing on the main thread writes them while a
-    // level loads — a hotkey toggle no longer resets — so keep it that way: a reset added to a path
-    // that runs during a load would race this one.
+    // level loads; keep it that way, or a reset on such a path races this one.
     public static void Level_OnLoadingThread(Level level) {
         CheckpointArrival.OnLoadingThread();
         SplitFeatures.ResetAll();
@@ -166,15 +159,6 @@ public class SomeSplitButtonsModule : EverestModule {
         SpeedrunToolHooks.ShowPopup(message);
     }
 
-    /// <summary>Announces on screen which split button a hotkey just toggled, and to which state.</summary>
-    // The hotkeys fire from gameplay, where nothing else reflects the new state: the mod menu is
-    // closed and the split button only appears once paused.
-    private static void AnnounceToggle(string buttonNameId, bool enabled) {
-        PopupMessage(string.Format(
-            Dialog.Get(enabled ? DialogIds.ButtonEnabledId : DialogIds.ButtonDisabledId),
-            Dialog.Clean(buttonNameId)));
-    }
-
     /// <summary>Set when Level.Update's own body runs, which is where Everest raises this event.</summary>
     private static bool levelBodyRan;
 
@@ -214,12 +198,22 @@ public class SomeSplitButtonsModule : EverestModule {
         // switched back on must not read as a fresh press.
         Hotkeys.Set.Update(Settings.Enabled);
         SaveSettingsOutsideGameplay();
-        if (!Settings.Enabled) return;
+        HandleHotkeys(feature => Hotkeys.Set.Pressed(feature.Keybind));
+    }
 
+    /// <summary>Toggles each split button whose hotkey was pressed, unless the mod is off.</summary>
+    // The test helper comes in here with its own idea of a press, so it meets the same gate.
+    internal static void HandleHotkeys(Func<SplitFeature, bool> pressed) {
+        if (!Settings.Enabled) return;
         foreach (SplitFeature feature in SplitFeatures.All) {
-            if (Hotkeys.Set.Pressed(feature.Keybind)) ToggleFromHotkey(feature);
+            if (pressed(feature)) ToggleFromHotkey(feature);
         }
     }
+
+    /// <summary>Switches the whole mod on or off: what its Mod Options row does.</summary>
+    // ⚠️ No ResetAll, for SplitFeature.Toggle's reason: a press already accepted must land, and holds
+    // and lists are let go by UpdateHold, above the gates.
+    internal static void SetEnabled(bool enabled) => Settings.Enabled = enabled;
 
     /// <summary>Settings a hotkey changed that have not been written to disk yet.</summary>
     private static bool settingsUnsaved;
@@ -231,7 +225,10 @@ public class SomeSplitButtonsModule : EverestModule {
         // The mod menu leaves the save to Everest, which writes when the menu closes; nothing closes
         // on a hotkey's behalf. Deferred rather than written here, because here is mid-run.
         settingsUnsaved = true;
-        AnnounceToggle(feature.ButtonLabelId, enabled);
+        // Said on screen: in gameplay nothing else shows the new state.
+        PopupMessage(string.Format(
+            Dialog.Get(enabled ? DialogIds.ButtonEnabledId : DialogIds.ButtonDisabledId),
+            Dialog.Clean(feature.ButtonLabelId)));
     }
 
     /// <summary>Writes what a hotkey changed at the next moment the player is not playing.</summary>

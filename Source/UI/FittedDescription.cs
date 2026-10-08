@@ -17,13 +17,7 @@ internal sealed class FittedDescription : EaseInSubHeaderExt {
 
     public FittedDescription(string title, TextMenu containingMenu)
         : base(title, false, containingMenu) {
-        scale = FitScale(title, PreferredScale);
-    }
-
-    /// <summary><paramref name="preferred"/>, or less if the line would be wider than <see cref="MaxLineWidth"/>.</summary>
-    internal static float FitScale(string line, float preferred) {
-        float width = ActiveFont.Measure(line).X * preferred;
-        return width <= MaxLineWidth ? preferred : preferred * MaxLineWidth / width;
+        scale = MathHelper.Min(PreferredScale, MaxLineWidth / ActiveFont.Measure(title).X);
     }
 
     public override float LeftWidth() => ActiveFont.Measure(Title).X * scale;

@@ -25,4 +25,17 @@ internal static class PausedWait {
         level.Paused = false;
         Audio.Play(SFX.ui_game_unpause);
     }
+
+    /// <summary>What vanilla's exits settle before leaving the level: game speed, music and gameplay sounds.</summary>
+    // A one-shot TimeRate reset, not a sustained modification: LoadLevel does not put it back, so a
+    // split during a seeker or Oshiro slowdown would start the next level slowed. SetMusic(null)
+    // because SetMusic returns early on the track already playing, so the next level's
+    // Session.Audio.Apply would leave the music running instead of restarting it.
+    internal static void ResetForExit() {
+#pragma warning disable CS0618
+        Engine.TimeRate = 1f;
+#pragma warning restore CS0618
+        Audio.SetMusic(null);
+        Audio.BusStopAll(Buses.GAMEPLAY, immediate: true);
+    }
 }

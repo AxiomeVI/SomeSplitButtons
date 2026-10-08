@@ -1,5 +1,6 @@
 using System;
 using Celeste.Mod.CelesteHotkeys;
+using Celeste.Mod.SomeSplitButtons.Integration;
 using Celeste.Mod.SomeSplitButtons.Interop;
 using Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 using Celeste.Mod.SomeSplitButtons.SaveAndQuitSplit;
@@ -134,9 +135,8 @@ internal sealed class SplitFeature {
 /// <summary>
 ///     The set of split buttons. Adding a fourth means adding one entry here and nothing else.
 /// </summary>
-// The point is not brevity: a missing entry here is impossible to write rather than easy to notice.
-// Two separate defects were each one manager missing from a hand-written list, and neither crashed
-// — the symptom is a timer left armed that splits on its own later, invisible until it costs a run.
+// A missing entry here is impossible to write; a manager missing from a hand-written list leaves a
+// timer armed that splits on its own later, and nothing crashes.
 internal static class SplitFeatures {
     internal static readonly SplitFeature SaveAndQuit = new() {
         NameId = DialogIds.EnableSaveAndQuitSplitButtonId,
@@ -188,19 +188,25 @@ internal static class SplitFeatures {
         // Both need InCutscene, so the vanilla button is always there when this one is: its absence
         // is a conflict with another mod and always worth saying.
         WarnsWhenAnchorMissingInMinimal = true,
-        // Not in the Epilogue: Level.UpdateTime returns at once when `Session.Area.ID == 8`, so no
-        // time runs there and there is nothing to split — although its ending sets the flag too.
+        // Only where time runs, so a split has something to mark: not in the Epilogue, where
+        // Level.UpdateTime returns at once on `Session.Area.ID == 8`, and not where TimerStopped is set,
+        // which UpdateTime also returns on. Of the vanilla endings, only Farewell's (CS10_Ending) sets it.
         Available = level => level.endingChapterAfterCutscene
                              && level.Session.Area.ID != SkipCutsceneTimer.EPILOGUE_AREA_ID
+                             && !level.TimerStopped
                              && !SkipCutsceneTimer.Hidden,
-        DescriptionId = () => SkipCutsceneTimer.InPrologue
-            ? DialogIds.SCSPrologueButtonDesc
-            : DialogIds.SCSButtonDesc,
+        // The list's wording only where a list can open: none does on a modded map.
+        DescriptionId = () => SomeSplitButtonsModule.Settings.SkipCutsceneLoadMenu
+                              && Engine.Scene is Level level
+                              && SkipCutsceneTimer.ListRows(level.Session.Area).Count > 0
+            ? SkipCutsceneTimer.InPrologue ? DialogIds.SCSPrologueListButtonDesc : DialogIds.SCSListButtonDesc
+            : SkipCutsceneTimer.InPrologue ? DialogIds.SCSPrologueButtonDesc : DialogIds.SCSButtonDesc,
         DescriptionFrames = () => SkipCutsceneTimer.FadeoutFrames,
         Press = (level, _) => {
             SkipCutsceneTimer.Press(level);
             return SplitStages.Confirmed;
         },
+        // Its list's hold is let go by Return to Map's UpdateHold: Reentry has one list for both.
     };
 
     internal static readonly SplitFeature ReturnToMap = new() {
@@ -230,9 +236,12 @@ internal static class SplitFeatures {
             ReturnToMapTimer.Press(level, pauseMenu);
             return null;
         },
-        // Holds the chapter clock while the checkpoint picker is open, for the same reason Save and
-        // Quit does and with the same outside-the-gates rule.
-        UpdateHold = ReturnToMapReentry.UpdateHold,
+        // Lets go of the list's hold, whichever split opened it, and of a heart's hidden chapter end,
+        // which follows the list's settings too.
+        UpdateHold = level => {
+            Reentry.UpdateHold(level);
+            SkipCutsceneRoomTimer.UpdateHiddenHeart(level);
+        },
     };
 
     /// <summary>

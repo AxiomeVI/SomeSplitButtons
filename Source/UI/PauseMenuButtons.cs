@@ -3,13 +3,10 @@ using Celeste.Mod.SomeSplitButtons.Integration;
 using Celeste.Mod.SomeSplitButtons.Interop;
 using Celeste.Mod.SomeSplitButtons.Splits;
 using Celeste.Mod.SomeSplitButtons.Utils;
-using static Celeste.TextMenuExt;
 
 namespace Celeste.Mod.SomeSplitButtons.UI;
 
 /// <summary>Where the split buttons go in the pause menu, and how they get there.</summary>
-// What each button *is* lives in SplitFeatures. This file is only the placement rules, and they are
-// the same three for every feature.
 internal static class PauseMenuButtons {
     private static readonly HashSet<string> warnedMissingAnchors = new();
 
@@ -70,11 +67,8 @@ internal static class PauseMenuButtons {
     /// <summary>
     ///     A split button's description, with the number of frames it will actually wait filled in.
     /// </summary>
-    // Dialog.Get and not Dialog.Clean. Language.LoadTxt builds the Cleaned dictionary by running
-    // `\{(.*?)\}` over every value and replacing each match with "" unless it is {n} or {break} — so
-    // Clean deletes the placeholder along with the dialogue markup it shares its braces with, and
-    // the sentence reaches the player as "after  frames". Every parameterised string in this mod is
-    // read this way. Both arguments are always supplied; entries quoting only frames ignore {1}.
+    // Raw entry, not Dialog.Clean: Clean deletes {0} with the markup it shares braces with. Both
+    // arguments are always supplied; entries quoting only frames ignore {1}.
     private static string Description(string dialogId, int frames)
         => string.Format(PluralDialog.Get(dialogId, frames), frames, SplitTimings.ToSeconds(frames));
 

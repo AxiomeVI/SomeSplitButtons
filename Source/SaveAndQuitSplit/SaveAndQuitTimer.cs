@@ -1,7 +1,7 @@
 using System;
 using Celeste.Mod.SomeSplitButtons.Integration;
+using Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 using Celeste.Mod.SomeSplitButtons.Splits;
-using Celeste.Mod.SomeSplitButtons.Utils;
 using Monocle;
 
 namespace Celeste.Mod.SomeSplitButtons.SaveAndQuitSplit;
@@ -11,7 +11,7 @@ internal static class SaveAndQuitTimer {
 
     /// <summary>The fade-out this timer started, to tell it from any other wipe.</summary>
     private static ScreenWipe fadeOut;
-    // A view of ClockHold, named as the expectation files have always read it.
+    // ⚠️ Read by name by the test fixtures.
     private static bool keepTimerStopped => ClockHold.IsHeldBy(ClockHold.Holder.SaveAndQuit);
 
     /// <summary>Disarms the timer and lets go of the chapter clock.</summary>
@@ -43,7 +43,8 @@ internal static class SaveAndQuitTimer {
     internal static void Restore(object snapshot) {
         Saved saved = (Saved) snapshot;
         countdown.State = saved.Countdown;
-        ClockHold.Restore(ClockHold.Holder.SaveAndQuit, saved.Held);
+        if (saved.Held) ClockHold.Take(ClockHold.Holder.SaveAndQuit);
+        else ClockHold.Release(ClockHold.Holder.SaveAndQuit);
         fadingOut = saved.FadingOut;
     }
 
@@ -51,10 +52,9 @@ internal static class SaveAndQuitTimer {
     ///     Arms the split and pauses the level for its wait, unless a collectible the player would
     ///     lose refuses it.
     /// </summary>
-    internal static bool HandleButtonPressed() {
+    internal static bool HandleButtonPressed(Level level) {
         if (!countdown.TryArm()) return false;
-        // TryArm arms nothing outside a Level.
-        PausedWait.Begin((Level) Engine.Scene);
+        PausedWait.Begin(level);
         return true;
     }
 
@@ -94,7 +94,7 @@ internal static class SaveAndQuitTimer {
     // would stop the wait the message asks the player to wait out. It never fades out either,
     // since nothing would ever end the wipe (see HandleButtonPressed).
     internal static bool Press(Level level, TextMenu pauseMenu) {
-        if (!HandleButtonPressed()) {
+        if (!HandleButtonPressed(level)) {
             level.Unpause();
             return false;
         }
@@ -110,15 +110,7 @@ internal static class SaveAndQuitTimer {
     ///     chapter is not ending.
     /// </summary>
     private static void BeginFadeOut(Level level) {
-        // A one-shot reset, not the sustained modification TimeRateModifier arbitrates: the
-        // fade-out should run at normal speed and not a seeker's.
-#pragma warning disable CS0618
-        Engine.TimeRate = 1f;
-#pragma warning restore CS0618
-        // Audio.SetMusic returns early when the requested track is already playing, so without
-        // this the re-entry's Session.Audio.Apply leaves the music running instead of restarting it.
-        Audio.SetMusic(null);
-        Audio.BusStopAll(Buses.GAMEPLAY, immediate: true);
+        PausedWait.ResetForExit();
         // No OnComplete: this class owns the frame the scene changes on. See Reenter.
         level.DoScreenWipe(wipeIn: false);
         fadeOut = level.Wipe;
@@ -148,11 +140,19 @@ internal static class SaveAndQuitTimer {
     ///     then rebuilds the level, respawning at <c>Session.RespawnPoint</c>.
     /// </summary>
     // Must stay on the same frame as the split above, and after it: RoomTimerManager reads the
-    // Level it is told about, and this scene is gone by the next frame. The hold taken with the
-    // split covers the rest of this frame, and the load's Level_OnLoadingThread lets go of it; the
-    // Level LevelLoader builds starts with TimerStarted false. fromSaveData keeps LevelEnter's
-    // postcards and remix card away, as for a real resume.
+    // Level it is told about, and this scene is gone by the next frame. fromSaveData keeps
+    // LevelEnter's postcards and remix card away, as for a real resume.
+    //
+    // Through LoadChain, as a pick from the list is: a save state kept from another chapter or side by
+    // an earlier pick would otherwise be cleared by SpeedrunTool on this scene switch, its room timer
+    // with it.
+    //
+    // JustStarted is [XmlIgnore], so a resume from the save file always has it back true. In a chapter
+    // begun from its start and still in its first room, LevelLoader then plays the chapter's own intro
+    // rather than the respawn.
     private static void Reenter(Level level) {
+        level.Session.JustStarted = true;
+        LoadChain.Start(level.Session);
         LevelEnter.Go(level.Session, fromSaveData: true);
     }
 }

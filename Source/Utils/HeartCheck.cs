@@ -26,8 +26,6 @@ internal static class HeartCheck {
     /// <summary>True while a heart is collecting and has not been written yet.</summary>
     // HeartGem.collected is set on the frame of the touch and level.Frozen on the line beside
     // RegisterAsCollected, so the pair brackets exactly that window and neither can drift.
-    // Session.HeartGem is the wrong third test: on a B or C side the routine also completes the
-    // chapter, and a session already carrying the heart would read as safe.
     //
     // Every heart in the room, because Tracker.GetEntity<HeartGem>() returns the first *tracked*
     // instance and not the first matching one. Heart entities that do not derive from HeartGem,
@@ -43,8 +41,7 @@ internal static class HeartCheck {
     }
 
     /// <summary>Counts the routine out, so the refusal can say how long the wait still is.</summary>
-    // Called above the settings gate: a protection that cannot be turned off must not be counted by
-    // something that can. Needs no Reset, since the count is zero on any frame without a heart.
+    // Called above the settings gate. Needs no Reset: the count is zero on any frame without a heart.
     internal static void Update(Level level) {
         updates = Collecting(level) ? updates + 1 : 0;
     }

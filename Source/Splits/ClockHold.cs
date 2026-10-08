@@ -3,8 +3,8 @@ using System;
 namespace Celeste.Mod.SomeSplitButtons.Splits;
 
 /// <summary>
-///     The one owner of the chapter-clock holds: Save and Quit's after its split, Return to Map's
-///     while the checkpoint picker is open.
+///     The one owner of the chapter-clock holds: Save and Quit's after its split, and Return to Map's
+///     or Skip Cutscene's while the list either opened is open.
 /// </summary>
 // A hold stops the clock without touching TimerStopped. Level.UpdateTime — the only reader of that
 // flag in the game — is skipped while any hold stands, and SpeedrunTool's room timer, the other
@@ -17,6 +17,7 @@ internal static class ClockHold {
         None = 0,
         SaveAndQuit = 1,
         ReturnToMap = 2,
+        SkipCutscene = 4,
     }
 
     private static Holder holders = Holder.None;
@@ -28,12 +29,6 @@ internal static class ClockHold {
     internal static void Take(Holder holder) => holders |= holder;
 
     internal static void Release(Holder holder) => holders &= ~holder;
-
-    /// <summary>Puts a hold back as a save state recorded it.</summary>
-    internal static void Restore(Holder holder, bool held) {
-        if (held) Take(holder);
-        else Release(holder);
-    }
 
     // Hook: stop the chapter clock, file time included, the way TimerStopped does — UpdateTime
     // returns before touching either when the flag is set, so skipping it whole is the same stop.
