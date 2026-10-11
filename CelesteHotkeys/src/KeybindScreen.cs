@@ -55,6 +55,7 @@ internal sealed class KeybindScreen<TSettings> : TextMenu where TSettings : clas
 
     private bool closing;
     private bool counted;
+    private bool hudHideWas;
     private float refocusDelay;
     private bool recording;
     private float recordingEase;
@@ -95,22 +96,32 @@ internal sealed class KeybindScreen<TSettings> : TextMenu where TSettings : clas
         if (counted) return;
         counted = true;
         HotkeyPause.RemapScreenOpened();
+
+        // ⚠️ A paused level stops drawing its HUD, this screen included, while Journal is held
+        // (Level.Render), and Journal is the gesture that clears a row. Vanilla's Options and
+        // Everest's key-config screens turn it off the same way. Put back to what it was, not to
+        // true: the Options screen may be open underneath.
+        if (scene is Level level) {
+            hudHideWas = level.AllowHudHide;
+            level.AllowHudHide = false;
+        }
     }
 
     public override void Removed(Scene scene) {
         base.Removed(scene);
-        Release();
+        Release(scene);
     }
 
     public override void SceneEnd(Scene scene) {
         base.SceneEnd(scene);
-        Release();
+        Release(scene);
     }
 
-    private void Release() {
+    private void Release(Scene scene) {
         if (!counted) return;
         counted = false;
         HotkeyPause.RemapScreenClosed();
+        if (scene is Level level) level.AllowHudHide = hudHideWas;
     }
 
     private TSettings Settings => hotkeys.Settings();
