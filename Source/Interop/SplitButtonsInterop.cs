@@ -13,6 +13,9 @@ namespace Celeste.Mod.SomeSplitButtons.Interop;
 ///     <c>observer(action, stage, frame)</c>, with <c>frame</c> being <see cref="Engine.FrameCounter"/>.
 ///     Every <c>Pressed</c> is followed by exactly one terminal stage — <c>Confirmed</c>,
 ///     <c>Cancelled</c> or <c>Refused</c> — on every path. <c>Opened</c> terminates nothing.
+///     Since version 3, a <c>Confirmed</c> press that lands emits <c>Split</c> on that frame, followed
+///     by exactly one of <c>Loading</c> or <c>Stayed</c> unless a level load or a state load comes
+///     first. None of the three terminates anything.
 /// </remarks>
 // Only BCL types cross the boundary: ModInterop binds by signature, and an enum would need an
 // assembly both sides reference. Bump InteropVersion whenever a string or a signature changes.
@@ -29,7 +32,7 @@ public static class SplitButtonsInterop {
     /// </summary>
     public static int FramesUntilSplitAllowed() => CollectCheck.FramesUntilSplitAllowed();
 
-    public static int InteropVersion() => 2;
+    public static int InteropVersion() => 3;
 }
 
 public static class SplitActions {
@@ -44,6 +47,16 @@ public static class SplitStages {
     public const string Confirmed = "Confirmed";
     public const string Cancelled = "Cancelled";
     public const string Refused = "Refused";
+
+    /// <summary>The split lands, after the wait. Emitted before the room timer is told or a hold taken.</summary>
+    public const string Split = "Split";
+
+    /// <summary>The mod is about to load a level for a split that landed: a reload, or a pick from a list.</summary>
+    public const string Loading = "Loading";
+
+    /// <summary>The split landed and the mod loads nothing for it: no list to open, or a list closed without a pick.</summary>
+    // Not Cancelled: that one ends a press that never became a split, and this press ended in Confirmed.
+    public const string Stayed = "Stayed";
 }
 
 /// <summary>

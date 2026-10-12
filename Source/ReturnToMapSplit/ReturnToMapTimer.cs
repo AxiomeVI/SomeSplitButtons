@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Celeste.Mod.SomeSplitButtons.Integration;
+using Celeste.Mod.SomeSplitButtons.Interop;
 using Celeste.Mod.SomeSplitButtons.Splits;
 using Monocle;
 
@@ -57,6 +58,8 @@ internal static class ReturnToMapTimer {
         if (!countdown.Tick()) return;
 
         Logger.Info(nameof(SomeSplitButtonsModule), $"ReturnToMap split in {level.Session.Level} on frame {Engine.FrameCounter}");
+        // First, for SaveAndQuitTimer.Update's reason.
+        SplitEvents.Emit(SplitActions.ReturnToMap, SplitStages.Split);
         SkipCutsceneRoomTimer.Split();
 
         // Alive, not the list's setting alone, for SkipCutsceneTimer.Update's reason: the hotkey answers
@@ -70,11 +73,15 @@ internal static class ReturnToMapTimer {
         // player carries on, clock running.
         if (rows == null || rows.Count == 0) {
             PausedWait.End(level);
+            SplitEvents.Emit(SplitActions.ReturnToMap, SplitStages.Stayed);
             return;
         }
 
-        // The picker is a pause too, so the wait's pause runs straight into it. A refusal needs nothing:
-        // it means another list is open, and that list owns the pause and ends it when it closes.
-        Reentry.Begin(level, rows, Reentry.ReturnToMap);
+        // The picker is a pause too, so the wait's pause runs straight into it. A refusal means another
+        // list is open: that list owns the pause and ends it when it closes, and this split loads nothing.
+        // Defensive: no press can be made under an open list, which is a pause.
+        if (!Reentry.Begin(level, rows, Reentry.ReturnToMap)) {
+            SplitEvents.Emit(SplitActions.ReturnToMap, SplitStages.Stayed);
+        }
     }
 }

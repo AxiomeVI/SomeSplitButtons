@@ -19,12 +19,16 @@ internal class ReturnToMapCheckpointMenu : TextMenu {
     /// <summary>The destination labels of the most recently built list, comma-separated, for the fixtures.</summary>
     internal static string lastDestinationLabels;
 
+    /// <summary>Every row label of the most recently built list, |-separated with spaces as _, Cancel left out, for the fixtures.</summary>
+    internal static string lastRowLabels;
+
     private bool finished;
     private readonly Action<string> onChosen;
-    private readonly Action onCancelled;
+    // True when the level goes on under the closed list, false when the scene is ending.
+    private readonly Action<bool> onCancelled;
 
     internal ReturnToMapCheckpointMenu(List<(string Key, string Label)> rows, Action<string> onChosen,
-        Action onCancelled, string titleId) {
+        Action<bool> onCancelled, string titleId) {
         this.onChosen = onChosen;
         this.onCancelled = onCancelled;
 
@@ -40,7 +44,7 @@ internal class ReturnToMapCheckpointMenu : TextMenu {
         }
 
         Button cancel = new(Dialog.Clean(DialogIds.VanillaReturnCancelId));
-        cancel.Pressed(() => Cancel());
+        cancel.Pressed(() => Cancel(levelGoesOn: true));
         Add(cancel);
 
         // Header is not a row the player counts; the checkpoints and Cancel are.
@@ -50,8 +54,9 @@ internal class ReturnToMapCheckpointMenu : TextMenu {
             if (Destinations.IsKey(key)) destinations.Add(label);
         }
         lastDestinationLabels = destinations.Count == 0 ? "none" : string.Join(",", destinations);
+        lastRowLabels = rows.Count == 0 ? "none" : string.Join("|", rows.ConvertAll(row => row.Label.Replace(' ', '_')));
 
-        OnCancel = OnESC = OnPause = Cancel;
+        OnCancel = OnESC = OnPause = () => Cancel(levelGoesOn: true);
     }
 
     private void Choose(string checkpointKey) {
@@ -60,22 +65,22 @@ internal class ReturnToMapCheckpointMenu : TextMenu {
         onChosen(checkpointKey);
     }
 
-    private void Cancel() {
+    private void Cancel(bool levelGoesOn) {
         if (finished) return;
         finished = true;
         Audio.Play(SFX.ui_main_button_back);
-        onCancelled();
+        onCancelled(levelGoesOn);
     }
 
     // The two ways out that bypass a button: something else removing the entity, and the scene
     // ending under it. Either way the hold this picker opened over is owed a release.
     public override void Removed(Scene scene) {
-        Cancel();
+        Cancel(levelGoesOn: true);
         base.Removed(scene);
     }
 
     public override void SceneEnd(Scene scene) {
-        Cancel();
+        Cancel(levelGoesOn: false);
         base.SceneEnd(scene);
     }
 }

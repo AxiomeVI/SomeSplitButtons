@@ -171,7 +171,8 @@ internal static class SplitFeatures {
 
     internal static readonly SplitFeature SkipCutscene = new() {
         NameId = DialogIds.EnableSkipCutsceneSplitButtonId,
-        Keybind = new(DialogIds.ToggleSkipCutsceneKeyId, nameof(SomeSplitButtonsModuleSettings.ButtonToggleSkipCutscene)),
+        Keybind = new(DialogIds.ToggleSkipCutsceneKeyId, nameof(SomeSplitButtonsModuleSettings.ButtonToggleSkipCutscene),
+                      DialogIds.EnableSkipCutsceneSplitButtonDescId),
         MenuDescriptionId = DialogIds.EnableSkipCutsceneSplitButtonDescId,
         Enabled = () => SomeSplitButtonsModule.Settings.ShowSkipCutsceneSplitButton,
         SetEnabled = value => SomeSplitButtonsModule.Settings.ShowSkipCutsceneSplitButton = value,
