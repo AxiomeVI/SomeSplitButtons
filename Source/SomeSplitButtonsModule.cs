@@ -57,7 +57,7 @@ public class SomeSplitButtonsModule : EverestModule {
                 OnLoadState,
                 OnClearState,
                 null,
-                null,
+                OnBeforeLoadState,
                 null
             );
         }
@@ -141,6 +141,11 @@ public class SomeSplitButtonsModule : EverestModule {
             SplitFeatures.RestoreAll((object[]) snapshots);
         }
     }
+
+    // Before SpeedrunTool unloads the level: its unload removes the open list, and a list removed under
+    // a live level says the player stayed. A state load is its own outcome, so the list goes first,
+    // silently.
+    public static void OnBeforeLoadState(Level level) => Reentry.Abort();
 
     // Deliberately empty. Clearing a state leaves the live level running — and SpeedrunTool also
     // clears the existing state before every save over it, so a reset here cancelled a split in

@@ -1,5 +1,6 @@
 using System;
 using Celeste.Mod.SomeSplitButtons.Integration;
+using Celeste.Mod.SomeSplitButtons.Interop;
 using Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 using Celeste.Mod.SomeSplitButtons.Splits;
 using Monocle;
@@ -74,6 +75,9 @@ internal static class SaveAndQuitTimer {
 
         fadingOut = false;
         Logger.Info(nameof(SomeSplitButtonsModule), $"SaveAndQuit split in {level.Session.Level} on frame {Engine.FrameCounter}");
+        // First, before the room timer is told or the hold is taken: an observer reads the level as
+        // the wait left it.
+        SplitEvents.Emit(SplitActions.SaveAndQuit, SplitStages.Split);
         SkipCutsceneRoomTimer.Split();
         // On both paths, and on this frame: SpeedrunTool's room timer runs after this on the same
         // frame, and would add it to the next room.
@@ -83,6 +87,7 @@ internal static class SaveAndQuitTimer {
         }
         else {
             PausedWait.End(level);
+            SplitEvents.Emit(SplitActions.SaveAndQuit, SplitStages.Stayed);
         }
     }
 
@@ -153,6 +158,7 @@ internal static class SaveAndQuitTimer {
     private static void Reenter(Level level) {
         level.Session.JustStarted = true;
         LoadChain.Start(level.Session);
+        SplitEvents.Emit(SplitActions.SaveAndQuit, SplitStages.Loading);
         LevelEnter.Go(level.Session, fromSaveData: true);
     }
 }

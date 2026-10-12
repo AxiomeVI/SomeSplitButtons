@@ -31,8 +31,10 @@ Farewell's ending, where the timer doesn't run.
 The room timer keeps running into the cutscene until the split, the way file time does in a run.
 The chapter still completes when the cutscene ends, as usual.
 
-**Then Load the Next Chapter** opens a list after the split with the next chapter and this chapter's
-B-side. Picking one loads it from the start. Picking from the Prologue marks the Prologue complete.
+**Then Load a Chapter or Checkpoint** opens a list after the split with the next chapter, this
+chapter's B-side and this chapter's checkpoints. A chapter loads from its start. A checkpoint keeps
+the chapter timer, as after the Return to Map split. Picking from the Prologue marks the Prologue
+complete.
 
 ### Save and Quit Split
 
@@ -103,7 +105,8 @@ SomeSplitButtons.AddSplitObserver?.Invoke((action, stage, frame) =>
 ```
 
 - `action` is `SkipCutscene`, `SaveAndQuit` or `ReturnToMap`.
-- `stage` is `Pressed`, `Opened`, `Confirmed`, `Cancelled` or `Refused`.
+- `stage` is `Pressed`, `Opened`, `Confirmed`, `Cancelled` or `Refused`, and since version 3 `Split`,
+  `Loading` or `Stayed`. Ignore a stage you don't know: later versions may add more.
 - `frame` is `Engine.FrameCounter` at that stage.
 
 Every `Pressed` ends in exactly one `Confirmed`, `Cancelled` or `Refused`:
@@ -114,16 +117,41 @@ Every `Pressed` ends in exactly one `Confirmed`, `Cancelled` or `Refused`:
   `Cancelled` if the confirmation never opened.
 
 `Confirmed` is the frame the press is accepted, not the split; the split follows after the wait
-above. A button isn't offered again until its split lands. Loading a SpeedrunTool save state emits
-nothing: a state saved during the wait brings the pending split back without a new `Pressed`, and an
-earlier state drops it silently. `Refused` means a collect protection turned the press down.
+above. A button isn't offered again until its split lands. `Refused` means a collect protection
+turned the press down.
+
+Version 3 reports what happens after `Confirmed`. None of these stages ends a press:
+
+- `Split`: the split lands. It is emitted first on that frame, before SpeedrunTool's room timer is
+  told and before the chapter timer is held.
+- `Loading`: the mod is about to load a level for that split, on this frame. That is the room reload
+  after Save and Quit (the same frame as `Split`) or a pick from a list.
+- `Stayed`: the split landed and the mod loads nothing for it. Either there was nothing to load (the
+  same frame as `Split`), or a list was closed without a pick.
+
+Every `Split` is followed by exactly one `Loading` or `Stayed` with the same action, unless the level
+is left or a save state is loaded first. Neither emits anything.
+
+- During `Split` and `Loading`, `Engine.Scene` is still the level being left.
+- `Session.Time` read inside the `Split` callback already includes that frame, where the chapter
+  timer is running. Where it is not, the reading is the time it stopped at: during a chapter's ending
+  (except the Prologue's), after the heart that ends a chapter, before the timer starts in a level,
+  and while an earlier Save and Quit split still holds it.
+- `Session.Time` does not advance between `Split` and its `Loading` or `Stayed`.
+- Don't compute the landing from `Confirmed`: the wait counts frames the level updated, and
+  `Engine.FrameCounter` also runs through freezes.
+- A save state loaded during the wait emits nothing. One saved before the press drops the pending
+  split. One saved during the wait brings it back, so a `Split` can come again with no new `Pressed`,
+  and `Engine.FrameCounter` goes back with the load.
+- After `Loading`, read the next level's session yourself. After a Save and Quit reload it is the
+  same session; a load can also end back on the map.
 
 `FramesUntilSplitAllowed()` (version 2) returns how many frames until a Save and Quit or Return to Map
 split would be accepted: `0` if now, at least `1` while a protection would refuse. Berries count only
 while Berry Collect Protection is on. A berry only collects on safe ground, so treat any non-zero
 value as "not yet".
 
-`InteropVersion()` returns `2`. It goes up when an action, a stage or a signature changes. An observer
+`InteropVersion()` returns `3`. It goes up when an action, a stage or a signature changes. An observer
 that throws is logged once and can't break a split or other observers.
 
 ## License

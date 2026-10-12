@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Celeste.Mod.SomeSplitButtons.Integration;
+using Celeste.Mod.SomeSplitButtons.Interop;
 using Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 using Celeste.Mod.SomeSplitButtons.Splits;
 using Monocle;
@@ -58,13 +59,17 @@ internal static class SkipCutsceneTimer {
 
     internal static bool InPrologue => inPrologue;
 
-    /// <summary>The destinations the list offers after this area's ending; empty where it does not open.</summary>
+    /// <summary>The destinations and checkpoints the list offers after this area's ending; empty where it does not open.</summary>
     internal static List<(string Key, string Label)> ListRows(AreaKey area) {
         List<(string Key, string Label)> rows = new();
         foreach ((int id, AreaMode mode) in Destinations.For(WindowTrigger.Ending, area.ID, area.Mode,
                      area.GetLevelSet() == "Celeste", hasBSide: false)) {
             rows.Add((Destinations.Key(id, mode), Destinations.Label(id, mode)));
         }
+        // This chapter's checkpoints, after the destinations: the first row stays the next chapter, which
+        // a runner confirms without reading. Only where a destination is offered, so the vanilla gate in
+        // Destinations.For stays the one gate.
+        if (rows.Count > 0) rows.AddRange(CheckpointList.ForArea(area));
         return rows;
     }
 
@@ -72,6 +77,8 @@ internal static class SkipCutsceneTimer {
         if (!countdown.Tick()) return;
 
         Logger.Info(nameof(SomeSplitButtonsModule), $"SkipCutscene split in {level.Session.Level} on frame {Engine.FrameCounter}");
+        // First, for SaveAndQuitTimer.Update's reason.
+        SplitEvents.Emit(SplitActions.SkipCutscene, SplitStages.Split);
 
         // Alive, not the list's setting alone: the hotkey turns the button off without disarming the
         // split, which still fires, and a list opened then would be torn down again the next frame.
@@ -84,7 +91,10 @@ internal static class SkipCutsceneTimer {
             // The run may go on: an ordinary room, the chapter end kept from SpeedrunTool until the list
             // closes without a pick.
             SkipCutsceneRoomTimer.SplitMarkAsRoom();
-            Reentry.Begin(level, rows, Reentry.SkipCutscene);
+            // Defensive: a list already open is a pause, which the test above excludes.
+            if (!Reentry.Begin(level, rows, Reentry.SkipCutscene)) {
+                SplitEvents.Emit(SplitActions.SkipCutscene, SplitStages.Stayed);
+            }
             return;
         }
 
@@ -94,5 +104,6 @@ internal static class SkipCutsceneTimer {
         // end, so SpeedrunTool alone is told now. Writing level.Completed instead makes the real
         // RegisterAreaComplete return early: no completion in the save, no Level.Complete event.
         if (!level.Completed) SkipCutsceneRoomTimer.SplitAsCompleted();
+        SplitEvents.Emit(SplitActions.SkipCutscene, SplitStages.Stayed);
     }
 }
