@@ -953,7 +953,9 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
     /// </summary>
     /// <remarks>
     ///     While the submenu is not in a menu, or for an item it does not hold, this only sets the item's
-    ///     <c>Visible</c>. An item that is being smoothly added or removed is left alone.
+    ///     <c>Visible</c>. An item that is being smoothly added or removed is left alone, and so is one already on
+    ///     its way to what a smooth call asks: the call may be repeated every frame. A call that is not smooth ends
+    ///     the animation at once.
     /// </remarks>
     /// <param name="item">The item to show or hide, in any of the submenu's menus</param>
     /// <param name="visible">Whether the item should be shown</param>
@@ -972,6 +974,10 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
                                       addRemoveItem.Item == item &&
                                       addRemoveItem.Kind is AnimationKind.Add or AnimationKind.Remove)) {
             // Being added or removed, which decides its visibility
+            return;
+        }
+        if (smooth && AnimationOf(item)?.Kind == (visible ? AnimationKind.Show : AnimationKind.Hide)) {
+            // Already on its way there: a caller may say the same every frame
             return;
         }
         // Settle a show or hide that's still animating before starting over
