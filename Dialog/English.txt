@@ -8,6 +8,8 @@
 # {0} frames takes these forms.
 
 # ============================== Mod Menu ======================================
+# ⚠️ Keep each line of a _DESC here to about 105 characters, breaking a longer one with {n}. Mod
+# Options is as wide as its widest section, so one long line spreads every mod's rows apart.
 SSB_SOME_SPLIT_BUTTONS=                           Some Split Buttons
 SSB_ENABLED=                                      Enabled
 SSB_ENABLE_SKIP_CUTSCENE_SPLIT_BUTTON=            Skip Cutscene
@@ -17,9 +19,9 @@ SSB_ENABLE_RETURN_TO_MAP_SPLIT_BUTTON=            Return to Map
 SSB_SQ_REENTER_OPTIONS=                           Then Reload the Room
 SSB_SQ_REENTER_OPTIONS_DESC=                      Vanilla S&Q reload: room state resets, Core mode included
 SSB_RTM_CHECKPOINT_MENU=                          Then Load a Checkpoint
-SSB_RTM_CHECKPOINT_MENU_DESC=                     Opens a checkpoint list and loads into it; after a cassette or a chapter's last heart, the next sides too
+SSB_RTM_CHECKPOINT_MENU_DESC=                     Opens a checkpoint list and loads into it
 SSB_SCS_LOAD_MENU=                                Then Load a Chapter or Checkpoint
-SSB_SCS_LOAD_MENU_DESC=                           Opens a list of the next chapter, this chapter's B-side and its checkpoints, and loads into it
+SSB_SCS_LOAD_MENU_DESC=                           Opens a chapter and checkpoint list and loads into it
 SSB_BERRY_COLLECT_PROTECTION=                     Berry Collect Protection
 SSB_BERRY_COLLECT_PROTECTION_DESC=                Refuse to split while a carried red berry would be lost
 SSB_KEYBIND_CONFIG=                               Hotkeys
