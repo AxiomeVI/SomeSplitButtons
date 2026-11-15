@@ -12,7 +12,7 @@
              it is somewhere this property names. See the README's Building section. -->
         <SpeedrunToolPath Condition="'$(SpeedrunToolPath)' == ''">$(CelestePrefix)\SpeedrunTool.dll</SpeedrunToolPath>
         <!-- Audio, Graphics, Ahorn and Loenn were template residue: this mod has no assets. -->
-        <ZippedFiles>..\everest.yaml;..\.everestignore;..\bin\**\*.*;..\Dialog\**\*.*;..\LICENSE</ZippedFiles>
+        <ZippedFiles>..\everest.yaml;..\.everestignore;..\bin\**\*.*;..\Dialog\**\*.*;..\LICENSE;..\THIRD-PARTY-NOTICES;..\Source\MenuTools\LICENSE</ZippedFiles>
     </PropertyGroup>
 
     <!--Disable "Copy Local" for all references-->

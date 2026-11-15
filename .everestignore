@@ -6,8 +6,10 @@
 Source/
 CelesteHotkeys/
 SomeSplitButtons.zip
-# Not mod content. LICENSE also ships in the release zip; the others only exist in a git checkout.
+# Not mod content. LICENSE and THIRD-PARTY-NOTICES also ship in the release zip; the others only
+# exist in a git checkout.
 GameBanana/
 *.sln
 README.md
 LICENSE
+THIRD-PARTY-NOTICES
