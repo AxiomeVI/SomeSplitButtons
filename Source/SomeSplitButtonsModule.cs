@@ -70,6 +70,10 @@ public class SomeSplitButtonsModule : EverestModule {
         }
         // Settings written by older builds can carry Keys.None, which fires on every unmappable key.
         Bindable.Sanitize(Settings);
+        if (Hotkeys.TextInputHandlers == null) {
+            Logger.Warn(nameof(SomeSplitButtonsModule),
+                "Everest's TextInput handlers were not found — the hotkeys will fire while typing in a text box.");
+        }
         // Engine.Update, not Level.Update: the hotkeys arm split buttons for a run that has not
         // started yet, so they have to answer on the overworld and the chapter card too.
         On.Monocle.Engine.Update += Engine_OnUpdate;
@@ -203,8 +207,9 @@ public class SomeSplitButtonsModule : EverestModule {
         orig(self, gameTime);
 
         // Polled even while the mod is off, which counts as a pause: a combo held while the mod is
-        // switched back on must not read as a fresh press.
-        Hotkeys.Set.Update(Settings.Enabled);
+        // switched back on must not read as a fresh press. Typing in a text box is a pause too: this
+        // hook answers on the overworld and in the pause menu, where every text box lives.
+        Hotkeys.Set.Update(Settings.Enabled && !Hotkeys.TextInputHasFocus);
         SaveSettingsOutsideGameplay();
         HandleHotkeys(feature => Hotkeys.Set.Pressed(feature.Keybind));
     }
