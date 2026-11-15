@@ -35,9 +35,12 @@ public class SomeSplitButtonsModule : EverestModule {
 
     public override void Load() {
         Everest.Events.Level.OnExit += Level_OnLevelExit;
-        // ⚠️ Must sit outside SpeedrunTool's Level.Update hook (RoomTimerManager.Timing), so SRT has
-        // counted the frame before the split timers call UpdateTimerState after orig. Both ids are
-        // everest.yaml Names; the load order alone breaks on a hot reload of SRT.
+        // ⚠️ This hook runs inside SpeedrunTool's Level.Update hook (RoomTimerManager.Timing), so SRT
+        // counts the frame after the split code here has run, as SaveAndQuitTimer.Update relies on.
+        // WithBefore("SpeedrunTool") matches no detour: SRT's everest.yaml depends on Everest, which
+        // gives its hook a legacy config with priority 0, and MonoMod sorts a prioritised detour ahead
+        // of this unprioritised one. If SRT ever depends on EverestCore instead, the order flips and
+        // every split records one frame more.
         using (new DetourConfigContext(
                    new DetourConfig("SomeSplitButtons").WithBefore("SpeedrunTool")).Use()) {
             On.Celeste.Level.Update += Level_OnUpdate;

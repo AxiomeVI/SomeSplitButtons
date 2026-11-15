@@ -7,9 +7,9 @@
         <LangVersion>latest</LangVersion>
         <CelestePrefix Condition="'$(CelestePrefix)' == '' And Exists('..\..\..\Celeste.dll')">..\..\..</CelestePrefix>
         <CelestePrefix Condition="'$(CelestePrefix)' == ''">..\..\..\..\lib-stripped</CelestePrefix>
-        <!-- SpeedrunTool.dll is NOT in the Celeste install root: it ships inside Mods/SpeedrunTool.zip
-             and has to be copied out by hand, or pointed at here. A fresh clone does not build until
-             it is somewhere this property names. See the README's Building section. -->
+        <!-- SpeedrunTool.dll is NOT in the Celeste install root: it ships at the root of
+             Mods/SpeedrunTool.zip. A fresh clone does not build until it is extracted into
+             $(CelestePrefix), or its path is passed as -p:SpeedrunToolPath=<path>/SpeedrunTool.dll. -->
         <SpeedrunToolPath Condition="'$(SpeedrunToolPath)' == ''">$(CelestePrefix)\SpeedrunTool.dll</SpeedrunToolPath>
         <!-- Audio, Graphics, Ahorn and Loenn were template residue: this mod has no assets. -->
         <ZippedFiles>..\everest.yaml;..\.everestignore;..\bin\**\*.*;..\Dialog\**\*.*;..\LICENSE;..\THIRD-PARTY-NOTICES;..\Source\MenuTools\LICENSE</ZippedFiles>

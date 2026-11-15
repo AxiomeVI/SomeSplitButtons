@@ -133,7 +133,9 @@ internal sealed class SplitFeature {
 }
 
 /// <summary>
-///     The set of split buttons. Adding a fourth means adding one entry here and nothing else.
+///     The set of split buttons. A fourth needs an entry here, plus its Show… and ButtonToggle…
+///     settings, its dialog ids in DialogIds.cs and Dialog/English.txt, and its rows in
+///     UI/ModMenuOptions.CreateMenu, which lists the companion rows and the berry rule by hand.
 /// </summary>
 // A missing entry here is impossible to write; a manager missing from a hand-written list leaves a
 // timer armed that splits on its own later, and nothing crashes.
