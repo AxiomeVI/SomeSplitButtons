@@ -1,6 +1,12 @@
 SomeSplitButtons includes code from the projects below. Each is used under the MIT License.
 
 ------------------------------------------------------------------------------
+CelesteHotkeys
+
+Compiled into SomeSplitButtons.dll. Its licence ships beside this file, at
+CelesteHotkeys/LICENSE.
+
+------------------------------------------------------------------------------
 CelesteMenuTools
 https://github.com/6point28etc/CelesteMenuTools
 
