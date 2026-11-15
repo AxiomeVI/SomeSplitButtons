@@ -231,7 +231,7 @@ public class SomeSplitButtonsModule : EverestModule {
         // on a hotkey's behalf. Deferred rather than written here, because here is mid-run.
         settingsUnsaved = true;
         // Said on screen: in gameplay nothing else shows the new state.
-        PopupMessage(string.Format(
+        PopupMessage(DialogFormat.Fill(
             Dialog.Get(enabled ? DialogIds.ButtonEnabledId : DialogIds.ButtonDisabledId),
             Dialog.Clean(feature.ButtonLabelId)));
     }

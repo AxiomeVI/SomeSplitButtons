@@ -77,13 +77,13 @@ internal static class BerryCheck {
         // including one added later.
         if (ProtectedRemainingFrames() is not int frames) return null;
 
-        string message = string.Format(PluralDialog.Get(DialogIds.BerryBlocksSplitId, frames), frames);
+        string message = DialogFormat.Fill(PluralDialog.Get(DialogIds.BerryBlocksSplitId, frames), frames);
 
         // The rate is formatted invariant so it reads 0.5x and never 0,5x.
         if (CurrentSlowdownFrames is int slowedFrames) {
-            message += " " + string.Format(PluralDialog.Get(DialogIds.BerrySlowdownId, slowedFrames),
-                                           slowedFrames,
-                                           Engine.TimeRate.ToString("0.##", CultureInfo.InvariantCulture));
+            message += " " + DialogFormat.Fill(PluralDialog.Get(DialogIds.BerrySlowdownId, slowedFrames),
+                                               slowedFrames,
+                                               Engine.TimeRate.ToString("0.##", CultureInfo.InvariantCulture));
         }
 
         return message;

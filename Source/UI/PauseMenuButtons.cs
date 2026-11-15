@@ -70,7 +70,7 @@ internal static class PauseMenuButtons {
     // Raw entry, not Dialog.Clean: Clean deletes {0} with the markup it shares braces with. Both
     // arguments are always supplied; entries quoting only frames ignore {1}.
     private static string Description(string dialogId, int frames)
-        => string.Format(PluralDialog.Get(dialogId, frames), frames, SplitTimings.ToSeconds(frames));
+        => DialogFormat.Fill(PluralDialog.Get(dialogId, frames), frames, SplitTimings.ToSeconds(frames));
 
     /// <summary>
     ///     The insertion index that makes a new entry the <paramref name="slot"/>-th one the cursor

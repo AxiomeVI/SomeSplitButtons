@@ -12,8 +12,8 @@ internal class ReturnToMapSplitHint : ReturnMapHint {
     // Formatted (Dialog.Clean would show "{0}") and measured once: nothing in it changes while the
     // prompt is open.
     private readonly string text =
-        string.Format(PluralDialog.Get(SplitFeatures.ReturnToMap.DescriptionId(), SplitTimings.WIPE_FADEOUT_FRAMES),
-                      SplitTimings.WIPE_FADEOUT_FRAMES);
+        DialogFormat.Fill(PluralDialog.Get(SplitFeatures.ReturnToMap.DescriptionId(), SplitTimings.WIPE_FADEOUT_FRAMES),
+                          SplitTimings.WIPE_FADEOUT_FRAMES);
 
     private readonly float textScale;
     private readonly float textWidth;

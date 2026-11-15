@@ -49,7 +49,7 @@ internal static class HeartCheck {
     /// <summary>Why the caller must not split, or null when no heart blocks it.</summary>
     internal static string? BlockedMessage() {
         if (RemainingFrames() is not int remaining) return null;
-        return string.Format(PluralDialog.Get(DialogIds.HeartBlocksSplitId, remaining), remaining);
+        return DialogFormat.Fill(PluralDialog.Get(DialogIds.HeartBlocksSplitId, remaining), remaining);
     }
 
     /// <summary>The frames the collect routine still needs, or null when no heart blocks a split.</summary>
