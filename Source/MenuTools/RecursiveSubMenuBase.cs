@@ -1,4 +1,5 @@
 // MenuTools requires: IInputHoldingItem.cs
+#nullable disable
 using Microsoft.Xna.Framework;
 using Monocle;
 using System;
@@ -105,6 +106,15 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
     // Set by MoveSelectionTo, whose autoScroll argument decides AutoScroll: the value taken from whatever scrolled
     // before, which DefaultOnLeave gives back. Null after DefaultOnEnter, where AutoScroll itself is that value.
     private bool? autoScrollToReturn;
+    // What a hovered submenu gives back on leaving: what it took, which a hovered row of it may hold in its place. That
+    // row is left only through a submenu that has the focus, so a suspended one counts it here (#41).
+    private bool ScrollOwed => autoScrollToReturn ?? (AutoScroll || HoveredRow is { ScrollOwed: true });
+
+    // The nested submenu hovered as the selected row, also while Focus is None and Current is null: a suspended
+    // submenu keeps it
+    private RecursiveSubMenuBase HoveredRow =>
+        Selection >= 0 && Selection < CurrentMenu.Count &&
+            CurrentMenu[Selection] is RecursiveSubMenuBase { receivedHover: true } row ? row : null;
     // How many times the submenu stopped being the selected row: tells SuspendInput's restore action that it left
     private int leaveCount;
     // How many times MoveSelectionTo put the selection here: tells SuspendInput's restore action that a handler chose
@@ -333,9 +343,26 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
     }
 
     // A submenu entered by scrolling whose title cannot hold the selection and whose items, shown as they are, cannot
-    // either: it would take the focus and show nothing selected. Not a submenu that shows its items only once
-    // entered: entering it is the way to read them.
-    private bool NothingToSelect => AutoEnter && !TitleSelectable && ShowMenu && !CurrentMenu.Exists(CanSelect);
+    // either: it would take the focus and show nothing selected. A submenu that shows its items only once entered
+    // counts only when it has none to show (#43): with rows shown that none can select, entering it is the way to
+    // read them.
+    private bool NothingToSelect => AutoEnter && !TitleSelectable &&
+                                        (ShowMenu ? !CurrentMenu.Exists(CanSelect) : !DrawsRows);
+
+    // Whether a row of the menu shown draws something once the submenu shows it. A row being added or shown smoothly
+    // is hidden during its animation, and counts for what it will be.
+    private bool DrawsRows => CurrentMenu.Exists(Drawn) ||
+                              addRemoveItems.Exists(animation => animation.Menu == CurrentMenu &&
+                                                                     (animation.Kind == AnimationKind.Show ||
+                                                                      animation.Kind == AnimationKind.Add &&
+                                                                          animation.WasVisible));
+
+    // Whether an item draws something: a submenu without a title draws only its rows, and those only while it shows
+    // them
+    private static bool Drawn(TextMenu.Item item) {
+        return item.Visible && (item is not RecursiveSubMenuBase { ShowTitle: false, ShowMenusSlider: false } sub ||
+                                    sub.ShowMenu && sub.DrawsRows);
+    }
 
     /// <summary>Target Y position for the menu to keep the current item on screen</summary>
     private float ScrollTargetY {
@@ -494,7 +521,9 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
     /// to the parent first. Items can be added again afterwards; for single-menu submenus, the menu is recreated.
     /// <see cref="OnValueChange"/> is not invoked. An item that was being smoothly added or removed leaves with the
     /// <c>Visible</c> and <c>Selectable</c> it had before, and a show or hide ends at its target; the callbacks of
-    /// those animations are not called. An override must call the base method.
+    /// those animations are not called. An override must call the base method. Unlike a removal, it leaves the
+    /// selection of what contains the submenu on it, so that items can be added back: a submenu cleared and not
+    /// filled again keeps that selection with nothing to select.
     /// </summary>
     public virtual void Clear() {
         ReleaseFocus();
@@ -535,7 +564,8 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
     /// <summary>
     /// Take this submenu out of the <see cref="TextMenu"/> or the recursive submenu that holds it. This is the way to
     /// remove a submenu that may be hovered or focused: the focus and the <see cref="TextMenu.AutoScroll"/> it holds
-    /// go back first, and the selection moves to a neighbouring row. While a page or the room chooser has the
+    /// go back first, and the selection moves to a neighbouring row. With none that can hold it, it moves to a submenu
+    /// with nothing to select, if the menu has one, which takes the focus with nothing selected. While a page or the room chooser has the
     /// submenu's input (<see cref="SuspendInput"/>), they go back when that closes. On a submenu already taken out
     /// with <see cref="TextMenu.Remove(TextMenu.Item)"/> it gives back what that left with the submenu. Otherwise it
     /// does nothing on a submenu that is not in a menu.
@@ -575,9 +605,11 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
             return;
         }
         ReleaseFocus();
-        if (container.Selection == index) {
-            // Off this row first, as RemoveItem does in a submenu
-            MoveMenuSelectionOffCurrent(container);
+        if (container.Selection == index && !MoveMenuSelectionOffCurrent(container)) {
+            // Off this row first, as RemoveItem does in a submenu. With no row that can hold the selection, to one the
+            // menu can hover, a submenu with nothing to select: a menu left with Selection -1 beside such a row
+            // breaks Everest's page keys, which read Current (#53).
+            _ = MoveMenuSelectionToward(container, -1, true) || MoveMenuSelectionToward(container, 1, true);
         }
         // Gives the AutoScroll back if no OnLeave came from the move
         Detach();
@@ -830,7 +862,9 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
     ///     Remove an item from a menu. Does nothing if that menu does not hold the item, or if a smooth removal of it
     ///     is already running. An item that is still animating in is removed with the <c>Visible</c> and
     ///     <c>Selectable</c> it came with. If the item has the selection, the selection first moves to a neighbouring
-    ///     item, or out of the items if there is none.
+    ///     item, or out of the items if there is none. A submenu left with nothing to select gives up the selection
+    ///     of what contains it, which moves to its closest row that can hold it, one level further up when there is
+    ///     none, up to the <see cref="TextMenu"/>.
     /// </summary>
     /// <param name="menuIndex">Index of the menu from which to remove the item</param>
     /// <param name="item">Item to remove</param>
@@ -874,6 +908,7 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
                 item.Visible    = false;
                 item.Selectable = false;
                 RecalculateSize();
+                PassSelectionOnIfEmptied();
                 return;
             }
             if (menuIndex == this.MenuIndex && Focus >= FocusType.Body && removeIndex < Selection) {
@@ -884,6 +919,7 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
             menus[menuIndex].Menu.Remove(item);
             DetachItem(item);
             RecalculateSize();
+            PassSelectionOnIfEmptied();
         } else {
             // No animation to play. The item is still attached if TextMenu.Remove took the submenu out after Added.
             if (menus[menuIndex].Menu.Remove(item)) {
@@ -920,6 +956,28 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
         }
     }
 
+    // A submenu left with nothing to select does not keep the selection of what holds it (#44): that moves to its
+    // closest row that can hold it, as for a row that goes (MoveSelectionOffCurrent). With none, the same one level
+    // up. At the top level the menu's selection moves the same way, and stays when no row can take it.
+    internal void PassSelectionOnIfEmptied() {
+        for (RecursiveSubMenuBase sub = this; !CanSelect(sub); sub = sub.parent) {
+            if (sub.parent == null) {
+                if (sub.Container?.Current == sub && sub.Focus == FocusType.None && sub.suspensions == 0) {
+                    MoveMenuSelectionOffCurrent(sub.Container);
+                }
+                return;
+            }
+            if (sub.parent.Focus != FocusType.Body || sub.parent.Current != sub) {
+                return;
+            }
+            sub.parent.MoveSelectionOffCurrent();
+            if (sub.parent.Focus != FocusType.None) {
+                // A row of the parent took the selection
+                return;
+            }
+        }
+    }
+
     // Leave the item as the animation ends or is cut short. The animation hid the item and made it unselectable for
     // its length, so an item that leaves the submenu gets back what it had before (Add and Remove), and a show or
     // hide ends at what it was going to.
@@ -949,7 +1007,9 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
     // ============================================== Show / hide items ================================================
     /// <summary>
     ///     Show or hide an item of this submenu. A hidden item takes no space and can't be selected. Hiding the
-    ///     selected item first moves the selection to a neighbouring item, or out of the items if there is none.
+    ///     selected item first moves the selection to a neighbouring item, or out of the items if there is none, and
+    ///     a submenu left with nothing to select gives up the selection of what contains it, as
+    ///     <see cref="RemoveItem(int, TextMenu.Item, bool, Action{TextMenu.Item})"/> says.
     /// </summary>
     /// <remarks>
     ///     While the submenu is not in a menu, or for an item it does not hold, this only sets the item's
@@ -1007,6 +1067,9 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
             item.Visible = visible;
         }
         RecalculateSize();
+        if (!visible) {
+            PassSelectionOnIfEmptied();
+        }
     }
 
     // Undo what InsertItem did to attach the item. Nothing to undo for an item that is only listed.
@@ -1070,8 +1133,10 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
 
     /// <summary>
     ///     Remove an item from the menu that holds it; for a single-menu submenu, its only menu. Does nothing if
-    ///     no menu holds the item, or if a smooth removal of the item is already running. If the item has the selection, the selection first moves to a neighbouring item, or out of the
-    ///     items if there is none.
+    ///     no menu holds the item, or if a smooth removal of the item is already running. If the item has the
+    ///     selection, the selection first moves to a neighbouring item, or out of the items if there is none, and a
+    ///     submenu left with nothing to select gives up the selection of what contains it, as
+    ///     <see cref="RemoveItem(int, TextMenu.Item, bool, Action{TextMenu.Item})"/> says.
     /// </summary>
     /// <param name="item"><inheritdoc cref="RemoveItem(int, TextMenu.Item, bool, Action{TextMenu.Item})"
     ///     path="/param[@name='item']/node()"/></param>
@@ -1135,8 +1200,10 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
     /// <param name="dir">Which direction to move in (down is positive)</param>
     /// <param name="allowExit">Whether a submenu with auto-exit is allowed to use it for this move</param>
     private bool MoveWouldWrap(int dir, bool allowExit) {
-        if ((dir == 1 && Selection != LastPossibleSelection) ||
-                (dir == -1 && Selection != FirstPossibleSelection)) {
+        // A row to move to, looked for from the title, which comes before every row, or from the selection. Not a
+        // comparison with First/LastPossibleSelection: on the title or with Selection -1 it reads an end as a move
+        // inside, and a move that leaves the menu's first or last row goes round, endlessly in a page move (#40).
+        if (CanSelectBeyond(CurrentMenu, Focus == FocusType.Title ? -1 : Selection, dir)) {
             // Just moving inside this submenu without wrapping
             return false;
         }
@@ -1146,12 +1213,21 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
         }
         if (parent == null) {
             // The move would exit into the top-level menu, check if it would wrap
-            return (dir == 1 && Container.IndexOf(this) == Container.LastPossibleSelection ||
-                    dir == -1 && Container.IndexOf(this) == Container.FirstPossibleSelection);
+            return !CanSelectBeyond(Container.Items, Container.IndexOf(this), dir);
         } else {
             // The move would exit into the parent submenu, check if it would wrap
             return parent.MoveWouldWrap(dir, allowExit);
         }
+    }
+
+    // Whether a row of items past index from, in direction dir, can take the selection
+    private static bool CanSelectBeyond(List<TextMenu.Item> items, int from, int dir) {
+        for (int i = Calc.Clamp(from, -1, items.Count) + dir; dir != 0 && i >= 0 && i < items.Count; i += dir) {
+            if (CanSelect(items[i])) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /// <summary>
@@ -1240,8 +1316,11 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
             return;
         }
         (float ToY, int Dir)? pageMoveBefore = pageMove;
+        object sharedBefore = null;
         if (allowExit) {
-            pageMove = (toY, dir);
+            pageMove     = (toY, dir);
+            sharedBefore = AppContext.GetData(SharedPageMoveKey);
+            AppContext.SetData(SharedPageMoveKey, (object)(Container, toY, dir));
         }
         try {
             // Each pass moves the selection one row or changes Focus once, so a move never needs more passes than
@@ -1266,12 +1345,21 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
             }
         } finally {
             pageMove = pageMoveBefore;
+            if (allowExit) {
+                AppContext.SetData(SharedPageMoveKey, sharedBefore);
+            }
         }
     }
 
     // Where a page move that may leave its submenu is going, in the frame of GetYOffsetOf, and which way, while it is
     // made: an auto-enter submenu hovered on the way goes on to there (DefaultOnEnter)
     private static (float ToY, int Dir)? pageMove;
+
+    // The same move for the other copies of the library in the menu, which each mod compiles under its own namespace
+    // and with its own statics (#47). A contract every version must keep reading and writing as it is: under this
+    // key, a boxed ValueTuple<TextMenu, float, int> of the menu, ToY and Dir while MoveToY moves with allowExit, and
+    // the value it found put back once it returns, by any path. A copy without the key carries on no other's move.
+    private const string SharedPageMoveKey = "CelesteMenuTools.PageMove.1";
 
     // The rest of a page move that left this submenu short of toY, in what got the selection: as far as the paging of
     // TextMenu.Update goes, and never round the end of the menu. Nothing to do when a submenu hovered on the way took
@@ -1512,8 +1600,11 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
             }
             receivedHover = true;
             // A hover no press caused has no paging to continue, and the direction its caller gives
+            (float ToY, int Dir)? move = hoverDirection != null ? null : pageMove ??
+                (AppContext.GetData(SharedPageMoveKey) is ValueTuple<TextMenu, float, int> shared &&
+                 shared.Item1 == Container ? ((float, int)?)(shared.Item2, shared.Item3) : null);
             bool paging   = hoverDirection == null &&
-                            (pageMove != null ||
+                            (move != null ||
                              CoreModule.Settings.MenuPageDown.Pressed || CoreModule.Settings.MenuPageUp.Pressed);
             if (AutoEnter && parent == null && !Container.Focused) {
                 // The search of Everest's Mod Options hovers its match while its text box has the focus, and a
@@ -1522,7 +1613,7 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
                 enterWhenFocused = true;
             } else if (AutoEnter) {
                 // A move of the library's own may go against a key that is held
-                int direction = hoverDirection ?? moveDirection ?? pageMove?.Dir ??
+                int direction = hoverDirection ?? moveDirection ?? move?.Dir ??
                                     (Input.MenuDown.Pressed || CoreModule.Settings.MenuPageDown.Pressed
                                          ? 1
                                          : Input.MenuUp.Pressed || CoreModule.Settings.MenuPageUp.Pressed
@@ -1542,10 +1633,20 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
                 // does the conversion
                 float offsetSpaceContainerY = (Engine.Height / 2) + Container.Height * Container.Justify.Y -
                                                   Container.Position.Y;
-                if (paging && pageMove is (float toY, int dir) && !NothingToSelect) {
-                    // A page move that came out of another submenu knows where it is going, and may leave this one
-                    // too. Not one with nothing to select: at the end of the menu, leaving it would go round.
-                    MoveToY(toY, dir, true);
+                if (paging && move is (float toY, int dir)) {
+                    if (NothingToSelect && !MoveWouldWrap(dir, true)) {
+                        // Nothing to rest on, and rows beyond can take the selection: the move goes on past it even
+                        // when its title is already as far as the move goes, where MoveToY would stop at once (#45)
+                        MoveSelection(dir, true, false, out _);
+                        if (Focus == FocusType.None && Container != null) {
+                            CarryPageOn(toY, dir);
+                        }
+                    } else {
+                        // A page move that came out of another submenu knows where it is going, and may leave this
+                        // one too. At the end of the menu MoveWouldWrap keeps one with nothing to select here, since
+                        // leaving would go round.
+                        MoveToY(toY, dir, true);
+                    }
                 } else if (paging) {
                     MoveToY(offsetSpaceContainerY + (CoreModule.Settings.MenuPageDown.Pressed ? 1080f : -1080f),
                             CoreModule.Settings.MenuPageDown.Pressed ? 1 : -1, false);
@@ -1594,10 +1695,12 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
 
     // Moves the selection of a menu to the closest row that can hold it on one side of the selected row. Not
     // TextMenu.MoveSelection: it stops on a submenu that has nothing to select, and goes round the end of the menu.
-    private static bool MoveMenuSelectionToward(TextMenu menu, int direction) {
+    // With anyHoverable, the closest row the menu can hover, which is hovered with no moving direction: a submenu
+    // with nothing to select then takes the focus instead of passing the move on.
+    private static bool MoveMenuSelectionToward(TextMenu menu, int direction, bool anyHoverable = false) {
         int from = menu.Selection, target = -1;
         for (int i = Calc.Clamp(from, -1, menu.Items.Count) + direction; i >= 0 && i < menu.Items.Count; i += direction) {
-            if (CanSelect(menu.Items[i])) {
+            if (anyHoverable ? menu.Items[i].Hoverable : CanSelect(menu.Items[i])) {
                 target = i;
                 break;
             }
@@ -1605,9 +1708,11 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
         if (target < 0) {
             return false;
         }
-        TextMenu.Item left       = from >= 0 && from < menu.Items.Count ? menu.Items[from] : null;
-        int? moveDirectionBefore = moveDirection;
-        moveDirection = direction;
+        TextMenu.Item left        = from >= 0 && from < menu.Items.Count ? menu.Items[from] : null;
+        int? moveDirectionBefore  = moveDirection;
+        int? hoverDirectionBefore = hoverDirection;
+        moveDirection  = anyHoverable ? null : direction;
+        hoverDirection = anyHoverable ? direction : hoverDirection;
         try {
             // As TextMenu.MoveSelection does
             menu.Selection = target;
@@ -1616,7 +1721,8 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
                 menu.Current.OnEnter?.Invoke();
             }
         } finally {
-            moveDirection = moveDirectionBefore;
+            moveDirection  = moveDirectionBefore;
+            hoverDirection = hoverDirectionBefore;
         }
         return true;
     }
@@ -1632,6 +1738,11 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
         }
         ++passingOver;
         try {
+            if ((direction > 0 ? Input.MenuDown : Input.MenuUp).Repeating &&
+                    !CanSelectBeyond(Container.Items, Container.IndexOf(this), direction)) {
+                // A held key does not go round the end of the menu, and TextMenu's own check for it counts this row
+                return MoveMenuSelectionToward(Container, -direction);
+            }
             MoveMenuSelection(Container, direction, false);
             // Nowhere to go on, in a menu too short to go round: back to the closest row the move came past
             return Container.Current != this || MoveMenuSelectionToward(Container, -direction);
@@ -1656,6 +1767,15 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
         if (receivedHover) {
             // Exit if that has not happened yet
             // (this happens during page up / page down for auto-exit submenus)
+            if (Focus == FocusType.None && HoveredRow is RecursiveSubMenuBase row) {
+                // Suspended: no exit leaves the hovered row, which would keep the scrolling off the selected path. A
+                // row that holds the input (a SuspendInput on a submenu with Child focus) gives it back first, which
+                // sets Focus to Body: the exit below then leaves the row.
+                row.ReleaseFocus();
+                if (Focus == FocusType.None) {
+                    LeaveItem(row);
+                }
+            }
             if (Focus != FocusType.None) {
                 ForceExit();
             }
@@ -1710,12 +1830,13 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
                 }
             } else {
                 // Moving up, go to the bottom (bottom of body or title)
-                if (AutoEnter && CurrentMenu.Count > 0) {
-                    // Go to the bottom of the body when it can be entered
+                if (AutoEnter && (CurrentMenu.Count > 0 || !TitleSelectable)) {
+                    // Go to the bottom of the body when it can be entered, or when the title cannot hold the
+                    // selection: a body with nothing in it then selects nothing, as when entered from above
                     Focus = FocusType.Body;
                     LastSelection(wiggle);
                 } else {
-                    // The body can't be entered: go to the title. This assumes TitleSelectable is true here.
+                    // The body can't be entered: go to the title
                     Focus = FocusType.Title;
                     if (wiggle) {
                         titleWiggler.Start();
@@ -1934,7 +2055,7 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
         List<TextMenu.Item> savedIn = CurrentMenu;
         bool savedAutoScroll        = AutoScroll;
         bool? savedToReturn         = autoScrollToReturn;
-        bool autoScrollOwed         = autoScrollToReturn ?? AutoScroll;
+        bool autoScrollOwed         = ScrollOwed;
         TextMenu menu               = attachedTo;
         RecursiveSubMenuBase holder = parent;
         int leaves                  = leaveCount;
@@ -2001,6 +2122,10 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
             }
             // A size calculated while Focus was None left out a body that is only shown with the focus
             RecalculateSize();
+            if (Focus == FocusType.None) {
+                // A handler took the last row it could select: the reselect gave the focus back (#44)
+                PassSelectionOnIfEmptied();
+            }
         };
     }
 
@@ -2076,9 +2201,13 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
     /// </summary>
     /// <param name="item">
     ///     The item within this submenu to move the selection to, or null to move the selection to the submenu title.
-    ///     If the item is in a menu other than the one shown, the submenu switches to that menu. If it is not in this
-    ///     submenu at all, or the submenu is not in a menu, nothing happens. The item is not checked: one the player
-    ///     could not select (hidden, disabled, not selectable) is selected all the same.
+    ///     If the item is in a menu other than the one shown, the submenu switches to that menu, and so does each
+    ///     submenu around it that does not show the menu holding it. Each one that switched invokes its
+    ///     <see cref="OnValueChange"/> once the move is done, the outermost first, unless a handler has switched it
+    ///     again since (that switch reported itself): for a
+    ///     <c>RecursiveOptionSubMenu&lt;T&gt;</c> around the item, the move changes the value it holds. If it is not
+    ///     in this submenu at all, or the submenu is not in a menu, nothing happens. The item is not
+    ///     checked: one the player could not select (hidden, disabled, not selectable) is selected all the same.
     /// </param>
     /// <param name="autoScroll">Whether this submenu should autoscroll after taking focus</param>
     /// <param name="snapScroll">
@@ -2116,13 +2245,24 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
             autoScrollOwed = Container.AutoScroll;
         } else {
             topSubMenu.ReleaseFocus();
-            autoScrollOwed = topSubMenu.receivedHover ? (topSubMenu.autoScrollToReturn ?? topSubMenu.AutoScroll)
-                                                      : Container.AutoScroll;
+            if (topSubMenu.HoveredRow is RecursiveSubMenuBase row) {
+                // Suspended, so it kept its hovered row, which must not go on holding the scrolling
+                topSubMenu.LeaveItem(row);
+            }
+            autoScrollOwed = topSubMenu.receivedHover ? topSubMenu.ScrollOwed : Container.AutoScroll;
         }
-        // Only now: releasing the focus calls OnLeave on the selected item, which is found in the menu shown
-        bool switchedMenu = itemMenuIndex >= 0 && itemMenuIndex != MenuIndex;
-        if (switchedMenu) {
-            StartMenuSwitch(itemMenuIndex - MenuIndex);
+        // Only now: releasing the focus calls OnLeave on the selected item, which is found in the menu shown. Each
+        // submenu on the way shows the menu that holds the next one in, the submenus around this one too (#42).
+        List<(RecursiveSubMenuBase SubMenu, int MenuIndex)> switched = [];
+        TextMenu.Item inner = item;
+        for (RecursiveSubMenuBase subMenu = this; subMenu != null; inner = subMenu, subMenu = subMenu.parent) {
+            int index = inner == null ? subMenu.MenuIndex
+                                      : subMenu.menus.FindIndex((LabeledMenu menu) => menu.Menu.Contains(inner));
+            if (index >= 0 && index != subMenu.MenuIndex) {
+                // OnValueChange waits for the end: a handler there sees the move done
+                subMenu.SwitchMenuQuietly(index - subMenu.MenuIndex);
+                switched.Add((subMenu, index));
+            }
         }
 
         ++selectionMoves;
@@ -2145,7 +2285,7 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
             parent.MoveSelectionToChild(this, inputStaysOutside);
         }
         foreach (RecursiveSubMenuBase subMenu in shown) {
-            if (subMenu.ShowMenu && !(subMenu == this && switchedMenu)) {
+            if (subMenu.ShowMenu && !switched.Exists(entry => entry.SubMenu == subMenu)) {
                 // Still drawn after the move: the collapse that the release started would blank the items meanwhile
                 subMenu.switchingMenus = false;
                 subMenu.switchMenuEase = 1f;
@@ -2155,6 +2295,15 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
         Container.RecalculateSize();
         if (autoScroll && snapScroll) {
             Container.Position.Y = ScrollTargetY;
+        }
+        // Outermost first. A handler may move the selection or remove a row, the target included, which the later
+        // calls do not undo: each reports the menu its submenu switched to while it still shows it. A switch a
+        // handler has undone, or a menu it took away, is not reported: its own call reported the menu shown.
+        for (int i = switched.Count - 1; i >= 0; --i) {
+            (RecursiveSubMenuBase subMenu, int index) = switched[i];
+            if (subMenu.MenuIndex == index && index < subMenu.menus.Count) {
+                subMenu.OnValueChange?.Invoke(index);
+            }
         }
     }
 
@@ -2265,6 +2414,14 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
     ///     change of the menu shown, as when a single-menu submenu expands or collapses.
     /// </param>
     protected void StartMenuSwitch(int dir) {
+        SwitchMenuQuietly(dir);
+        if (dir != 0) {
+            OnValueChange?.Invoke(MenuIndex);
+        }
+    }
+
+    // StartMenuSwitch without OnValueChange, for a caller that invokes it once its own state is valid
+    private void SwitchMenuQuietly(int dir) {
         switchingMenus       = true;
         switchFromMenuIndex  = MenuIndex;
         switchFromMenuHeight = EasedMenuHeight;
@@ -2278,7 +2435,6 @@ public abstract class RecursiveSubMenuBase : TextMenu.Item, IInputHoldingItem {
         }
         if (dir != 0) {
             ValueWiggler.Start();
-            OnValueChange?.Invoke(MenuIndex);
         }
     }
 

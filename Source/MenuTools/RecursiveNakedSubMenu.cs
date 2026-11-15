@@ -1,4 +1,5 @@
 // MenuTools requires: RecursiveSubMenuBase.cs
+#nullable disable
 using System;
 using System.Collections.Generic;
 
@@ -27,7 +28,8 @@ public class RecursiveNakedSubMenu : RecursiveSubMenuBase {
 
     /// <summary>
     /// Whether the items are shown. Set it to expand or collapse the submenu; the height change is animated.
-    /// Collapsing while the selection is in the submenu first moves it to a neighbouring row of what contains it.
+    /// Collapsing while the selection is in the submenu first moves it to a neighbouring row of what contains it. A
+    /// submenu around it left with nothing to select then gives up its own selection the same way.
     /// </summary>
     public bool Expanded {
         get => expanded;
@@ -43,6 +45,10 @@ public class RecursiveNakedSubMenu : RecursiveSubMenuBase {
                 MoveSelectionOffSelf();
             }
             Selectable = value;
+            if (!value) {
+                // The submenu that held it may have nothing left to select (#44)
+                parent?.PassSelectionOnIfEmptied();
+            }
             StartMenuSwitch(0);
         }
     }

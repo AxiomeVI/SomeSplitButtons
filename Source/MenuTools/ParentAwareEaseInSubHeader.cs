@@ -1,4 +1,5 @@
 // MenuTools requires: RecursiveSubMenuBase.cs
+#nullable disable
 namespace Celeste.Mod.SomeSplitButtons.MenuTools;
 
 /// <summary>
