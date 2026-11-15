@@ -113,8 +113,7 @@ Every `Pressed` ends in exactly one `Confirmed`, `Cancelled` or `Refused`:
 
 - Skip Cutscene: `Pressed` → `Confirmed`.
 - Save and Quit: `Pressed` → `Confirmed` or `Refused`.
-- Return to Map: `Pressed` → `Opened` → `Confirmed`, `Refused` or `Cancelled`, or `Pressed` →
-  `Cancelled` if the confirmation never opened.
+- Return to Map: `Pressed` → `Opened` → `Confirmed`, `Refused` or `Cancelled`.
 
 `Confirmed` is the frame the press is accepted, not the split; the split follows after the wait
 above. A button isn't offered again until its split lands. `Refused` means a collect protection
