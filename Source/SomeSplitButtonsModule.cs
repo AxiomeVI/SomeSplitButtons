@@ -104,7 +104,7 @@ public class SomeSplitButtonsModule : EverestModule {
         Everest.Events.Level.OnExit -= Level_OnLevelExit;
         SpeedrunToolHooks.Uninstall();
         LoadChain.Unload();
-        SceneSwitchClear.Resume();
+        SceneSwitchClear.Uninstall();
         DestinationWindow.Unload();
     }
 
