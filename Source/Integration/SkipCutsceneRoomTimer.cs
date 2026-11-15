@@ -133,7 +133,10 @@ internal static class SkipCutsceneRoomTimer {
     // Not left to OnUpdateTimerState to swallow: a mod detouring UpdateTimerState from outside this one
     // would still see a call every frame. Before the ending's split is recorded, the manager must see
     // the completion, or that split never happens.
+    //
+    // Not at all on the level a pick leaves, on the pick's frame (SpeedrunToolRecords.LeftByAPick).
     public static void OnManagerTiming(Action<Level> orig, Level level) {
+        if (SpeedrunToolRecords.LeftByAPick(level)) return;
         if (!(endingSplitRecorded && ShouldFreezeLevelCompleted(level)) && hiddenEnd == HiddenEnd.None) {
             orig(level);
             return;
@@ -173,7 +176,11 @@ internal static class SkipCutsceneRoomTimer {
     // (!level.Completed)`, so without it both splits share a key and the second overwrites the
     // first. It also makes SpeedrunTool break before the second write to ThisRunTimes[pbTimeKey], so
     // the call still produces exactly one record.
+    //
+    // LeftByAPick here as well as in OnManagerTiming: before SpeedrunTool 3.27.16 the manager's Timing
+    // hooks Level.Update and runs the pick inside its own orig, so that detour does not bind.
     public static void OnUpdateTimerState(Action<bool> orig, bool endPoint) {
+        if (Engine.Scene is Level left && SpeedrunToolRecords.LeftByAPick(left)) return;
         if (Engine.Scene is not Level level) {
             SpeedrunToolRecords.Around(() => orig(endPoint));
             return;

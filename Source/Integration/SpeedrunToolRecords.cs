@@ -28,6 +28,10 @@ internal static class SpeedrunToolRecords {
     // before the first end-of-run write since the last Forget.
     private static readonly Dictionary<object, RecordSnapshot[]> pending = new();
 
+    // The session of the level a pick last took an end of the run back in, until a timer call reaches
+    // another level.
+    private static Session takenBackIn;
+
     internal static RecordSnapshot Capture(string key, IDictionary table) =>
         new(key, table.Contains(key), table.Contains(key) ? table[key] : null);
 
@@ -79,7 +83,8 @@ internal static class SpeedrunToolRecords {
     ///     advance SpeedrunTool's room: only where the last record is a segment of its own, as a
     ///     chapter's end recorded on a completed level is, which splits without advancing it.
     /// </summary>
-    internal static bool KeepRunGoing() {
+    internal static bool KeepRunGoing(Session outgoing) {
+        if (pending.Count > 0) takenBackIn = outgoing;
         foreach ((object data, RecordSnapshot[] before) in pending) {
             for (int i = 0; i < Tables.Length; i++) {
                 if (Read(data, Tables[i]) is IDictionary table) Restore(before[i], table);
@@ -92,6 +97,18 @@ internal static class SpeedrunToolRecords {
         return current != null && Read(current, "ThisRunTimes") is IDictionary thisRun
                                && LastRecordIsASegment(thisRun, Read(current, "thisRunTimeKey") as string,
                                    Read(current, "thisRunPrevRoomTimeKey") as string);
+    }
+
+    /// <summary>Whether SpeedrunTool's room timer must not run on this level: a pick took its end of the run back.</summary>
+    // On the pick's frame the timer still runs once on the outgoing level, which is Completed, and
+    // ResumeTiming has put the state back to Timing: UpdateTimerState would write the end under
+    // pbTimeKey again. Not cleared in Forget, which runs on the loader's thread, and the pick's
+    // LevelLoader starts that thread before this frame's timer runs.
+    internal static bool LeftByAPick(Level level) {
+        if (takenBackIn == null) return false;
+        if (level.Session == takenBackIn) return true;
+        takenBackIn = null;
+        return false;
     }
 
     // The run goes on, so the timer is no longer Completed. While it is, its display shows the end-of-run

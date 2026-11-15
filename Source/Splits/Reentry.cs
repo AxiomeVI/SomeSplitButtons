@@ -146,7 +146,7 @@ internal static class Reentry {
         PausedWait.ResetForExit();
 
         // False: the split already advanced the room, and the arrival must not add one of no length.
-        if (!SpeedrunToolRecords.KeepRunGoing()) CheckpointArrival.Expect();
+        if (!SpeedrunToolRecords.KeepRunGoing(outgoing)) CheckpointArrival.Expect();
         LoadChain.Start(next);
         if (loading != null) SplitEvents.Emit(loading.InteropAction, SplitStages.Loading);
 
