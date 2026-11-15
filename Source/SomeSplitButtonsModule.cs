@@ -125,11 +125,13 @@ public class SomeSplitButtonsModule : EverestModule {
         => SplitFeatures.ResetAll();
 
     // Records what the features are doing and disarms nothing: a save state leaves the live level
-    // running, so an armed split must still fire.
-    public static void OnSaveState(Dictionary<Type, Dictionary<string, object>> dictionary, Level level)
-        => dictionary[typeof(SomeSplitButtonsModule)] = new Dictionary<string, object> {
+    // running, so an armed split must still fire. SpeedrunTool's run restarts, though.
+    public static void OnSaveState(Dictionary<Type, Dictionary<string, object>> dictionary, Level level) {
+        dictionary[typeof(SomeSplitButtonsModule)] = new Dictionary<string, object> {
             [nameof(SplitFeatures)] = SplitFeatures.SnapshotAll(),
         };
+        SpeedrunToolRecords.Restart(level);
+    }
 
     // A load puts the level back as it was saved, and SpeedrunTool restarts its room timer from there,
     // so the features go back to what they were doing at the save: a split counting down then counts
@@ -143,6 +145,7 @@ public class SomeSplitButtonsModule : EverestModule {
             && saved.TryGetValue(nameof(SplitFeatures), out object snapshots)) {
             SplitFeatures.RestoreAll((object[]) snapshots);
         }
+        SpeedrunToolRecords.Restart(level);
     }
 
     // Before SpeedrunTool unloads the level: its unload removes the open list, and a list removed under

@@ -32,6 +32,10 @@ internal static class SpeedrunToolRecords {
     // another level.
     private static Session takenBackIn;
 
+    // The session of the level a state was last saved or loaded in. Either one resets SpeedrunTool's room
+    // timer (ClearPbTimes before a save, ResetTime on a load), so the run there is a new attempt.
+    private static Session restartedIn;
+
     internal static RecordSnapshot Capture(string key, IDictionary table) =>
         new(key, table.Contains(key), table.Contains(key) ? table[key] : null);
 
@@ -51,6 +55,12 @@ internal static class SpeedrunToolRecords {
     /// <summary>Forgets what was taken; called with every level load.</summary>
     // ⚠️ Reached from Level_OnLoadingThread, on the loader's thread, after any pick has used it.
     internal static void Forget() => pending.Clear();
+
+    /// <summary>Starts a new attempt at a state save or load: nothing noted before it is taken back.</summary>
+    internal static void Restart(Level level) {
+        pending.Clear();
+        restartedIn = level.Session;
+    }
 
     /// <summary>Runs one UpdateTimerState call, noting the tables if the call writes the end of the run.</summary>
     internal static void Around(Action call) {
@@ -84,6 +94,13 @@ internal static class SpeedrunToolRecords {
     ///     chapter's end recorded on a completed level is, which splits without advancing it.
     /// </summary>
     internal static bool KeepRunGoing(Session outgoing) {
+        object current = Timer("CurrentRoomTimerData");
+        // On a level already complete, SpeedrunTool ends the restarted run at once, at room 1 and with its
+        // keys still "", which Around does not note. That end belongs to the new attempt: it stays, and the
+        // arrival is timed as the attempt's next room.
+        if (outgoing == restartedIn && pending.Count == 0
+            && current != null && Read(current, "timerState")?.ToString() == "Completed") return false;
+
         if (pending.Count > 0) takenBackIn = outgoing;
         foreach ((object data, RecordSnapshot[] before) in pending) {
             for (int i = 0; i < Tables.Length; i++) {
@@ -93,7 +110,6 @@ internal static class SpeedrunToolRecords {
         }
         pending.Clear();
 
-        object current = Timer("CurrentRoomTimerData");
         return current != null && Read(current, "ThisRunTimes") is IDictionary thisRun
                                && LastRecordIsASegment(thisRun, Read(current, "thisRunTimeKey") as string,
                                    Read(current, "thisRunPrevRoomTimeKey") as string);
