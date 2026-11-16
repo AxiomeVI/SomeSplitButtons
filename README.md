@@ -8,8 +8,8 @@ Inspired by [WonderMods](https://github.com/WonderGinger/WonderMods)' Return to 
 
 ## Requirements
 
-- Everest 1.5935.0 or newer
-- SpeedrunTool 3.26.4 or newer
+- Everest 1.6485.0 or newer
+- SpeedrunTool 3.27.21 or newer
 
 ## Setup
 
