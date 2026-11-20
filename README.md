@@ -34,7 +34,7 @@ The chapter still completes when the cutscene ends, as usual.
 **Then Load a Chapter or Checkpoint** opens a list after the split with the next chapter, this
 chapter's B-side and this chapter's checkpoints. A chapter loads from its start. A checkpoint keeps
 the chapter timer, as after the Return to Map split. Picking from the Prologue marks the Prologue
-complete.
+complete, without writing a best time: the run skipped the ending its clock runs through.
 
 ### Save and Quit Split
 

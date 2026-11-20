@@ -115,6 +115,17 @@ internal static class Reentry {
         if (current != null) Reset(current);
     }
 
+    // The completion without a time: the pick skips the ending the Prologue's clock runs through, so no
+    // time it could write is the game's. The best times already in the save stay as they were.
+    private static void RegisterPrologueComplete(Level level) {
+        AreaModeStats stats = SaveData.Instance.Areas_Safe[level.Session.Area.ID].Modes[(int)level.Session.Area.Mode];
+        long bestTime = stats.BestTime;
+        long bestFullClearTime = stats.BestFullClearTime;
+        level.RegisterAreaComplete();
+        stats.BestTime = bestTime;
+        stats.BestFullClearTime = bestFullClearTime;
+    }
+
     /// <summary>Builds the session for the chosen row, a checkpoint or a destination, and loads it.</summary>
     private static void Load(string checkpointKey) {
         if (Engine.Scene is not Level level) return;
@@ -139,7 +150,7 @@ internal static class Reentry {
         // The Prologue registers its completion at the very end of its ending, which the pick leaves
         // before; chapters 1 to 7 already did as theirs began. Keyed on the ID, not on Completed, which
         // is false wherever a split fires outside an ending.
-        if (loading == SkipCutscene && level.Session.Area.ID == SkipCutsceneTimer.PROLOGUE_AREA_ID) level.RegisterAreaComplete();
+        if (loading == SkipCutscene && level.Session.Area.ID == SkipCutsceneTimer.PROLOGUE_AREA_ID) RegisterPrologueComplete(level);
 
         // Vanilla's Return to Map runs these; a heart's collect sound stops through one.
         foreach (LevelEndingHook hook in level.Tracker.GetComponents<LevelEndingHook>()) hook.OnEnd?.Invoke();
