@@ -1,7 +1,6 @@
 using System;
 using Celeste.Mod.SomeSplitButtons.Splits;
 using Celeste.Mod.SomeSplitButtons.UI;
-using Celeste.Mod.SomeSplitButtons.Utils;
 using Microsoft.Xna.Framework;
 using Monocle;
 
@@ -9,11 +8,10 @@ namespace Celeste.Mod.SomeSplitButtons.ReturnToMapSplit;
 
 /// <summary>The vanilla Return to Map hint with its caption replaced.</summary>
 internal class ReturnToMapSplitHint : ReturnMapHint {
-    // Formatted (Dialog.Clean would show "{0}") and measured once: nothing in it changes while the
-    // prompt is open.
-    private readonly string text =
-        DialogFormat.Fill(PluralDialog.Get(SplitFeatures.ReturnToMap.DescriptionId(), SplitTimings.WIPE_FADEOUT_FRAMES),
-                          SplitTimings.WIPE_FADEOUT_FRAMES);
+    // The button's own description, end-point warning included, and measured once: nothing in it
+    // changes while the prompt is open. SpeedrunTool's hotkeys, which set an end point, refuse the
+    // paused level the prompt sits on.
+    private readonly string text = PauseMenuButtons.Description(SplitFeatures.ReturnToMap);
 
     private readonly float textScale;
     private readonly float textWidth;
@@ -33,6 +31,9 @@ internal class ReturnToMapSplitHint : ReturnMapHint {
 
     /// <summary>The width fitted against FittedDescription.MaxLineWidth. Read by the test probe.</summary>
     internal float FittedWidth => fittedWidth;
+
+    /// <summary>The caption as drawn. Read by the test probe.</summary>
+    internal string Text => text;
 
     public override void Render() {
         MTexture icon = GFX.Gui["checkpoint"];

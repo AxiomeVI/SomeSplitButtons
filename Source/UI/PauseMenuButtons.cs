@@ -37,12 +37,7 @@ internal static class PauseMenuButtons {
                 if (terminal != null) SplitEvents.Emit(feature.InteropAction, terminal);
             });
 
-            // In the menu rather than a popup at the press: Save and Quit's fade-out starts on the
-            // press and draws over any popup.
-            string description = feature.IgnoredAtEndPoint && SpeedrunToolHooks.EndPointExists
-                ? Dialog.Clean(DialogIds.EndPointIgnoresSplitId)
-                : Description(feature.DescriptionId(), feature.DescriptionFrames());
-            Insert(menu, SlotIndex(menu, feature.Slot), button, description);
+            Insert(menu, SlotIndex(menu, feature.Slot), button, Description(feature));
         }
     }
 
@@ -65,12 +60,20 @@ internal static class PauseMenuButtons {
     }
 
     /// <summary>
-    ///     A split button's description, with the number of frames it will actually wait filled in.
+    ///     A split button's description, with the number of frames it will actually wait filled in,
+    ///     or the end-point warning when SpeedrunTool's room timer will ignore the split.
     /// </summary>
+    // Return to Map's confirm hint shows the same text, so the two cannot disagree. The warning is in
+    // the menu rather than a popup at the press: Save and Quit's fade-out starts on the press and
+    // draws over any popup.
+    //
     // Raw entry, not Dialog.Clean: Clean deletes {0} with the markup it shares braces with. Both
     // arguments are always supplied; entries quoting only frames ignore {1}.
-    private static string Description(string dialogId, int frames)
-        => DialogFormat.Fill(PluralDialog.Get(dialogId, frames), frames, SplitTimings.ToSeconds(frames));
+    internal static string Description(SplitFeature feature) {
+        if (feature.IgnoredAtEndPoint && SpeedrunToolHooks.EndPointExists) return Dialog.Clean(DialogIds.EndPointIgnoresSplitId);
+        int frames = feature.DescriptionFrames();
+        return DialogFormat.Fill(PluralDialog.Get(feature.DescriptionId(), frames), frames, SplitTimings.ToSeconds(frames));
+    }
 
     /// <summary>
     ///     The insertion index that makes a new entry the <paramref name="slot"/>-th one the cursor
