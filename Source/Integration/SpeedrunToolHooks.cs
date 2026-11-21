@@ -35,6 +35,9 @@ internal static class SpeedrunToolHooks {
     /// </summary>
     internal static bool EndPointExists => endPointExists?.Invoke() ?? false;
 
+    /// <summary>Whether RoomTimerManager.Timing is detoured, so a split can wait for it.</summary>
+    internal static bool ManagerTimingHooked => managerTimingHook != null;
+
     /// <summary>
     ///     Forgets the room SpeedrunTool last timed, as its own reset does, so the next level it
     ///     times raises no room-change split. Does nothing when the field was not found.

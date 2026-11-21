@@ -35,6 +35,8 @@ internal static class SkipCutsceneRoomTimer {
         showCompletedToSpeedrunTool = false;
         hiddenEnd = HiddenEnd.None;
         endingFrozen = null;
+        splitAfterTiming = false;
+        timeSplitFrame = false;
     }
 
     internal static object Snapshot()
@@ -96,6 +98,28 @@ internal static class SkipCutsceneRoomTimer {
         }
     }
 
+    // Set by SplitAfterThisFrame, cleared by the manager's Timing on the same frame.
+    private static bool splitAfterTiming = false;
+    // Whether this frame is timed despite a hold: only if none stood before the split took its own.
+    // A hold left by an earlier Save and Quit split is a stopped clock, and stops this frame too.
+    private static bool timeSplitFrame = false;
+
+    /// <summary>
+    ///     Splits on behalf of a button whose press leaves the level, once SpeedrunTool has timed this frame.
+    /// </summary>
+    // Vanilla's last wipe frame is timed in the room the wipe leaves. Split now and the hold the
+    // split takes gives this frame to no room: one frame short of the real button. Without the
+    // manager's Timing hook nothing would run the split, so it splits now.
+    // ⚠️ Before the caller takes its hold: what is held now is held from before.
+    internal static void SplitAfterThisFrame() {
+        if (!SpeedrunToolHooks.ManagerTimingHooked) {
+            Split();
+            return;
+        }
+        splitAfterTiming = true;
+        timeSplitFrame = !ClockHold.Held;
+    }
+
     /// <summary>
     ///     Called when the split fires: from here on SpeedrunTool is no longer shown an incomplete
     ///     level.
@@ -136,6 +160,23 @@ internal static class SkipCutsceneRoomTimer {
     //
     // Not at all on the level a pick leaves, on the pick's frame (SpeedrunToolRecords.LeftByAPick).
     public static void OnManagerTiming(Action<Level> orig, Level level) {
+        ManagerTiming(orig, level);
+        if (!splitAfterTiming) return;
+        splitAfterTiming = false;
+        timeSplitFrame = false;
+        Split();
+        // SpeedrunTool times right after each of its own splits, which ends the Completed state a split
+        // leaves when rooms remain. Again here, with no time to add: this frame is already timed.
+        float rawDeltaTime = Engine.RawDeltaTime;
+        Engine.RawDeltaTime = 0f;
+        try {
+            ManagerTiming(orig, level);
+        } finally {
+            Engine.RawDeltaTime = rawDeltaTime;
+        }
+    }
+
+    private static void ManagerTiming(Action<Level> orig, Level level) {
         if (SpeedrunToolRecords.LeftByAPick(level)) return;
         if (!(endingSplitRecorded && ShouldFreezeLevelCompleted(level)) && hiddenEnd == HiddenEnd.None) {
             orig(level);
@@ -154,7 +195,8 @@ internal static class SkipCutsceneRoomTimer {
         bool wasCompleted = level.Completed;
         float rawDeltaTime = Engine.RawDeltaTime;
         level.Completed = !ShouldFreezeLevelCompleted(level) && CompletedAsShown(level);
-        if (ClockHold.Held) Engine.RawDeltaTime = 0f;
+        // Not on the frame a split waits for: that frame belongs to the room it ends.
+        if (ClockHold.Held && !(splitAfterTiming && timeSplitFrame)) Engine.RawDeltaTime = 0f;
         try {
             orig(self, level);
         } finally {

@@ -78,9 +78,10 @@ internal static class SaveAndQuitTimer {
         // First, before the room timer is told or the hold is taken: an observer reads the level as
         // the wait left it.
         SplitEvents.Emit(SplitActions.SaveAndQuit, SplitStages.Split);
-        SkipCutsceneRoomTimer.Split();
-        // On both paths, and on this frame: SpeedrunTool's room timer runs after this on the same
-        // frame, and would add it to the next room.
+        // This frame is vanilla's last wipe frame, which the room being left times. SpeedrunTool's
+        // room timer runs after this on the same frame: the split waits for it.
+        SkipCutsceneRoomTimer.SplitAfterThisFrame();
+        // On both paths, and on this frame: after the split, nothing more reaches either room.
         ClockHold.Take(ClockHold.Holder.SaveAndQuit);
         if (SomeSplitButtonsModule.Settings.SaveAndQuitAndReenter) {
             Reenter(level);
